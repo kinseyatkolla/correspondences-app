@@ -47,6 +47,75 @@ export interface TarotCard {
   updatedAt: string;
 }
 
+export interface BirthData {
+  year: number;
+  month: number;
+  day: number;
+  hour?: number;
+  minute?: number;
+  second?: number;
+  latitude?: number;
+  longitude?: number;
+  houseSystem?: string;
+}
+
+export interface PlanetPosition {
+  longitude: number;
+  latitude: number;
+  distance: number;
+  speed: number;
+  zodiacSign: number;
+  zodiacSignName: string;
+  degree: number;
+  degreeFormatted: string;
+  symbol: string;
+  error?: string;
+}
+
+export interface HouseData {
+  cusps: number[];
+  ascendant: number;
+  ascendantSign: string;
+  ascendantDegree: string;
+  mc: number;
+  mcSign: string;
+  mcDegree: string;
+  armc: number;
+  vertex: number;
+  equatorialAscendant: number;
+  coAscendant: number;
+  polarAscendant: number;
+  houseSystem: string;
+}
+
+export interface BirthChart {
+  julianDay: number;
+  inputDate: {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+  };
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
+  planets: Record<string, PlanetPosition>;
+  houses: HouseData;
+}
+
+export interface EphemerisInfo {
+  status: string;
+  ephemerisType: string;
+  note: string;
+  testCalculation: {
+    date: string;
+    sunLongitude: number;
+    fullResult: any;
+  };
+  planetConstants: Record<string, number>;
+}
+
 // API service class
 class ApiService {
   private baseUrl: string;
@@ -262,6 +331,66 @@ class ApiService {
     return this.fetchData(`/tarot-cards/${id}`, {
       method: "DELETE",
     });
+  }
+
+  // Astrology API
+  async getPlanetaryPositions(birthData: BirthData): Promise<{
+    success: boolean;
+    data: {
+      julianDay: number;
+      inputDate: {
+        year: number;
+        month: number;
+        day: number;
+        hour: number;
+      };
+      planets: Record<string, PlanetPosition>;
+    };
+  }> {
+    return this.fetchData("/astrology/planets", {
+      method: "POST",
+      body: JSON.stringify(birthData),
+    });
+  }
+
+  async getHouses(birthData: BirthData): Promise<{
+    success: boolean;
+    data: {
+      julianDay: number;
+      inputDate: {
+        year: number;
+        month: number;
+        day: number;
+        hour: number;
+      };
+      location: {
+        latitude: number;
+        longitude: number;
+      };
+      houses: HouseData;
+    };
+  }> {
+    return this.fetchData("/astrology/houses", {
+      method: "POST",
+      body: JSON.stringify(birthData),
+    });
+  }
+
+  async getBirthChart(birthData: BirthData): Promise<{
+    success: boolean;
+    data: BirthChart;
+  }> {
+    return this.fetchData("/astrology/chart", {
+      method: "POST",
+      body: JSON.stringify(birthData),
+    });
+  }
+
+  async getEphemerisInfo(): Promise<{
+    success: boolean;
+    data: EphemerisInfo;
+  }> {
+    return this.fetchData("/astrology/ephemeris-info");
   }
 }
 

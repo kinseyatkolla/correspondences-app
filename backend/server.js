@@ -6,6 +6,7 @@ const config = require("./config");
 // Import routes
 const flowerEssenceRoutes = require("./routes/flowerEssences");
 const tarotCardRoutes = require("./routes/tarotCards");
+const astrologyRoutes = require("./routes/astrology");
 
 const app = express();
 const PORT = config.PORT;
@@ -84,6 +85,9 @@ app.use("/api/flower-essences", flowerEssenceRoutes);
 
 // Use tarot card routes
 app.use("/api/tarot-cards", tarotCardRoutes);
+
+// Use astrology routes
+app.use("/api/astrology", astrologyRoutes);
 
 // Start server
 app.listen(PORT, () => {
