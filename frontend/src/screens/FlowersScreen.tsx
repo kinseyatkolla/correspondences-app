@@ -98,18 +98,17 @@ export default function FlowersScreen() {
     }
   }, []);
 
-  const handleSearch = (query: string) => {
+  const handleSearchInput = (query: string) => {
     setSearchQuery(query);
   };
 
-  // Debounced search effect
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      loadFlowerEssences(searchQuery);
-    }, 300); // 300ms delay
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery]);
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      loadFlowerEssences(searchQuery.trim());
+    } else {
+      loadFlowerEssences("");
+    }
+  };
 
   const handleFlowerPress = (flower: FlowerEssence) => {
     setSelectedFlower(flower);
@@ -165,13 +164,20 @@ export default function FlowersScreen() {
         <Text style={styles.randomButtonText}>🔮 Draw a Random Flower</Text>
       </TouchableOpacity>
 
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search flower essences..."
-        placeholderTextColor="#8a8a8a"
-        value={searchQuery}
-        onChangeText={handleSearch}
-      />
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search flower essences..."
+          placeholderTextColor="#8a8a8a"
+          value={searchQuery}
+          onChangeText={handleSearchInput}
+          returnKeyType="search"
+          onSubmitEditing={handleSearch}
+        />
+        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+          <Text style={styles.searchButtonText}>🔍</Text>
+        </TouchableOpacity>
+      </View>
 
       <FlatList
         data={flowerEssences}
@@ -317,15 +323,34 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#e6e6fa",
   },
+  searchContainer: {
+    flexDirection: "row",
+    marginBottom: 20,
+    alignItems: "center",
+  },
   searchInput: {
     backgroundColor: "#3d6b1a",
     borderRadius: 12,
     padding: 15,
-    marginBottom: 20,
     color: "#e6e6fa",
     fontSize: 16,
     borderWidth: 1,
     borderColor: "#4a7c1f",
+    flex: 1,
+    marginRight: 10,
+  },
+  searchButton: {
+    backgroundColor: "#4a7c1f",
+    borderRadius: 12,
+    padding: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 50,
+  },
+  searchButtonText: {
+    color: "#e6e6fa",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   list: {
     flex: 1,

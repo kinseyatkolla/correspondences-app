@@ -5,7 +5,7 @@ const TarotCard = require("../models/TarotCard");
 // GET /api/tarot-cards - Get all tarot cards
 router.get("/", async (req, res) => {
   try {
-    const { search, suit, limit = 50, page = 1 } = req.query;
+    const { search, suit, limit = 200, page = 1 } = req.query;
 
     let query = {};
 
