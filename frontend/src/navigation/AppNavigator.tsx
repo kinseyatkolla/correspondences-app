@@ -44,9 +44,11 @@ export default function AppNavigator() {
           name="Moon"
           component={MoonScreen}
           options={{
-            tabBarLabel: "Moon",
-            tabBarIcon: ({ color, size }) => (
-              <Text style={{ color, fontSize: size }}>🌙</Text>
+            tabBarLabel: "",
+            tabBarIcon: ({ focused, size }) => (
+              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.5 }}>
+                🌙
+              </Text>
             ),
           }}
         />
@@ -54,9 +56,11 @@ export default function AppNavigator() {
           name="Tarot"
           component={TarotScreen}
           options={{
-            tabBarLabel: "Tarot",
-            tabBarIcon: ({ color, size }) => (
-              <Text style={{ color, fontSize: size }}>🃏</Text>
+            tabBarLabel: "",
+            tabBarIcon: ({ focused, size }) => (
+              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.5 }}>
+                🃏
+              </Text>
             ),
           }}
         />
@@ -64,9 +68,11 @@ export default function AppNavigator() {
           name="Flowers"
           component={FlowersScreen}
           options={{
-            tabBarLabel: "Flowers",
-            tabBarIcon: ({ color, size }) => (
-              <Text style={{ color, fontSize: size }}>🌸</Text>
+            tabBarLabel: "",
+            tabBarIcon: ({ focused, size }) => (
+              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.5 }}>
+                🌸
+              </Text>
             ),
           }}
         />
@@ -74,9 +80,11 @@ export default function AppNavigator() {
           name="Book"
           component={BookScreen}
           options={{
-            tabBarLabel: "Book",
-            tabBarIcon: ({ color, size }) => (
-              <Text style={{ color, fontSize: size }}>📖</Text>
+            tabBarLabel: "",
+            tabBarIcon: ({ focused, size }) => (
+              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.5 }}>
+                📖
+              </Text>
             ),
           }}
         />
@@ -84,9 +92,11 @@ export default function AppNavigator() {
           name="Astrology"
           component={AstrologyScreen}
           options={{
-            tabBarLabel: "Astrology",
-            tabBarIcon: ({ color, size }) => (
-              <Text style={{ color, fontSize: size }}>⭐</Text>
+            tabBarLabel: "",
+            tabBarIcon: ({ focused, size }) => (
+              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.5 }}>
+                ⭐
+              </Text>
             ),
           }}
         />

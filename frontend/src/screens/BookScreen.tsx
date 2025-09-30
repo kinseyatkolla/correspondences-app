@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#4a2c7a",
+    backgroundColor: "#111111",
     padding: 20,
   },
   emoji: {
