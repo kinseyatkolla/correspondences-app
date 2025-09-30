@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TextInput,
   TouchableOpacity,
   Modal,
@@ -110,6 +109,11 @@ export default function FlowersScreen() {
     }
   };
 
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    loadFlowerEssences("");
+  };
+
   const handleFlowerPress = (flower: FlowerEssence) => {
     setSelectedFlower(flower);
     setModalVisible(true);
@@ -129,20 +133,6 @@ export default function FlowersScreen() {
     }
   };
 
-  const renderFlowerItem = ({ item }: { item: FlowerEssence }) => (
-    <TouchableOpacity
-      style={styles.flowerItem}
-      onPress={() => handleFlowerPress(item)}
-    >
-      <Text style={styles.flowerEmoji}>{getFlowerEmoji(item.imageName)}</Text>
-      <View style={styles.flowerInfo}>
-        <Text style={styles.flowerName}>{item.commonName}</Text>
-        <Text style={styles.flowerLatin}>{item.latinName}</Text>
-      </View>
-      <Text style={styles.arrow}>›</Text>
-    </TouchableOpacity>
-  );
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -153,7 +143,7 @@ export default function FlowersScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={styles.title}>🌸 Flower Essences</Text>
       <Text style={styles.subtitle}>
         Discover the healing properties of flowers
@@ -176,15 +166,40 @@ export default function FlowersScreen() {
         <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
           <Text style={styles.searchButtonText}>🔍</Text>
         </TouchableOpacity>
+        {searchQuery.length > 0 && (
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={handleClearSearch}
+          >
+            <Text style={styles.clearButtonText}>✕</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      <FlatList
-        data={flowerEssences}
-        renderItem={renderFlowerItem}
-        keyExtractor={(item) => item._id}
-        style={styles.list}
-        showsVerticalScrollIndicator={false}
-      />
+      {flowerEssences.map((flower) => (
+        <TouchableOpacity
+          key={flower._id}
+          style={styles.flowerItem}
+          onPress={() => handleFlowerPress(flower)}
+        >
+          <Text style={styles.flowerEmoji}>
+            {getFlowerEmoji(flower.imageName)}
+          </Text>
+          <View style={styles.flowerInfo}>
+            <Text style={styles.flowerName}>{flower.commonName}</Text>
+            <Text style={styles.flowerLatin}>{flower.latinName}</Text>
+          </View>
+          <Text style={styles.arrow}>›</Text>
+        </TouchableOpacity>
+      ))}
+
+      {flowerEssences.length > 0 && (
+        <View style={styles.listFooter}>
+          <Text style={styles.footerText}>
+            Showing {flowerEssences.length} flowers
+          </Text>
+        </View>
+      )}
 
       <Modal
         visible={modalVisible}
@@ -269,7 +284,7 @@ export default function FlowersScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -351,8 +366,27 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-  list: {
-    flex: 1,
+  clearButton: {
+    backgroundColor: "#8a8a8a",
+    borderRadius: 12,
+    padding: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 50,
+    marginLeft: 5,
+  },
+  clearButtonText: {
+    color: "#e6e6fa",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  listFooter: {
+    padding: 20,
+    alignItems: "center",
+  },
+  footerText: {
+    color: "#b19cd9",
+    fontSize: 14,
   },
   flowerItem: {
     backgroundColor: "#3d6b1a",

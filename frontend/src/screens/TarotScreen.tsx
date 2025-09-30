@@ -58,6 +58,12 @@ export default function TarotScreen() {
     }
   };
 
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setFilteredCards([]);
+    setSelectedCategory(null);
+  };
+
   const handleCategoryPress = (category: string) => {
     setSelectedCategory(category);
     setSearchQuery("");
@@ -234,6 +240,14 @@ export default function TarotScreen() {
         <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
           <Text style={styles.searchButtonText}>🔍</Text>
         </TouchableOpacity>
+        {searchQuery.length > 0 && (
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={handleClearSearch}
+          >
+            <Text style={styles.clearButtonText}>✕</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {selectedCategory && (
@@ -430,6 +444,20 @@ const styles = StyleSheet.create({
     minWidth: 50,
   },
   searchButtonText: {
+    color: "#e6e6fa",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  clearButton: {
+    backgroundColor: "#8a8a8a",
+    borderRadius: 12,
+    padding: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 50,
+    marginLeft: 5,
+  },
+  clearButtonText: {
     color: "#e6e6fa",
     fontSize: 18,
     fontWeight: "bold",
