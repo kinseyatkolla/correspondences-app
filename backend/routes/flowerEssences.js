@@ -46,6 +46,34 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET /api/flower-essences/random - Get a random flower essence
+router.get("/random", async (req, res) => {
+  try {
+    const count = await FlowerEssence.countDocuments();
+    const random = Math.floor(Math.random() * count);
+    const randomFlower = await FlowerEssence.findOne().skip(random);
+
+    if (!randomFlower) {
+      return res.status(404).json({
+        success: false,
+        message: "No flower essences found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: randomFlower,
+    });
+  } catch (error) {
+    console.error("Error fetching random flower essence:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching random flower essence",
+      error: error.message,
+    });
+  }
+});
+
 // GET /api/flower-essences/:id - Get single flower essence
 router.get("/:id", async (req, res) => {
   try {

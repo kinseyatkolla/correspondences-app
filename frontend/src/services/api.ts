@@ -145,6 +145,13 @@ class ApiService {
     return this.fetchData(`/flower-essences/${id}`);
   }
 
+  async getRandomFlowerEssence(): Promise<{
+    success: boolean;
+    data: FlowerEssence;
+  }> {
+    return this.fetchData("/flower-essences/random");
+  }
+
   async createFlowerEssence(
     flowerEssence: Omit<FlowerEssence, "_id" | "createdAt" | "updatedAt">
   ): Promise<{

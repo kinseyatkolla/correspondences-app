@@ -115,19 +115,18 @@ export default function FlowersScreen() {
     setModalVisible(true);
   };
 
-  const handleRandomDraw = () => {
-    if (flowerEssences.length === 0) {
-      Alert.alert(
-        "No flowers available",
-        "Please wait for flowers to load or check your connection."
-      );
-      return;
+  const handleRandomDraw = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getRandomFlowerEssence();
+      setSelectedFlower(response.data);
+      setModalVisible(true);
+    } catch (error) {
+      console.error("Error drawing random flower:", error);
+      Alert.alert("Error", "Failed to draw random flower");
+    } finally {
+      setLoading(false);
     }
-
-    const randomIndex = Math.floor(Math.random() * flowerEssences.length);
-    const randomFlower = flowerEssences[randomIndex];
-    setSelectedFlower(randomFlower);
-    setModalVisible(true);
   };
 
   const renderFlowerItem = ({ item }: { item: FlowerEssence }) => (
