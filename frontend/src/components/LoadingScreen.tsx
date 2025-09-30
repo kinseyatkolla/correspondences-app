@@ -146,15 +146,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 3,
+    marginBottom: 16, // Perfect equilateral triangle spacing
   },
   letter: {
-    fontSize: 28,
+    fontSize: 18, // Smaller font size to match header
     fontWeight: "bold",
     color: "#ffffff",
-    marginHorizontal: 4, // Reduced from 8 to make triangle narrower
+    marginHorizontal: 4, // Keep same spacing
     fontFamily: "monospace",
-    letterSpacing: 1, // Reduced from 2
+    letterSpacing: 8, // Match the header letterSpacing
   },
   loadingText: {
     fontSize: 16,
