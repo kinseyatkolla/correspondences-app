@@ -5,7 +5,7 @@ import DynamicSvgImporter from "../components/DynamicSvgImporter";
 export default function MoonScreen() {
   // For now, using phase 13 as an example
   // In a real app, you'd calculate this based on current date/time
-  const currentMoonPhase = 30;
+  const currentMoonPhase = 10;
 
   return (
     <View style={styles.container}>
@@ -15,7 +15,8 @@ export default function MoonScreen() {
         height={140}
         style={styles.emoji}
       />
-      <Text style={styles.title}>Moon</Text>
+      <Text style={styles.title}>Capricorn Moon</Text>
+      <Text style={styles.description}>Waxing Gibbous</Text>
       <Text style={styles.description}>Tithi</Text>
       <Text style={styles.description}>nakshatra</Text>
       <Text style={styles.description}>Moon phase</Text>

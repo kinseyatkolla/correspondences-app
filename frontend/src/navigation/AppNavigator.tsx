@@ -17,12 +17,11 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Tab.Navigator
         screenOptions={{
-          tabBarActiveTintColor: "#007AFF",
-          tabBarInactiveTintColor: "#8E8E93",
+          tabBarActiveTintColor: "#e6e6fa",
+          tabBarInactiveTintColor: "#8a8a8a",
           tabBarStyle: {
-            backgroundColor: "white",
-            borderTopWidth: 1,
-            borderTopColor: "#E5E5EA",
+            backgroundColor: "#000000",
+            borderTopWidth: 0,
             paddingBottom: 5,
             paddingTop: 5,
             height: 60,
