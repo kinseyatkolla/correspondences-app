@@ -16,7 +16,7 @@ import { apiService, FlowerEssence } from "../services/api";
 import { getFlowerEmoji } from "../utils/imageHelper";
 
 // Import all flower images
-const flowerImages = {
+const flowerImages: { [key: string]: any } = {
   "agrimony.png": require("../../assets/images/flowers/agrimony.png"),
   "aloevera.png": require("../../assets/images/flowers/aloevera.png"),
   "aspen.png": require("../../assets/images/flowers/aspen.png"),
@@ -386,8 +386,6 @@ const styles = StyleSheet.create({
   },
   modalHeader: {
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#4a2c7a",
     position: "relative",
   },
   imageContainer: {
