@@ -1,0 +1,111 @@
+[
+  {
+    "name": "The Fool",
+    "number": 0,
+    "suit": "Major Arcana",
+    "keywords": ["New beginnings", "Innocence", "Spontaneity", "Adventure"],
+    "uprightMeaning": "New beginnings, taking a leap of faith, innocence, spontaneity, adventure, optimism, trust in the universe",
+    "reversedMeaning": "Recklessness, lack of planning, naivety, poor judgment, risk-taking without consideration",
+    "description": "The Fool represents new beginnings, fresh starts, and the courage to take a leap of faith. This card encourages you to embrace the unknown with optimism and trust.",
+    "astrologicalCorrespondence": "Uranus",
+    "element": "Air",
+    "imageName": "fool.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Magician",
+    "number": 1,
+    "suit": "Major Arcana",
+    "keywords": ["Manifestation", "Power", "Will", "Skill"],
+    "uprightMeaning": "Manifestation, personal power, willpower, skill, concentration, resourcefulness",
+    "reversedMeaning": "Manipulation, trickery, lack of focus, untapped talents, poor planning",
+    "description": "The Magician represents the power to manifest your desires through focused will and action. You have all the tools you need to achieve your goals.",
+    "astrologicalCorrespondence": "Mercury",
+    "element": "Air",
+    "imageName": "magician.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The High Priestess",
+    "number": 2,
+    "suit": "Major Arcana",
+    "keywords": ["Intuition", "Mystery", "Wisdom", "Secrets"],
+    "uprightMeaning": "Intuition, inner wisdom, mystery, secrets, subconscious mind, spiritual insight",
+    "reversedMeaning": "Lack of intuition, secrets, hidden agendas, disconnect from inner voice",
+    "description": "The High Priestess represents your inner wisdom and intuition. Trust your instincts and look within for answers to your questions.",
+    "astrologicalCorrespondence": "Moon",
+    "element": "Water",
+    "imageName": "high-priestess.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "Ace of Cups",
+    "number": 1,
+    "suit": "Cups",
+    "keywords": [
+      "Love",
+      "Emotions",
+      "New relationships",
+      "Spiritual awakening"
+    ],
+    "uprightMeaning": "New love, emotional fulfillment, spiritual awakening, intuition, compassion, new relationships",
+    "reversedMeaning": "Emotional loss, blocked creativity, depression, emotional instability",
+    "description": "The Ace of Cups represents the beginning of emotional fulfillment and new love. It signals a time of emotional renewal and spiritual awakening.",
+    "astrologicalCorrespondence": "Water signs (Cancer, Scorpio, Pisces)",
+    "element": "Water",
+    "imageName": "ace-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Two of Cups",
+    "number": 2,
+    "suit": "Cups",
+    "keywords": ["Partnership", "Love", "Connection", "Harmony"],
+    "uprightMeaning": "Partnership, love, connection, harmony, mutual respect, emotional balance",
+    "reversedMeaning": "Imbalance, broken communication, lack of harmony, separation",
+    "description": "The Two of Cups represents partnership, love, and emotional connection. It suggests a harmonious relationship based on mutual respect and understanding.",
+    "astrologicalCorrespondence": "Venus in Cancer",
+    "element": "Water",
+    "imageName": "two-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Ace of Wands",
+    "number": 1,
+    "suit": "Wands",
+    "keywords": ["Inspiration", "New opportunities", "Energy", "Passion"],
+    "uprightMeaning": "New opportunities, inspiration, energy, passion, creativity, new beginnings",
+    "reversedMeaning": "Lack of direction, creative blocks, delays, missed opportunities",
+    "description": "The Ace of Wands represents new opportunities and creative inspiration. It's a time to pursue your passions with energy and enthusiasm.",
+    "astrologicalCorrespondence": "Fire signs (Aries, Leo, Sagittarius)",
+    "element": "Fire",
+    "imageName": "ace-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Ace of Swords",
+    "number": 1,
+    "suit": "Swords",
+    "keywords": ["Truth", "Clarity", "Justice", "Mental clarity"],
+    "uprightMeaning": "Mental clarity, truth, justice, new ideas, breakthrough, clear thinking",
+    "reversedMeaning": "Confusion, lack of clarity, injustice, mental blocks, clouded judgment",
+    "description": "The Ace of Swords represents mental clarity and the power of truth. It's a time for clear thinking and cutting through confusion.",
+    "astrologicalCorrespondence": "Air signs (Gemini, Libra, Aquarius)",
+    "element": "Air",
+    "imageName": "ace-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Ace of Pentacles",
+    "number": 1,
+    "suit": "Pentacles",
+    "keywords": ["Material gain", "New opportunities", "Security", "Abundance"],
+    "uprightMeaning": "New opportunities, material gain, security, abundance, new beginnings, financial stability",
+    "reversedMeaning": "Missed opportunities, financial loss, lack of planning, instability",
+    "description": "The Ace of Pentacles represents new opportunities for material gain and financial security. It's a time to invest in your future.",
+    "astrologicalCorrespondence": "Earth signs (Taurus, Virgo, Capricorn)",
+    "element": "Earth",
+    "imageName": "ace-pentacles.jpg",
+    "isMajorArcana": false
+  }
+]

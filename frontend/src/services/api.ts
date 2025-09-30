@@ -30,6 +30,23 @@ export interface FlowerEssence {
   updatedAt: string;
 }
 
+export interface TarotCard {
+  _id: string;
+  name: string;
+  number: number;
+  suit: string;
+  keywords: string[];
+  uprightMeaning: string;
+  reversedMeaning: string;
+  description: string;
+  astrologicalCorrespondence?: string;
+  element?: string;
+  imageName?: string;
+  isMajorArcana: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // API service class
 class ApiService {
   private baseUrl: string;
@@ -162,6 +179,80 @@ class ApiService {
     message: string;
   }> {
     return this.fetchData(`/flower-essences/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Tarot Cards API
+  async getTarotCards(
+    search?: string,
+    suit?: string,
+    page = 1,
+    limit = 50
+  ): Promise<{
+    success: boolean;
+    data: TarotCard[];
+    pagination: {
+      current: number;
+      pages: number;
+      total: number;
+    };
+  }> {
+    const params = new URLSearchParams();
+    if (search) params.append("search", search);
+    if (suit) params.append("suit", suit);
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+
+    return this.fetchData(`/tarot-cards?${params.toString()}`);
+  }
+
+  async getTarotCard(id: string): Promise<{
+    success: boolean;
+    data: TarotCard;
+  }> {
+    return this.fetchData(`/tarot-cards/${id}`);
+  }
+
+  async getRandomTarotCard(): Promise<{
+    success: boolean;
+    data: TarotCard;
+  }> {
+    return this.fetchData("/tarot-cards/random");
+  }
+
+  async createTarotCard(
+    tarotCard: Omit<TarotCard, "_id" | "createdAt" | "updatedAt">
+  ): Promise<{
+    success: boolean;
+    data: TarotCard;
+    message: string;
+  }> {
+    return this.fetchData("/tarot-cards", {
+      method: "POST",
+      body: JSON.stringify(tarotCard),
+    });
+  }
+
+  async updateTarotCard(
+    id: string,
+    tarotCard: Partial<Omit<TarotCard, "_id" | "createdAt" | "updatedAt">>
+  ): Promise<{
+    success: boolean;
+    data: TarotCard;
+    message: string;
+  }> {
+    return this.fetchData(`/tarot-cards/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(tarotCard),
+    });
+  }
+
+  async deleteTarotCard(id: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    return this.fetchData(`/tarot-cards/${id}`, {
       method: "DELETE",
     });
   }

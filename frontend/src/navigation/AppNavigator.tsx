@@ -36,7 +36,9 @@ export default function AppNavigator() {
           headerTintColor: "white",
           headerTitleStyle: {
             fontWeight: "bold",
+            letterSpacing: 8,
           },
+          headerTitle: "CORRESPONDENCES",
         }}
       >
         <Tab.Screen

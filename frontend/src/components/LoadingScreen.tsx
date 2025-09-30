@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
+import React, { useEffect, useState, useRef } from "react";
+import { View, Text, StyleSheet, Animated } from "react-native";
 
 interface LoadingScreenProps {
   onLoadingComplete: () => void;
@@ -8,7 +8,12 @@ interface LoadingScreenProps {
 export default function LoadingScreen({
   onLoadingComplete,
 }: LoadingScreenProps) {
-  const [loadingText, setLoadingText] = useState("Loading...");
+  const [loadingText, setLoadingText] = useState("Initializing...");
+
+  // Create animated values for each letter (15 letters total)
+  const letterAnimations = useRef(
+    Array.from({ length: 15 }, () => new Animated.Value(0.3))
+  ).current;
 
   useEffect(() => {
     // Simulate loading process
@@ -17,6 +22,9 @@ export default function LoadingScreen({
       "Connecting to server...",
       "Loading your data...",
       "Almost ready...",
+      "Preparing mystical energies...", // 😄
+      "Aligning cosmic forces...",
+      "Final preparations...",
     ];
 
     let currentStep = 0;
@@ -36,12 +44,87 @@ export default function LoadingScreen({
     return () => clearInterval(interval);
   }, [onLoadingComplete]);
 
+  // Firefly glow animation
+  useEffect(() => {
+    const createFireflyAnimation = (index: number) => {
+      const duration = 3000 + Math.random() * 4000; // 3-7 seconds (slower)
+      const delay = Math.random() * 2000; // 0-2 second delay
+
+      const animate = () => {
+        Animated.sequence([
+          Animated.timing(letterAnimations[index], {
+            toValue: 1,
+            duration: duration / 2,
+            useNativeDriver: true,
+          }),
+          Animated.timing(letterAnimations[index], {
+            toValue: 0.3,
+            duration: duration / 2,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          // Random delay before next animation (longer)
+          setTimeout(animate, Math.random() * 4000);
+        });
+      };
+
+      setTimeout(animate, delay);
+    };
+
+    // Start firefly animation for each letter
+    letterAnimations.forEach((_, index) => {
+      createFireflyAnimation(index);
+    });
+  }, []);
+
+  // Define the triangular layout of letters
+  const triangularLayout = ["C", "O R", "R E S", "P O N D", "E N C E S"];
+
+  // Flatten the letters for animation mapping
+  const allLetters = "CORRESPONDENCES".split("");
+
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>{loadingText}</Text>
-        <Text style={styles.appName}>Correspondences</Text>
+      {/* Loading text at top */}
+      <Text style={styles.loadingText}>{loadingText}</Text>
+
+      {/* Triangular CORRESPONDENCES centered */}
+      <View style={styles.triangleContainer}>
+        {triangularLayout.map((line, lineIndex) => (
+          <View key={lineIndex} style={styles.triangleLine}>
+            {line.split("").map((letter, letterIndex) => {
+              // Calculate the global letter index
+              let globalIndex = 0;
+              for (let i = 0; i < lineIndex; i++) {
+                globalIndex += triangularLayout[i].replace(/\s/g, "").length;
+              }
+              globalIndex += letterIndex;
+
+              // Ensure we don't go out of bounds
+              const safeIndex = Math.min(
+                globalIndex,
+                letterAnimations.length - 1
+              );
+              const animation = letterAnimations[safeIndex];
+
+              return (
+                <Animated.Text
+                  key={`${lineIndex}-${letterIndex}`}
+                  style={[
+                    styles.letter,
+                    {
+                      opacity: animation,
+                      textShadowColor: "#ffffff",
+                      textShadowOffset: { width: 0, height: 0 },
+                    },
+                  ]}
+                >
+                  {letter}
+                </Animated.Text>
+              );
+            })}
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -50,22 +133,35 @@ export default function LoadingScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#007AFF",
+    backgroundColor: "#000000",
     justifyContent: "center",
     alignItems: "center",
   },
-  content: {
+  triangleContainer: {
     alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+  },
+  triangleLine: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 3,
+  },
+  letter: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#ffffff",
+    marginHorizontal: 4, // Reduced from 8 to make triangle narrower
+    fontFamily: "monospace",
+    letterSpacing: 1, // Reduced from 2
   },
   loadingText: {
     fontSize: 16,
-    color: "white",
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  appName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
+    color: "#cccccc",
+    marginTop: 60, // Position at top
+    fontFamily: "monospace",
+    letterSpacing: 1,
+    textAlign: "center",
   },
 });
