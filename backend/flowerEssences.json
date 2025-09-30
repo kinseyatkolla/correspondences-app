@@ -1,0 +1,70 @@
+[
+  {
+    "commonName": "Rose",
+    "latinName": "Rosa damascena",
+    "positiveQualities": [
+      "Love",
+      "Compassion",
+      "Self-acceptance",
+      "Emotional healing"
+    ],
+    "patternsOfImbalance": [
+      "Closed heart",
+      "Fear of intimacy",
+      "Emotional wounds",
+      "Lack of self-love"
+    ],
+    "crossReferences": [
+      "Bach Flower Remedies",
+      "Essential Oils",
+      "Aromatherapy"
+    ],
+    "description": "The Rose essence opens the heart chakra and helps heal emotional wounds. It promotes self-love, compassion, and the ability to give and receive love freely.",
+    "imageName": "rose.jpg"
+  },
+  {
+    "commonName": "Lavender",
+    "latinName": "Lavandula angustifolia",
+    "positiveQualities": [
+      "Calm",
+      "Peace",
+      "Relaxation",
+      "Mental clarity"
+    ],
+    "patternsOfImbalance": [
+      "Anxiety",
+      "Restlessness",
+      "Mental overstimulation",
+      "Sleep disturbances"
+    ],
+    "crossReferences": [
+      "Essential Oils",
+      "Herbal Medicine",
+      "Aromatherapy"
+    ],
+    "description": "Lavender essence calms the nervous system and promotes deep relaxation. It helps with anxiety, insomnia, and mental overstimulation.",
+    "imageName": "lavender.jpg"
+  },
+  {
+    "commonName": "Sunflower",
+    "latinName": "Helianthus annuus",
+    "positiveQualities": [
+      "Joy",
+      "Optimism",
+      "Vitality",
+      "Confidence"
+    ],
+    "patternsOfImbalance": [
+      "Depression",
+      "Low energy",
+      "Lack of confidence",
+      "Pessimism"
+    ],
+    "crossReferences": [
+      "Bach Flower Remedies",
+      "Herbal Medicine"
+    ],
+    "description": "Sunflower essence brings warmth and joy to the spirit. It helps overcome depression, boosts confidence, and restores optimism and vitality.",
+    "imageName": "sunflower.jpg"
+  }
+]
