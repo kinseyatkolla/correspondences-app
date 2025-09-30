@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16, // Perfect equilateral triangle spacing
+    marginBottom: 22, // Perfect equilateral triangle spacing
   },
   letter: {
     fontSize: 18, // Smaller font size to match header

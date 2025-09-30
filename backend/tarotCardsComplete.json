@@ -1,0 +1,1406 @@
+[
+  {
+    "name": "The Fool",
+    "number": 0,
+    "suit": "Major Arcana",
+    "keywords": [
+      "New beginnings",
+      "Innocence",
+      "Spontaneity",
+      "Adventure"
+    ],
+    "uprightMeaning": "New beginnings, taking a leap of faith, innocence, spontaneity, adventure, optimism, trust in the universe",
+    "reversedMeaning": "Recklessness, lack of planning, naivety, poor judgment, risk-taking without consideration",
+    "description": "The Fool represents new beginnings, fresh starts, and the courage to take a leap of faith. This card encourages you to embrace the unknown with optimism and trust.",
+    "astrologicalCorrespondence": "Uranus",
+    "element": "Air",
+    "imageName": "fool.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Magician",
+    "number": 1,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Manifestation",
+      "Power",
+      "Will",
+      "Skill"
+    ],
+    "uprightMeaning": "Manifestation, personal power, willpower, skill, concentration, resourcefulness",
+    "reversedMeaning": "Manipulation, trickery, lack of focus, untapped talents, poor planning",
+    "description": "The Magician represents the power to manifest your desires through focused will and action. You have all the tools you need to achieve your goals.",
+    "astrologicalCorrespondence": "Mercury",
+    "element": "Air",
+    "imageName": "magician.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The High Priestess",
+    "number": 2,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Intuition",
+      "Mystery",
+      "Wisdom",
+      "Secrets"
+    ],
+    "uprightMeaning": "Intuition, inner wisdom, mystery, secrets, subconscious mind, spiritual insight",
+    "reversedMeaning": "Lack of intuition, secrets, hidden agendas, disconnect from inner voice",
+    "description": "The High Priestess represents your inner wisdom and intuition. Trust your instincts and look within for answers to your questions.",
+    "astrologicalCorrespondence": "Moon",
+    "element": "Water",
+    "imageName": "high-priestess.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Empress",
+    "number": 3,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Fertility",
+      "Abundance",
+      "Nature",
+      "Motherhood"
+    ],
+    "uprightMeaning": "Fertility, abundance, nature, motherhood, creativity, nurturing, growth",
+    "reversedMeaning": "Infertility, creative blocks, over-dependence, neglect of self",
+    "description": "The Empress represents abundance, fertility, and the nurturing aspects of life. She embodies creativity, growth, and the power of nature.",
+    "astrologicalCorrespondence": "Venus",
+    "element": "Earth",
+    "imageName": "empress.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Emperor",
+    "number": 4,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Authority",
+      "Structure",
+      "Control",
+      "Leadership"
+    ],
+    "uprightMeaning": "Authority, structure, control, leadership, stability, discipline, father figure",
+    "reversedMeaning": "Tyranny, rigidity, lack of discipline, abuse of power, immaturity",
+    "description": "The Emperor represents authority, structure, and leadership. He brings order and stability through discipline and clear boundaries.",
+    "astrologicalCorrespondence": "Aries",
+    "element": "Fire",
+    "imageName": "emperor.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Hierophant",
+    "number": 5,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Tradition",
+      "Spirituality",
+      "Teaching",
+      "Conformity"
+    ],
+    "uprightMeaning": "Tradition, spirituality, teaching, conformity, religious beliefs, seeking guidance",
+    "reversedMeaning": "Rebellion, non-conformity, personal beliefs, challenging tradition",
+    "description": "The Hierophant represents traditional values, spiritual teaching, and the search for meaning through established systems and beliefs.",
+    "astrologicalCorrespondence": "Taurus",
+    "element": "Earth",
+    "imageName": "hierophant.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Lovers",
+    "number": 6,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Love",
+      "Relationships",
+      "Choices",
+      "Harmony"
+    ],
+    "uprightMeaning": "Love, relationships, choices, harmony, values, alignment, commitment",
+    "reversedMeaning": "Imbalance, misalignment, poor choices, disharmony, lack of commitment",
+    "description": "The Lovers represent love, relationships, and important choices. This card asks you to align your values with your actions.",
+    "astrologicalCorrespondence": "Gemini",
+    "element": "Air",
+    "imageName": "lovers.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Chariot",
+    "number": 7,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Determination",
+      "Control",
+      "Willpower",
+      "Victory"
+    ],
+    "uprightMeaning": "Determination, control, willpower, victory, overcoming obstacles, focus",
+    "reversedMeaning": "Lack of control, aggression, no direction, defeat, giving up",
+    "description": "The Chariot represents determination and the will to succeed. You have the strength and focus to overcome any obstacle.",
+    "astrologicalCorrespondence": "Cancer",
+    "element": "Water",
+    "imageName": "chariot.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "Strength",
+    "number": 8,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Inner strength",
+      "Courage",
+      "Patience",
+      "Compassion"
+    ],
+    "uprightMeaning": "Inner strength, courage, patience, compassion, self-control, gentle power",
+    "reversedMeaning": "Weakness, self-doubt, lack of self-discipline, inner turmoil",
+    "description": "Strength represents inner courage and the power to overcome challenges through patience and compassion rather than force.",
+    "astrologicalCorrespondence": "Leo",
+    "element": "Fire",
+    "imageName": "strength.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Hermit",
+    "number": 9,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Soul-searching",
+      "Introspection",
+      "Guidance",
+      "Solitude"
+    ],
+    "uprightMeaning": "Soul-searching, introspection, guidance, solitude, inner wisdom, seeking truth",
+    "reversedMeaning": "Isolation, loneliness, withdrawal, lack of direction, ignoring inner voice",
+    "description": "The Hermit represents a time of introspection and soul-searching. Look within for answers and trust your inner guidance.",
+    "astrologicalCorrespondence": "Virgo",
+    "element": "Earth",
+    "imageName": "hermit.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "Wheel of Fortune",
+    "number": 10,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Change",
+      "Cycles",
+      "Fate",
+      "Karma"
+    ],
+    "uprightMeaning": "Change, cycles, fate, karma, good luck, destiny, turning point",
+    "reversedMeaning": "Bad luck, resistance to change, external control, setbacks",
+    "description": "The Wheel of Fortune represents the cyclical nature of life and the inevitability of change. What goes up must come down, and vice versa.",
+    "astrologicalCorrespondence": "Jupiter",
+    "element": "Fire",
+    "imageName": "wheel-of-fortune.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "Justice",
+    "number": 11,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Justice",
+      "Fairness",
+      "Truth",
+      "Balance"
+    ],
+    "uprightMeaning": "Justice, fairness, truth, balance, cause and effect, accountability",
+    "reversedMeaning": "Unfairness, lack of accountability, dishonesty, imbalance",
+    "description": "Justice represents fairness, truth, and the law of cause and effect. Every action has consequences, and balance will be restored.",
+    "astrologicalCorrespondence": "Libra",
+    "element": "Air",
+    "imageName": "justice.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Hanged Man",
+    "number": 12,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Sacrifice",
+      "Surrender",
+      "Letting go",
+      "New perspective"
+    ],
+    "uprightMeaning": "Sacrifice, surrender, letting go, new perspective, waiting, suspension",
+    "reversedMeaning": "Stalling, needless sacrifice, fear of sacrifice, resistance",
+    "description": "The Hanged Man represents surrender and letting go. Sometimes the best action is inaction, and a new perspective can change everything.",
+    "astrologicalCorrespondence": "Neptune",
+    "element": "Water",
+    "imageName": "hanged-man.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "Death",
+    "number": 13,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Transformation",
+      "Endings",
+      "Change",
+      "Rebirth"
+    ],
+    "uprightMeaning": "Transformation, endings, change, rebirth, letting go, new beginnings",
+    "reversedMeaning": "Resistance to change, stagnation, fear of change, holding on",
+    "description": "Death represents transformation and the end of one phase to make way for another. It's about letting go and embracing change.",
+    "astrologicalCorrespondence": "Scorpio",
+    "element": "Water",
+    "imageName": "death.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "Temperance",
+    "number": 14,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Balance",
+      "Moderation",
+      "Patience",
+      "Harmony"
+    ],
+    "uprightMeaning": "Balance, moderation, patience, harmony, healing, self-control",
+    "reversedMeaning": "Imbalance, excess, lack of patience, discord, recklessness",
+    "description": "Temperance represents balance and moderation in all things. It's about finding the middle path and practicing patience.",
+    "astrologicalCorrespondence": "Sagittarius",
+    "element": "Fire",
+    "imageName": "temperance.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Devil",
+    "number": 15,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Temptation",
+      "Bondage",
+      "Materialism",
+      "Shadow self"
+    ],
+    "uprightMeaning": "Temptation, bondage, materialism, shadow self, addiction, unhealthy patterns",
+    "reversedMeaning": "Freedom, breaking free, releasing addictions, reclaiming power",
+    "description": "The Devil represents the shadow self and the things that bind us. It's about recognizing and breaking free from unhealthy patterns.",
+    "astrologicalCorrespondence": "Capricorn",
+    "element": "Earth",
+    "imageName": "devil.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Tower",
+    "number": 16,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Sudden change",
+      "Revelation",
+      "Disruption",
+      "Breakthrough"
+    ],
+    "uprightMeaning": "Sudden change, revelation, disruption, breakthrough, liberation, awakening",
+    "reversedMeaning": "Avoiding disaster, fear of change, internal explosion, delayed breakdown",
+    "description": "The Tower represents sudden, dramatic change that breaks down old structures to make way for something new and better.",
+    "astrologicalCorrespondence": "Mars",
+    "element": "Fire",
+    "imageName": "tower.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Star",
+    "number": 17,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Hope",
+      "Inspiration",
+      "Spirituality",
+      "Renewal"
+    ],
+    "uprightMeaning": "Hope, inspiration, spirituality, renewal, healing, guidance, optimism",
+    "reversedMeaning": "Hopelessness, despair, lack of faith, disconnection, pessimism",
+    "description": "The Star represents hope and inspiration after a difficult time. It's a sign of healing and spiritual renewal.",
+    "astrologicalCorrespondence": "Aquarius",
+    "element": "Air",
+    "imageName": "star.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Moon",
+    "number": 18,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Illusion",
+      "Intuition",
+      "Unconscious",
+      "Mystery"
+    ],
+    "uprightMeaning": "Illusion, intuition, unconscious, mystery, confusion, fear, deception",
+    "reversedMeaning": "Releasing fear, repressed emotion, inner confusion, clarity",
+    "description": "The Moon represents the realm of dreams, illusions, and the unconscious mind. Things may not be as they appear.",
+    "astrologicalCorrespondence": "Pisces",
+    "element": "Water",
+    "imageName": "moon.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The Sun",
+    "number": 19,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Joy",
+      "Success",
+      "Vitality",
+      "Optimism"
+    ],
+    "uprightMeaning": "Joy, success, vitality, optimism, confidence, achievement, happiness",
+    "reversedMeaning": "Temporary depression, lack of success, pessimism, low confidence",
+    "description": "The Sun represents joy, success, and vitality. It's a card of optimism and the promise of good things to come.",
+    "astrologicalCorrespondence": "Sun",
+    "element": "Fire",
+    "imageName": "sun.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "Judgement",
+    "number": 20,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Judgement",
+      "Rebirth",
+      "Absolution",
+      "Awakening"
+    ],
+    "uprightMeaning": "Judgement, rebirth, absolution, awakening, inner calling, forgiveness",
+    "reversedMeaning": "Self-doubt, lack of self-awareness, fear of judgement, inner critic",
+    "description": "Judgement represents a time of reckoning and rebirth. It's about answering your inner calling and being reborn into a new phase of life.",
+    "astrologicalCorrespondence": "Pluto",
+    "element": "Fire",
+    "imageName": "judgement.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "The World",
+    "number": 21,
+    "suit": "Major Arcana",
+    "keywords": [
+      "Completion",
+      "Achievement",
+      "Integration",
+      "Success"
+    ],
+    "uprightMeaning": "Completion, achievement, integration, success, fulfillment, wholeness",
+    "reversedMeaning": "Lack of closure, incomplete, no success, fear of completion",
+    "description": "The World represents completion and achievement. You have reached a major milestone and are ready for the next phase of your journey.",
+    "astrologicalCorrespondence": "Saturn",
+    "element": "Earth",
+    "imageName": "world.jpg",
+    "isMajorArcana": true
+  },
+  {
+    "name": "Ace of Cups",
+    "number": 1,
+    "suit": "Cups",
+    "keywords": [
+      "Love",
+      "Emotions",
+      "New relationships",
+      "Spiritual awakening"
+    ],
+    "uprightMeaning": "New love, emotional fulfillment, spiritual awakening, intuition, compassion, new relationships",
+    "reversedMeaning": "Emotional loss, blocked creativity, depression, emotional instability",
+    "description": "The Ace of Cups represents the beginning of emotional fulfillment and new love. It signals a time of emotional renewal and spiritual awakening.",
+    "astrologicalCorrespondence": "Water signs (Cancer, Scorpio, Pisces)",
+    "element": "Water",
+    "imageName": "ace-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Two of Cups",
+    "number": 2,
+    "suit": "Cups",
+    "keywords": [
+      "Partnership",
+      "Love",
+      "Connection",
+      "Harmony"
+    ],
+    "uprightMeaning": "Partnership, love, connection, harmony, mutual respect, emotional balance",
+    "reversedMeaning": "Imbalance, broken communication, lack of harmony, separation",
+    "description": "The Two of Cups represents partnership, love, and emotional connection. It suggests a harmonious relationship based on mutual respect and understanding.",
+    "astrologicalCorrespondence": "Venus in Cancer",
+    "element": "Water",
+    "imageName": "two-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Three of Cups",
+    "number": 3,
+    "suit": "Cups",
+    "keywords": [
+      "Celebration",
+      "Friendship",
+      "Community",
+      "Joy"
+    ],
+    "uprightMeaning": "Celebration, friendship, community, joy, social gatherings, emotional support",
+    "reversedMeaning": "Isolation, betrayal, gossip, lack of support, social anxiety",
+    "description": "The Three of Cups represents celebration, friendship, and community. It's a time for joy, social connection, and emotional support from others.",
+    "astrologicalCorrespondence": "Mercury in Cancer",
+    "element": "Water",
+    "imageName": "three-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Four of Cups",
+    "number": 4,
+    "suit": "Cups",
+    "keywords": [
+      "Apathy",
+      "Contemplation",
+      "Disconnection",
+      "Missed opportunities"
+    ],
+    "uprightMeaning": "Apathy, contemplation, disconnection, missed opportunities, emotional withdrawal",
+    "reversedMeaning": "New opportunities, re-engagement, awareness, acceptance",
+    "description": "The Four of Cups represents a time of emotional withdrawal and contemplation. You may be missing opportunities or feeling disconnected from your emotions.",
+    "astrologicalCorrespondence": "Moon in Cancer",
+    "element": "Water",
+    "imageName": "four-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Five of Cups",
+    "number": 5,
+    "suit": "Cups",
+    "keywords": [
+      "Loss",
+      "Grief",
+      "Disappointment",
+      "Regret"
+    ],
+    "uprightMeaning": "Loss, grief, disappointment, regret, emotional pain, focusing on what's lost",
+    "reversedMeaning": "Moving on, acceptance, finding peace, new opportunities",
+    "description": "The Five of Cups represents loss, grief, and disappointment. It's about processing emotional pain and learning to move forward.",
+    "astrologicalCorrespondence": "Mars in Scorpio",
+    "element": "Water",
+    "imageName": "five-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Six of Cups",
+    "number": 6,
+    "suit": "Cups",
+    "keywords": [
+      "Nostalgia",
+      "Childhood",
+      "Innocence",
+      "Reunion"
+    ],
+    "uprightMeaning": "Nostalgia, childhood, innocence, reunion, happy memories, emotional healing",
+    "reversedMeaning": "Living in the past, emotional immaturity, difficulty moving on",
+    "description": "The Six of Cups represents nostalgia and happy memories. It's about reconnecting with your inner child and finding joy in simple pleasures.",
+    "astrologicalCorrespondence": "Sun in Scorpio",
+    "element": "Water",
+    "imageName": "six-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Seven of Cups",
+    "number": 7,
+    "suit": "Cups",
+    "keywords": [
+      "Choices",
+      "Illusion",
+      "Fantasy",
+      "Overwhelm"
+    ],
+    "uprightMeaning": "Choices, illusion, fantasy, overwhelm, many options, need for clarity",
+    "reversedMeaning": "Clarity, focus, making decisions, reality check",
+    "description": "The Seven of Cups represents choices and the need to distinguish between fantasy and reality. You may have many options but need to focus on what's real.",
+    "astrologicalCorrespondence": "Venus in Scorpio",
+    "element": "Water",
+    "imageName": "seven-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Eight of Cups",
+    "number": 8,
+    "suit": "Cups",
+    "keywords": [
+      "Walking away",
+      "Disappointment",
+      "Abandonment",
+      "Search for meaning"
+    ],
+    "uprightMeaning": "Walking away, disappointment, abandonment, search for meaning, emotional withdrawal",
+    "reversedMeaning": "Avoiding necessary endings, fear of walking away, staying in unhealthy situations",
+    "description": "The Eight of Cups represents walking away from something that no longer serves you. It's about leaving behind what's not working to find something better.",
+    "astrologicalCorrespondence": "Saturn in Pisces",
+    "element": "Water",
+    "imageName": "eight-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Nine of Cups",
+    "number": 9,
+    "suit": "Cups",
+    "keywords": [
+      "Satisfaction",
+      "Emotional fulfillment",
+      "Wishes granted",
+      "Contentment"
+    ],
+    "uprightMeaning": "Satisfaction, emotional fulfillment, wishes granted, contentment, happiness, gratitude",
+    "reversedMeaning": "Disappointment, unfulfilled wishes, lack of satisfaction, overindulgence",
+    "description": "The Nine of Cups represents emotional fulfillment and satisfaction. Your wishes are coming true, and you're experiencing deep contentment.",
+    "astrologicalCorrespondence": "Jupiter in Pisces",
+    "element": "Water",
+    "imageName": "nine-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Ten of Cups",
+    "number": 10,
+    "suit": "Cups",
+    "keywords": [
+      "Happiness",
+      "Harmony",
+      "Family",
+      "Fulfillment"
+    ],
+    "uprightMeaning": "Happiness, harmony, family, fulfillment, emotional completion, joy, love",
+    "reversedMeaning": "Dysfunctional relationships, lack of harmony, family problems, emotional instability",
+    "description": "The Ten of Cups represents emotional fulfillment and happiness in relationships. It's about finding harmony and joy in your connections with others.",
+    "astrologicalCorrespondence": "Mars in Pisces",
+    "element": "Water",
+    "imageName": "ten-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Page of Cups",
+    "number": 11,
+    "suit": "Cups",
+    "keywords": [
+      "Emotional messages",
+      "Intuition",
+      "Creativity",
+      "Sensitivity"
+    ],
+    "uprightMeaning": "Emotional messages, intuition, creativity, sensitivity, new emotional experiences",
+    "reversedMeaning": "Emotional immaturity, blocked creativity, lack of intuition, insensitivity",
+    "description": "The Page of Cups represents emotional messages and new creative opportunities. It's about trusting your intuition and exploring your creative side.",
+    "astrologicalCorrespondence": "Water signs (Cancer, Scorpio, Pisces)",
+    "element": "Water",
+    "imageName": "page-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Knight of Cups",
+    "number": 12,
+    "suit": "Cups",
+    "keywords": [
+      "Romance",
+      "Charm",
+      "Emotional pursuit",
+      "Idealistic"
+    ],
+    "uprightMeaning": "Romance, charm, emotional pursuit, idealistic, following your heart",
+    "reversedMeaning": "Moodiness, emotional manipulation, unrealistic expectations, lack of commitment",
+    "description": "The Knight of Cups represents romantic pursuit and following your heart. It's about being guided by emotions and ideals rather than logic.",
+    "astrologicalCorrespondence": "Water signs (Cancer, Scorpio, Pisces)",
+    "element": "Water",
+    "imageName": "knight-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Queen of Cups",
+    "number": 13,
+    "suit": "Cups",
+    "keywords": [
+      "Emotional maturity",
+      "Intuition",
+      "Compassion",
+      "Nurturing"
+    ],
+    "uprightMeaning": "Emotional maturity, intuition, compassion, nurturing, emotional intelligence",
+    "reversedMeaning": "Emotional manipulation, moodiness, lack of boundaries, emotional instability",
+    "description": "The Queen of Cups represents emotional maturity and intuitive wisdom. She embodies compassion, nurturing, and emotional intelligence.",
+    "astrologicalCorrespondence": "Water signs (Cancer, Scorpio, Pisces)",
+    "element": "Water",
+    "imageName": "queen-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "King of Cups",
+    "number": 14,
+    "suit": "Cups",
+    "keywords": [
+      "Emotional balance",
+      "Compassion",
+      "Diplomacy",
+      "Control"
+    ],
+    "uprightMeaning": "Emotional balance, compassion, diplomacy, control, emotional intelligence, leadership",
+    "reversedMeaning": "Emotional manipulation, moodiness, lack of emotional control, coldness",
+    "description": "The King of Cups represents emotional balance and compassionate leadership. He combines emotional intelligence with diplomatic skills.",
+    "astrologicalCorrespondence": "Water signs (Cancer, Scorpio, Pisces)",
+    "element": "Water",
+    "imageName": "king-cups.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Ace of Wands",
+    "number": 1,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in wands matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in wands matters",
+    "description": "The Ace of Wands represents energy and action in wands matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "ace-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Two of Wands",
+    "number": 2,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in wands matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in wands matters",
+    "description": "The Two of Wands represents energy and action in wands matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "two-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Three of Wands",
+    "number": 3,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in wands matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in wands matters",
+    "description": "The Three of Wands represents energy and action in wands matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "three-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Four of Wands",
+    "number": 4,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in wands matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in wands matters",
+    "description": "The Four of Wands represents energy and action in wands matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "four-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Five of Wands",
+    "number": 5,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in wands matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in wands matters",
+    "description": "The Five of Wands represents energy and action in wands matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "five-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Six of Wands",
+    "number": 6,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in wands matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in wands matters",
+    "description": "The Six of Wands represents energy and action in wands matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "six-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Seven of Wands",
+    "number": 7,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in wands matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in wands matters",
+    "description": "The Seven of Wands represents energy and action in wands matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "seven-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Eight of Wands",
+    "number": 8,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in wands matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in wands matters",
+    "description": "The Eight of Wands represents energy and action in wands matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "eight-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Nine of Wands",
+    "number": 9,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in wands matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in wands matters",
+    "description": "The Nine of Wands represents energy and action in wands matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "nine-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Ten of Wands",
+    "number": 10,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in wands matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in wands matters",
+    "description": "The Ten of Wands represents energy and action in wands matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "ten-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Page of Wands",
+    "number": 11,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Leadership",
+      "Authority"
+    ],
+    "uprightMeaning": "Page energy in wands matters - action, leadership, and authority",
+    "reversedMeaning": "Blocked page energy, lack of action, poor leadership",
+    "description": "The Page of Wands represents page energy in wands matters. It's about taking action and showing leadership.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "page-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Knight of Wands",
+    "number": 12,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Leadership",
+      "Authority"
+    ],
+    "uprightMeaning": "Knight energy in wands matters - action, leadership, and authority",
+    "reversedMeaning": "Blocked knight energy, lack of action, poor leadership",
+    "description": "The Knight of Wands represents knight energy in wands matters. It's about taking action and showing leadership.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "knight-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Queen of Wands",
+    "number": 13,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Leadership",
+      "Authority"
+    ],
+    "uprightMeaning": "Queen energy in wands matters - action, leadership, and authority",
+    "reversedMeaning": "Blocked queen energy, lack of action, poor leadership",
+    "description": "The Queen of Wands represents queen energy in wands matters. It's about taking action and showing leadership.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "queen-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "King of Wands",
+    "number": 14,
+    "suit": "Wands",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Leadership",
+      "Authority"
+    ],
+    "uprightMeaning": "King energy in wands matters - action, leadership, and authority",
+    "reversedMeaning": "Blocked king energy, lack of action, poor leadership",
+    "description": "The King of Wands represents king energy in wands matters. It's about taking action and showing leadership.",
+    "astrologicalCorrespondence": "Fire signs",
+    "element": "Fire",
+    "imageName": "king-of-wands.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Ace of Swords",
+    "number": 1,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in swords matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in swords matters",
+    "description": "The Ace of Swords represents energy and action in swords matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "ace-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Two of Swords",
+    "number": 2,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in swords matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in swords matters",
+    "description": "The Two of Swords represents energy and action in swords matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "two-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Three of Swords",
+    "number": 3,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in swords matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in swords matters",
+    "description": "The Three of Swords represents energy and action in swords matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "three-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Four of Swords",
+    "number": 4,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in swords matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in swords matters",
+    "description": "The Four of Swords represents energy and action in swords matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "four-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Five of Swords",
+    "number": 5,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in swords matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in swords matters",
+    "description": "The Five of Swords represents energy and action in swords matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "five-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Six of Swords",
+    "number": 6,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in swords matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in swords matters",
+    "description": "The Six of Swords represents energy and action in swords matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "six-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Seven of Swords",
+    "number": 7,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in swords matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in swords matters",
+    "description": "The Seven of Swords represents energy and action in swords matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "seven-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Eight of Swords",
+    "number": 8,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in swords matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in swords matters",
+    "description": "The Eight of Swords represents energy and action in swords matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "eight-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Nine of Swords",
+    "number": 9,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in swords matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in swords matters",
+    "description": "The Nine of Swords represents energy and action in swords matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "nine-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Ten of Swords",
+    "number": 10,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in swords matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in swords matters",
+    "description": "The Ten of Swords represents energy and action in swords matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "ten-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Page of Swords",
+    "number": 11,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Leadership",
+      "Authority"
+    ],
+    "uprightMeaning": "Page energy in swords matters - action, leadership, and authority",
+    "reversedMeaning": "Blocked page energy, lack of action, poor leadership",
+    "description": "The Page of Swords represents page energy in swords matters. It's about taking action and showing leadership.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "page-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Knight of Swords",
+    "number": 12,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Leadership",
+      "Authority"
+    ],
+    "uprightMeaning": "Knight energy in swords matters - action, leadership, and authority",
+    "reversedMeaning": "Blocked knight energy, lack of action, poor leadership",
+    "description": "The Knight of Swords represents knight energy in swords matters. It's about taking action and showing leadership.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "knight-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Queen of Swords",
+    "number": 13,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Leadership",
+      "Authority"
+    ],
+    "uprightMeaning": "Queen energy in swords matters - action, leadership, and authority",
+    "reversedMeaning": "Blocked queen energy, lack of action, poor leadership",
+    "description": "The Queen of Swords represents queen energy in swords matters. It's about taking action and showing leadership.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "queen-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "King of Swords",
+    "number": 14,
+    "suit": "Swords",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Leadership",
+      "Authority"
+    ],
+    "uprightMeaning": "King energy in swords matters - action, leadership, and authority",
+    "reversedMeaning": "Blocked king energy, lack of action, poor leadership",
+    "description": "The King of Swords represents king energy in swords matters. It's about taking action and showing leadership.",
+    "astrologicalCorrespondence": "Air signs",
+    "element": "Air",
+    "imageName": "king-of-swords.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Ace of Pentacles",
+    "number": 1,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in pentacles matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in pentacles matters",
+    "description": "The Ace of Pentacles represents energy and action in pentacles matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "ace-of-pentacles.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Two of Pentacles",
+    "number": 2,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in pentacles matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in pentacles matters",
+    "description": "The Two of Pentacles represents energy and action in pentacles matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "two-of-pentacles.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Three of Pentacles",
+    "number": 3,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in pentacles matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in pentacles matters",
+    "description": "The Three of Pentacles represents energy and action in pentacles matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "three-of-pentacles.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Four of Pentacles",
+    "number": 4,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in pentacles matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in pentacles matters",
+    "description": "The Four of Pentacles represents energy and action in pentacles matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "four-of-pentacles.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Five of Pentacles",
+    "number": 5,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in pentacles matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in pentacles matters",
+    "description": "The Five of Pentacles represents energy and action in pentacles matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "five-of-pentacles.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Six of Pentacles",
+    "number": 6,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in pentacles matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in pentacles matters",
+    "description": "The Six of Pentacles represents energy and action in pentacles matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "six-of-pentacles.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Seven of Pentacles",
+    "number": 7,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in pentacles matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in pentacles matters",
+    "description": "The Seven of Pentacles represents energy and action in pentacles matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "seven-of-pentacles.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Eight of Pentacles",
+    "number": 8,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in pentacles matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in pentacles matters",
+    "description": "The Eight of Pentacles represents energy and action in pentacles matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "eight-of-pentacles.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Nine of Pentacles",
+    "number": 9,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in pentacles matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in pentacles matters",
+    "description": "The Nine of Pentacles represents energy and action in pentacles matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "nine-of-pentacles.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Ten of Pentacles",
+    "number": 10,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Movement",
+      "Progress"
+    ],
+    "uprightMeaning": "Positive energy, action, movement, progress in pentacles matters",
+    "reversedMeaning": "Blocked energy, lack of action, stagnation in pentacles matters",
+    "description": "The Ten of Pentacles represents energy and action in pentacles matters. It's about taking initiative and moving forward.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "ten-of-pentacles.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Page of Pentacles",
+    "number": 11,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Leadership",
+      "Authority"
+    ],
+    "uprightMeaning": "Page energy in pentacles matters - action, leadership, and authority",
+    "reversedMeaning": "Blocked page energy, lack of action, poor leadership",
+    "description": "The Page of Pentacles represents page energy in pentacles matters. It's about taking action and showing leadership.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "page-of-pentacles.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Knight of Pentacles",
+    "number": 12,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Leadership",
+      "Authority"
+    ],
+    "uprightMeaning": "Knight energy in pentacles matters - action, leadership, and authority",
+    "reversedMeaning": "Blocked knight energy, lack of action, poor leadership",
+    "description": "The Knight of Pentacles represents knight energy in pentacles matters. It's about taking action and showing leadership.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "knight-of-pentacles.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "Queen of Pentacles",
+    "number": 13,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Leadership",
+      "Authority"
+    ],
+    "uprightMeaning": "Queen energy in pentacles matters - action, leadership, and authority",
+    "reversedMeaning": "Blocked queen energy, lack of action, poor leadership",
+    "description": "The Queen of Pentacles represents queen energy in pentacles matters. It's about taking action and showing leadership.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "queen-of-pentacles.jpg",
+    "isMajorArcana": false
+  },
+  {
+    "name": "King of Pentacles",
+    "number": 14,
+    "suit": "Pentacles",
+    "keywords": [
+      "Energy",
+      "Action",
+      "Leadership",
+      "Authority"
+    ],
+    "uprightMeaning": "King energy in pentacles matters - action, leadership, and authority",
+    "reversedMeaning": "Blocked king energy, lack of action, poor leadership",
+    "description": "The King of Pentacles represents king energy in pentacles matters. It's about taking action and showing leadership.",
+    "astrologicalCorrespondence": "Earth signs",
+    "element": "Earth",
+    "imageName": "king-of-pentacles.jpg",
+    "isMajorArcana": false
+  }
+]

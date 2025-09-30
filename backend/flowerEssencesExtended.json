@@ -1,0 +1,830 @@
+[
+  {
+    "commonName": "Agrimony",
+    "latinName": "Agrimonia eupatoria",
+    "positiveQualities": [
+      "Honesty",
+      "Emotional openness",
+      "Inner peace",
+      "Courage"
+    ],
+    "patternsOfImbalance": [
+      "Hidden emotional pain",
+      "False cheerfulness",
+      "Avoiding conflict",
+      "Mental torture"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Herbal Medicine"],
+    "description": "Agrimony essence helps those who hide their inner turmoil behind a cheerful facade. It promotes emotional honesty and the courage to face difficult feelings.",
+    "imageName": "agrimony.png"
+  },
+  {
+    "commonName": "Aloe Vera",
+    "latinName": "Aloe barbadensis",
+    "positiveQualities": ["Healing", "Protection", "Nurturing", "Regeneration"],
+    "patternsOfImbalance": [
+      "Emotional wounds",
+      "Lack of self-care",
+      "Burned out",
+      "Need for healing"
+    ],
+    "crossReferences": ["Herbal Medicine", "Aromatherapy"],
+    "description": "Aloe Vera essence promotes deep healing and regeneration on all levels. It nurtures the spirit and helps recover from emotional and physical trauma.",
+    "imageName": "aloevera.png"
+  },
+  {
+    "commonName": "Aspen",
+    "latinName": "Populus tremula",
+    "positiveQualities": ["Courage", "Trust", "Inner strength", "Fearlessness"],
+    "patternsOfImbalance": [
+      "Vague fears",
+      "Anxiety",
+      "Apprehension",
+      "Unknown terrors"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Aspen essence helps those who experience vague, unexplained fears and anxieties. It brings courage and trust in the unknown.",
+    "imageName": "aspen.png"
+  },
+  {
+    "commonName": "Basil",
+    "latinName": "Ocimum basilicum",
+    "positiveQualities": [
+      "Mental clarity",
+      "Focus",
+      "Adaptability",
+      "Fresh perspective"
+    ],
+    "patternsOfImbalance": [
+      "Mental confusion",
+      "Lack of focus",
+      "Rigid thinking",
+      "Mental fatigue"
+    ],
+    "crossReferences": ["Culinary Herbs", "Aromatherapy"],
+    "description": "Basil essence clears mental fog and brings fresh perspective. It helps with mental clarity and adaptability in changing situations.",
+    "imageName": "basil.png"
+  },
+  {
+    "commonName": "Beech",
+    "latinName": "Fagus sylvatica",
+    "positiveQualities": [
+      "Tolerance",
+      "Understanding",
+      "Flexibility",
+      "Acceptance"
+    ],
+    "patternsOfImbalance": [
+      "Intolerance",
+      "Criticism",
+      "Rigid standards",
+      "Judgmental attitude"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Beech essence helps those who are overly critical and intolerant. It promotes understanding and acceptance of others' differences.",
+    "imageName": "beech.png"
+  },
+  {
+    "commonName": "Centaury",
+    "latinName": "Centaurium erythraea",
+    "positiveQualities": [
+      "Strength",
+      "Independence",
+      "Self-assertion",
+      "Personal power"
+    ],
+    "patternsOfImbalance": [
+      "Weak will",
+      "Subservience",
+      "Difficulty saying no",
+      "Lack of boundaries"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Wildflower Essences"],
+    "description": "Centaury essence strengthens the will and helps those who are too subservient. It promotes healthy boundaries and personal power.",
+    "imageName": "centaury.png"
+  },
+  {
+    "commonName": "Cerato",
+    "latinName": "Ceratostigma willmottianum",
+    "positiveQualities": [
+      "Inner wisdom",
+      "Self-trust",
+      "Intuition",
+      "Confidence"
+    ],
+    "patternsOfImbalance": [
+      "Self-doubt",
+      "Seeking advice",
+      "Lack of confidence",
+      "Ignoring inner voice"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Garden Flower Essences"],
+    "description": "Cerato essence helps those who doubt their own judgment and constantly seek advice. It strengthens inner wisdom and self-trust.",
+    "imageName": "cerato.png"
+  },
+  {
+    "commonName": "Chamomile",
+    "latinName": "Matricaria chamomilla",
+    "positiveQualities": ["Calm", "Peace", "Gentleness", "Emotional balance"],
+    "patternsOfImbalance": [
+      "Irritability",
+      "Overwhelm",
+      "Emotional sensitivity",
+      "Mental agitation"
+    ],
+    "crossReferences": ["Herbal Medicine", "Aromatherapy"],
+    "description": "Chamomile essence soothes emotional sensitivity and irritability. It brings gentle calm and emotional balance to the spirit.",
+    "imageName": "chamomile.png"
+  },
+  {
+    "commonName": "Cherry Plum",
+    "latinName": "Prunus cerasifera",
+    "positiveQualities": [
+      "Self-control",
+      "Mental stability",
+      "Courage",
+      "Inner strength"
+    ],
+    "patternsOfImbalance": [
+      "Fear of losing control",
+      "Mental tension",
+      "Desperation",
+      "Thoughts of self-harm"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Cherry Plum essence helps those who fear losing mental control. It brings stability and courage during desperate times.",
+    "imageName": "cherryplumb.png"
+  },
+  {
+    "commonName": "Chestnut Bud",
+    "latinName": "Aesculus hippocastanum",
+    "positiveQualities": ["Learning", "Growth", "Wisdom", "Progress"],
+    "patternsOfImbalance": [
+      "Repeating mistakes",
+      "Not learning",
+      "Stagnation",
+      "Lack of progress"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Chestnut Bud essence helps those who repeat the same mistakes. It promotes learning from experience and personal growth.",
+    "imageName": "chestnutbud.png"
+  },
+  {
+    "commonName": "Chicory",
+    "latinName": "Cichorium intybus",
+    "positiveQualities": [
+      "Unconditional love",
+      "Selflessness",
+      "Giving",
+      "Nurturing"
+    ],
+    "patternsOfImbalance": [
+      "Possessiveness",
+      "Self-pity",
+      "Manipulation",
+      "Need for attention"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Wildflower Essences"],
+    "description": "Chicory essence helps those who are possessive and manipulative in relationships. It promotes unconditional love and selfless giving.",
+    "imageName": "chicory.png"
+  },
+  {
+    "commonName": "Clematis",
+    "latinName": "Clematis vitalba",
+    "positiveQualities": [
+      "Present moment awareness",
+      "Grounding",
+      "Focus",
+      "Practicality"
+    ],
+    "patternsOfImbalance": [
+      "Daydreaming",
+      "Lack of focus",
+      "Escapism",
+      "Unrealistic expectations"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Climbing Plant Essences"],
+    "description": "Clematis essence helps those who escape into daydreams and fantasies. It brings focus to the present moment and practical thinking.",
+    "imageName": "clematis.png"
+  },
+  {
+    "commonName": "Crab Apple",
+    "latinName": "Malus sylvestris",
+    "positiveQualities": [
+      "Self-acceptance",
+      "Purity",
+      "Cleansing",
+      "Inner beauty"
+    ],
+    "patternsOfImbalance": [
+      "Self-disgust",
+      "Feeling unclean",
+      "Perfectionism",
+      "Obsessive cleaning"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Crab Apple essence helps those who feel unclean or have self-disgust. It promotes self-acceptance and inner purity.",
+    "imageName": "crabapple.png"
+  },
+  {
+    "commonName": "Dandelion",
+    "latinName": "Taraxacum officinale",
+    "positiveQualities": [
+      "Flexibility",
+      "Adaptability",
+      "Resilience",
+      "Letting go"
+    ],
+    "patternsOfImbalance": [
+      "Rigidity",
+      "Tension",
+      "Holding on",
+      "Resistance to change"
+    ],
+    "crossReferences": ["Herbal Medicine", "Wildflower Essences"],
+    "description": "Dandelion essence helps those who are rigid and resistant to change. It promotes flexibility and the ability to let go gracefully.",
+    "imageName": "dandelion.png"
+  },
+  {
+    "commonName": "Dill",
+    "latinName": "Anethum graveolens",
+    "positiveQualities": [
+      "Mental clarity",
+      "Focus",
+      "Digestive ease",
+      "Fresh energy"
+    ],
+    "patternsOfImbalance": [
+      "Mental fog",
+      "Digestive issues",
+      "Lack of energy",
+      "Confusion"
+    ],
+    "crossReferences": ["Culinary Herbs", "Aromatherapy"],
+    "description": "Dill essence clears mental fog and promotes digestive ease. It brings fresh energy and mental clarity to the system.",
+    "imageName": "dill.png"
+  },
+  {
+    "commonName": "Dogwood",
+    "latinName": "Cornus florida",
+    "positiveQualities": ["Joy", "Celebration", "Appreciation", "Gratitude"],
+    "patternsOfImbalance": [
+      "Lack of joy",
+      "Taking things for granted",
+      "Pessimism",
+      "Ingratitude"
+    ],
+    "crossReferences": ["Tree Essences", "Native American Medicine"],
+    "description": "Dogwood essence helps those who have lost their joy and appreciation for life. It brings celebration and gratitude to the heart.",
+    "imageName": "dogwood.png"
+  },
+  {
+    "commonName": "Elm",
+    "latinName": "Ulmus procera",
+    "positiveQualities": ["Confidence", "Strength", "Leadership", "Capability"],
+    "patternsOfImbalance": [
+      "Overwhelm",
+      "Feeling inadequate",
+      "Temporary depression",
+      "Loss of confidence"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Elm essence helps capable people who temporarily feel overwhelmed by responsibility. It restores confidence and strength.",
+    "imageName": "elm.png"
+  },
+  {
+    "commonName": "Gorse",
+    "latinName": "Ulex europaeus",
+    "positiveQualities": ["Hope", "Optimism", "Faith", "Renewal"],
+    "patternsOfImbalance": [
+      "Hopelessness",
+      "Despair",
+      "Giving up",
+      "Lack of faith"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Wildflower Essences"],
+    "description": "Gorse essence helps those who have lost hope and faith. It brings optimism and the courage to try again.",
+    "imageName": "gorse.png"
+  },
+  {
+    "commonName": "Heather",
+    "latinName": "Calluna vulgaris",
+    "positiveQualities": [
+      "Independence",
+      "Self-reliance",
+      "Inner strength",
+      "Solitude"
+    ],
+    "patternsOfImbalance": [
+      "Self-absorption",
+      "Talking about self",
+      "Need for attention",
+      "Loneliness"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Wildflower Essences"],
+    "description": "Heather essence helps those who are overly self-absorbed and talk too much about themselves. It promotes independence and self-reliance.",
+    "imageName": "heather.png"
+  },
+  {
+    "commonName": "Hibiscus",
+    "latinName": "Hibiscus rosa-sinensis",
+    "positiveQualities": ["Feminine power", "Creativity", "Passion", "Beauty"],
+    "patternsOfImbalance": [
+      "Lack of creativity",
+      "Low self-esteem",
+      "Suppressed femininity",
+      "Creative blocks"
+    ],
+    "crossReferences": ["Tropical Flower Essences", "Aromatherapy"],
+    "description": "Hibiscus essence awakens feminine power and creativity. It helps with self-expression and embracing one's natural beauty.",
+    "imageName": "hibiscus.png"
+  },
+  {
+    "commonName": "Holly",
+    "latinName": "Ilex aquifolium",
+    "positiveQualities": ["Love", "Forgiveness", "Compassion", "Open heart"],
+    "patternsOfImbalance": ["Hatred", "Jealousy", "Suspicion", "Closed heart"],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Holly essence helps those who feel hatred, jealousy, or suspicion. It opens the heart to love, forgiveness, and compassion.",
+    "imageName": "holly.png"
+  },
+  {
+    "commonName": "Honeysuckle",
+    "latinName": "Lonicera periclymenum",
+    "positiveQualities": [
+      "Present moment",
+      "Moving forward",
+      "New experiences",
+      "Growth"
+    ],
+    "patternsOfImbalance": [
+      "Living in the past",
+      "Nostalgia",
+      "Resistance to change",
+      "Stagnation"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Climbing Plant Essences"],
+    "description": "Honeysuckle essence helps those who live in the past and resist change. It brings focus to the present and encourages new experiences.",
+    "imageName": "honeysuckle.png"
+  },
+  {
+    "commonName": "Hornbeam",
+    "latinName": "Carpinus betulus",
+    "positiveQualities": ["Vitality", "Energy", "Strength", "Endurance"],
+    "patternsOfImbalance": [
+      "Mental fatigue",
+      "Monday morning feeling",
+      "Lack of enthusiasm",
+      "Tiredness"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Hornbeam essence helps those who feel mentally tired and lack enthusiasm. It restores vitality and mental energy.",
+    "imageName": "hornbeam.png"
+  },
+  {
+    "commonName": "Larch",
+    "latinName": "Larix decidua",
+    "positiveQualities": ["Confidence", "Self-belief", "Courage", "Self-worth"],
+    "patternsOfImbalance": [
+      "Lack of confidence",
+      "Fear of failure",
+      "Self-doubt",
+      "Anticipation of failure"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Larch essence helps those who lack confidence and anticipate failure. It builds self-belief and the courage to try.",
+    "imageName": "larch.png"
+  },
+  {
+    "commonName": "Lavender",
+    "latinName": "Lavandula angustifolia",
+    "positiveQualities": ["Calm", "Peace", "Relaxation", "Mental clarity"],
+    "patternsOfImbalance": [
+      "Anxiety",
+      "Restlessness",
+      "Mental overstimulation",
+      "Sleep disturbances"
+    ],
+    "crossReferences": ["Essential Oils", "Herbal Medicine", "Aromatherapy"],
+    "description": "Lavender essence calms the nervous system and promotes deep relaxation. It helps with anxiety, insomnia, and mental overstimulation.",
+    "imageName": "lavender.png"
+  },
+  {
+    "commonName": "Mimulus",
+    "latinName": "Mimulus guttatus",
+    "positiveQualities": [
+      "Courage",
+      "Confidence",
+      "Fearlessness",
+      "Inner strength"
+    ],
+    "patternsOfImbalance": [
+      "Known fears",
+      "Shyness",
+      "Timidity",
+      "Anxiety about specific things"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Wildflower Essences"],
+    "description": "Mimulus essence helps those with known fears and shyness. It brings courage and confidence to face specific challenges.",
+    "imageName": "mimulus.png"
+  },
+  {
+    "commonName": "Morning Glory",
+    "latinName": "Ipomoea purpurea",
+    "positiveQualities": [
+      "Spiritual awakening",
+      "Higher consciousness",
+      "Transcendence",
+      "Divine connection"
+    ],
+    "patternsOfImbalance": [
+      "Spiritual disconnection",
+      "Lack of purpose",
+      "Material focus",
+      "Lost direction"
+    ],
+    "crossReferences": ["Flower Essences", "Spiritual Healing"],
+    "description": "Morning Glory essence awakens spiritual consciousness and divine connection. It helps those who feel spiritually disconnected.",
+    "imageName": "morningglory.png"
+  },
+  {
+    "commonName": "Mullein",
+    "latinName": "Verbascum thapsus",
+    "positiveQualities": ["Courage", "Protection", "Strength", "Inner fire"],
+    "patternsOfImbalance": [
+      "Timidity",
+      "Lack of courage",
+      "Feeling vulnerable",
+      "Need for protection"
+    ],
+    "crossReferences": ["Herbal Medicine", "Wildflower Essences"],
+    "description": "Mullein essence strengthens courage and provides spiritual protection. It helps those who feel vulnerable and need inner strength.",
+    "imageName": "mullein.png"
+  },
+  {
+    "commonName": "Mustard",
+    "latinName": "Sinapis arvensis",
+    "positiveQualities": ["Joy", "Lightness", "Hope", "Inner sunshine"],
+    "patternsOfImbalance": [
+      "Deep gloom",
+      "Depression",
+      "Melancholy",
+      "Dark moods"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Wildflower Essences"],
+    "description": "Mustard essence helps those who experience deep, unexplained gloom and depression. It brings inner sunshine and hope.",
+    "imageName": "mustard.png"
+  },
+  {
+    "commonName": "Oak",
+    "latinName": "Quercus robur",
+    "positiveQualities": [
+      "Endurance",
+      "Strength",
+      "Persistence",
+      "Determination"
+    ],
+    "patternsOfImbalance": [
+      "Overwork",
+      "Struggling on",
+      "Exhaustion",
+      "Never giving up"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Oak essence helps those who struggle on despite exhaustion. It provides strength and the wisdom to rest when needed.",
+    "imageName": "oak.png"
+  },
+  {
+    "commonName": "Olive",
+    "latinName": "Olea europaea",
+    "positiveQualities": ["Renewal", "Recovery", "Vitality", "Regeneration"],
+    "patternsOfImbalance": [
+      "Complete exhaustion",
+      "Burnout",
+      "No energy",
+      "Physical and mental fatigue"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Olive essence helps those who are completely exhausted and burned out. It promotes deep renewal and regeneration.",
+    "imageName": "olive.png"
+  },
+  {
+    "commonName": "Peppermint",
+    "latinName": "Mentha piperita",
+    "positiveQualities": [
+      "Mental clarity",
+      "Focus",
+      "Fresh energy",
+      "Stimulating"
+    ],
+    "patternsOfImbalance": [
+      "Mental fog",
+      "Lack of focus",
+      "Low energy",
+      "Confusion"
+    ],
+    "crossReferences": ["Herbal Medicine", "Aromatherapy"],
+    "description": "Peppermint essence clears mental fog and stimulates fresh energy. It promotes mental clarity and focus.",
+    "imageName": "peppermint.png"
+  },
+  {
+    "commonName": "Pine",
+    "latinName": "Pinus sylvestris",
+    "positiveQualities": [
+      "Self-forgiveness",
+      "Self-acceptance",
+      "Peace",
+      "Release"
+    ],
+    "patternsOfImbalance": [
+      "Self-blame",
+      "Guilt",
+      "Self-criticism",
+      "Feeling unworthy"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Pine essence helps those who blame themselves and feel guilty. It promotes self-forgiveness and self-acceptance.",
+    "imageName": "pine.png"
+  },
+  {
+    "commonName": "Red Chestnut",
+    "latinName": "Aesculus carnea",
+    "positiveQualities": ["Trust", "Peace", "Detachment", "Freedom"],
+    "patternsOfImbalance": [
+      "Over-concern for others",
+      "Worry",
+      "Anxiety about loved ones",
+      "Over-protectiveness"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Red Chestnut essence helps those who worry excessively about others. It promotes trust and healthy detachment.",
+    "imageName": "redchestnut.png"
+  },
+  {
+    "commonName": "Red Clover",
+    "latinName": "Trifolium pratense",
+    "positiveQualities": [
+      "Purification",
+      "Cleansing",
+      "Renewal",
+      "Fresh start"
+    ],
+    "patternsOfImbalance": [
+      "Toxicity",
+      "Need for cleansing",
+      "Stagnation",
+      "Old patterns"
+    ],
+    "crossReferences": ["Herbal Medicine", "Wildflower Essences"],
+    "description": "Red Clover essence promotes deep purification and cleansing on all levels. It helps release old patterns and toxins.",
+    "imageName": "redclover.png"
+  },
+  {
+    "commonName": "Rock Rose",
+    "latinName": "Helianthemum nummularium",
+    "positiveQualities": ["Courage", "Calm", "Strength", "Fearlessness"],
+    "patternsOfImbalance": [
+      "Terror",
+      "Panic",
+      "Extreme fear",
+      "Emergency situations"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Wildflower Essences"],
+    "description": "Rock Rose essence helps those experiencing terror and panic. It brings courage and calm in emergency situations.",
+    "imageName": "rockrose.png"
+  },
+  {
+    "commonName": "Rock Water",
+    "latinName": "Aqua petra",
+    "positiveQualities": ["Flexibility", "Spontaneity", "Joy", "Freedom"],
+    "patternsOfImbalance": [
+      "Rigidity",
+      "Self-denial",
+      "Strict standards",
+      "Lack of joy"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Water Essences"],
+    "description": "Rock Water essence helps those who are rigid and self-denying. It promotes flexibility, spontaneity, and joy.",
+    "imageName": "rockwater.png"
+  },
+  {
+    "commonName": "Rosemary",
+    "latinName": "Rosmarinus officinalis",
+    "positiveQualities": ["Memory", "Mental clarity", "Focus", "Stimulation"],
+    "patternsOfImbalance": [
+      "Poor memory",
+      "Mental fog",
+      "Lack of focus",
+      "Forgetfulness"
+    ],
+    "crossReferences": ["Herbal Medicine", "Aromatherapy"],
+    "description": "Rosemary essence enhances memory and mental clarity. It stimulates the mind and improves focus and concentration.",
+    "imageName": "rosemary.png"
+  },
+  {
+    "commonName": "Sage",
+    "latinName": "Salvia officinalis",
+    "positiveQualities": ["Wisdom", "Clarity", "Purification", "Protection"],
+    "patternsOfImbalance": [
+      "Lack of wisdom",
+      "Mental confusion",
+      "Need for cleansing",
+      "Vulnerability"
+    ],
+    "crossReferences": ["Herbal Medicine", "Aromatherapy"],
+    "description": "Sage essence brings wisdom and mental clarity. It promotes purification and spiritual protection.",
+    "imageName": "sage.png"
+  },
+  {
+    "commonName": "Scleranthus",
+    "latinName": "Scleranthus annuus",
+    "positiveQualities": [
+      "Balance",
+      "Decision-making",
+      "Stability",
+      "Certainty"
+    ],
+    "patternsOfImbalance": [
+      "Indecision",
+      "Mood swings",
+      "Uncertainty",
+      "Lack of balance"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Wildflower Essences"],
+    "description": "Scleranthus essence helps those who are indecisive and have mood swings. It brings balance and the ability to make decisions.",
+    "imageName": "scleranthus.png"
+  },
+  {
+    "commonName": "Star of Bethlehem",
+    "latinName": "Ornithogalum umbellatum",
+    "positiveQualities": ["Comfort", "Healing", "Peace", "Recovery"],
+    "patternsOfImbalance": ["Shock", "Trauma", "Grief", "Need for comfort"],
+    "crossReferences": ["Bach Flower Remedies", "Wildflower Essences"],
+    "description": "Star of Bethlehem essence helps those who have experienced shock or trauma. It provides comfort and promotes healing.",
+    "imageName": "starofbethlehem.png"
+  },
+  {
+    "commonName": "Sunflower",
+    "latinName": "Helianthus annuus",
+    "positiveQualities": ["Joy", "Optimism", "Vitality", "Confidence"],
+    "patternsOfImbalance": [
+      "Depression",
+      "Low energy",
+      "Lack of confidence",
+      "Pessimism"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Garden Flower Essences"],
+    "description": "Sunflower essence brings warmth and joy to the spirit. It helps overcome depression and restores optimism and vitality.",
+    "imageName": "sunflower.png"
+  },
+  {
+    "commonName": "Sweet Chestnut",
+    "latinName": "Castanea sativa",
+    "positiveQualities": ["Hope", "Renewal", "Faith", "New beginning"],
+    "patternsOfImbalance": [
+      "Extreme mental anguish",
+      "Despair",
+      "Dark night of soul",
+      "Feeling at limit"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Sweet Chestnut essence helps those experiencing extreme mental anguish and despair. It brings hope and faith in renewal.",
+    "imageName": "sweetchestnut.png"
+  },
+  {
+    "commonName": "Vervain",
+    "latinName": "Verbena officinalis",
+    "positiveQualities": ["Tolerance", "Patience", "Gentleness", "Flexibility"],
+    "patternsOfImbalance": [
+      "Over-enthusiasm",
+      "Tension",
+      "Over-effort",
+      "Rigid principles"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Herbal Medicine"],
+    "description": "Vervain essence helps those who are over-enthusiastic and tense. It promotes tolerance, patience, and gentle approach.",
+    "imageName": "vervain.png"
+  },
+  {
+    "commonName": "Vine",
+    "latinName": "Vitis vinifera",
+    "positiveQualities": ["Leadership", "Service", "Humility", "Flexibility"],
+    "patternsOfImbalance": [
+      "Domination",
+      "Rigidity",
+      "Bossiness",
+      "Lack of flexibility"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Climbing Plant Essences"],
+    "description": "Vine essence helps those who are dominating and rigid in leadership. It promotes service-oriented leadership and flexibility.",
+    "imageName": "vine.png"
+  },
+  {
+    "commonName": "Walnut",
+    "latinName": "Juglans regia",
+    "positiveQualities": [
+      "Protection",
+      "New beginnings",
+      "Breaking links",
+      "Freedom"
+    ],
+    "patternsOfImbalance": [
+      "Influence of others",
+      "Difficulty with change",
+      "Old ties",
+      "Lack of protection"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Walnut essence helps those who are easily influenced by others during times of change. It provides protection and strength for new beginnings.",
+    "imageName": "walnut.png"
+  },
+  {
+    "commonName": "Water Violet",
+    "latinName": "Hottonia palustris",
+    "positiveQualities": [
+      "Humility",
+      "Approachability",
+      "Gentleness",
+      "Connection"
+    ],
+    "patternsOfImbalance": ["Pride", "Aloofness", "Isolation", "Superiority"],
+    "crossReferences": ["Bach Flower Remedies", "Water Plant Essences"],
+    "description": "Water Violet essence helps those who are proud and aloof. It promotes humility and gentle connection with others.",
+    "imageName": "waterviolet.png"
+  },
+  {
+    "commonName": "White Chestnut",
+    "latinName": "Aesculus hippocastanum",
+    "positiveQualities": ["Mental peace", "Calm", "Focus", "Clarity"],
+    "patternsOfImbalance": [
+      "Mental arguments",
+      "Unwanted thoughts",
+      "Mental chatter",
+      "Lack of peace"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "White Chestnut essence helps those with unwanted thoughts and mental arguments. It brings mental peace and clarity.",
+    "imageName": "whitechestnut.png"
+  },
+  {
+    "commonName": "Wild Oat",
+    "latinName": "Bromus ramosus",
+    "positiveQualities": ["Purpose", "Direction", "Fulfillment", "Life path"],
+    "patternsOfImbalance": [
+      "Uncertainty of purpose",
+      "Lack of direction",
+      "Dissatisfaction",
+      "Wandering"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Wildflower Essences"],
+    "description": "Wild Oat essence helps those who are uncertain about their life purpose. It brings clarity and direction to one's path.",
+    "imageName": "wildoat.png"
+  },
+  {
+    "commonName": "Wild Rose",
+    "latinName": "Rosa canina",
+    "positiveQualities": [
+      "Vitality",
+      "Interest",
+      "Enthusiasm",
+      "Zest for life"
+    ],
+    "patternsOfImbalance": [
+      "Apathy",
+      "Resignation",
+      "Lack of interest",
+      "Drifting"
+    ],
+    "crossReferences": ["Bach Flower Remedies", "Wildflower Essences"],
+    "description": "Wild Rose essence helps those who are apathetic and resigned. It awakens interest and enthusiasm for life.",
+    "imageName": "wildrose.png"
+  },
+  {
+    "commonName": "Willow",
+    "latinName": "Salix vitellina",
+    "positiveQualities": [
+      "Acceptance",
+      "Responsibility",
+      "Flexibility",
+      "Adaptability"
+    ],
+    "patternsOfImbalance": ["Resentment", "Bitterness", "Self-pity", "Blame"],
+    "crossReferences": ["Bach Flower Remedies", "Tree Essences"],
+    "description": "Willow essence helps those who feel resentful and bitter about life. It promotes acceptance and taking responsibility.",
+    "imageName": "willow.png"
+  },
+  {
+    "commonName": "Yarrow",
+    "latinName": "Achillea millefolium",
+    "positiveQualities": ["Protection", "Boundaries", "Strength", "Shielding"],
+    "patternsOfImbalance": [
+      "Over-sensitivity",
+      "Absorbing others' energy",
+      "Lack of boundaries",
+      "Vulnerability"
+    ],
+    "crossReferences": ["Herbal Medicine", "Wildflower Essences"],
+    "description": "Yarrow essence provides spiritual protection and strengthens personal boundaries. It helps those who absorb others' energy.",
+    "imageName": "yarrow.png"
+  }
+]

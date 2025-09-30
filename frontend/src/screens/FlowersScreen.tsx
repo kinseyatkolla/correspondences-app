@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,63 @@ import {
 import { apiService, FlowerEssence } from "../services/api";
 import { getFlowerEmoji } from "../utils/imageHelper";
 
+// Import all flower images
+const flowerImages = {
+  "agrimony.png": require("../../assets/images/flowers/agrimony.png"),
+  "aloevera.png": require("../../assets/images/flowers/aloevera.png"),
+  "aspen.png": require("../../assets/images/flowers/aspen.png"),
+  "basil.png": require("../../assets/images/flowers/basil.png"),
+  "beech.png": require("../../assets/images/flowers/beech.png"),
+  "centaury.png": require("../../assets/images/flowers/centaury.png"),
+  "cerato.png": require("../../assets/images/flowers/cerato.png"),
+  "chamomile.png": require("../../assets/images/flowers/chamomile.png"),
+  "cherryplumb.png": require("../../assets/images/flowers/cherryplumb.png"),
+  "chestnutbud.png": require("../../assets/images/flowers/chestnutbud.png"),
+  "chicory.png": require("../../assets/images/flowers/chicory.png"),
+  "clematis.png": require("../../assets/images/flowers/clematis.png"),
+  "crabapple.png": require("../../assets/images/flowers/crabapple.png"),
+  "dandelion.png": require("../../assets/images/flowers/dandelion.png"),
+  "default.jpg": require("../../assets/images/flowers/default.jpg"),
+  "dill.png": require("../../assets/images/flowers/dill.png"),
+  "dogwood.png": require("../../assets/images/flowers/dogwood.png"),
+  "elm.png": require("../../assets/images/flowers/elm.png"),
+  "gorse.png": require("../../assets/images/flowers/gorse.png"),
+  "heather.png": require("../../assets/images/flowers/heather.png"),
+  "hibiscus.png": require("../../assets/images/flowers/hibiscus.png"),
+  "holly.png": require("../../assets/images/flowers/holly.png"),
+  "honeysuckle.png": require("../../assets/images/flowers/honeysuckle.png"),
+  "hornbeam.png": require("../../assets/images/flowers/hornbeam.png"),
+  "larch.png": require("../../assets/images/flowers/larch.png"),
+  "lavender.png": require("../../assets/images/flowers/lavender.png"),
+  "mimulus.png": require("../../assets/images/flowers/mimulus.png"),
+  "morningglory.png": require("../../assets/images/flowers/morningglory.png"),
+  "mullein.png": require("../../assets/images/flowers/mullein.png"),
+  "mustard.png": require("../../assets/images/flowers/mustard.png"),
+  "oak.png": require("../../assets/images/flowers/oak.png"),
+  "olive.png": require("../../assets/images/flowers/olive.png"),
+  "peppermint.png": require("../../assets/images/flowers/peppermint.png"),
+  "pine.png": require("../../assets/images/flowers/pine.png"),
+  "redchestnut.png": require("../../assets/images/flowers/redchestnut.png"),
+  "redclover.png": require("../../assets/images/flowers/redclover.png"),
+  "rockrose.png": require("../../assets/images/flowers/rockrose.png"),
+  "rockwater.png": require("../../assets/images/flowers/rockwater.png"),
+  "rosemary.png": require("../../assets/images/flowers/rosemary.png"),
+  "sage.png": require("../../assets/images/flowers/sage.png"),
+  "scleranthus.png": require("../../assets/images/flowers/scleranthus.png"),
+  "starofbethlehem.png": require("../../assets/images/flowers/starofbethlehem.png"),
+  "sunflower.png": require("../../assets/images/flowers/sunflower.png"),
+  "sweetchestnut.png": require("../../assets/images/flowers/sweetchestnut.png"),
+  "vervain.png": require("../../assets/images/flowers/vervain.png"),
+  "vine.png": require("../../assets/images/flowers/vine.png"),
+  "walnut.png": require("../../assets/images/flowers/walnut.png"),
+  "waterviolet.png": require("../../assets/images/flowers/waterviolet.png"),
+  "whitechestnut.png": require("../../assets/images/flowers/whitechestnut.png"),
+  "wildoat.png": require("../../assets/images/flowers/wildoat.png"),
+  "wildrose.png": require("../../assets/images/flowers/wildrose.png"),
+  "willow.png": require("../../assets/images/flowers/willow.png"),
+  "yarrow.png": require("../../assets/images/flowers/yarrow.png"),
+};
+
 export default function FlowersScreen() {
   const [flowerEssences, setFlowerEssences] = useState<FlowerEssence[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +85,7 @@ export default function FlowersScreen() {
     loadFlowerEssences();
   }, []);
 
-  const loadFlowerEssences = async (search = "") => {
+  const loadFlowerEssences = useCallback(async (search = "") => {
     try {
       setLoading(true);
       const response = await apiService.getFlowerEssences(search);
@@ -39,12 +96,20 @@ export default function FlowersScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    loadFlowerEssences(query);
   };
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadFlowerEssences(searchQuery);
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   const handleFlowerPress = (flower: FlowerEssence) => {
     setSelectedFlower(flower);
@@ -145,7 +210,12 @@ export default function FlowersScreen() {
                   {/* Flower Image */}
                   <View style={styles.imageContainer}>
                     <Image
-                      source={require("../../assets/images/flowers/default.jpg")}
+                      source={
+                        selectedFlower.imageName &&
+                        flowerImages[selectedFlower.imageName]
+                          ? flowerImages[selectedFlower.imageName]
+                          : flowerImages["default.jpg"]
+                      }
                       style={styles.flowerImage}
                       resizeMode="contain"
                     />
