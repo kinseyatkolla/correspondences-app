@@ -10,6 +10,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Image,
 } from "react-native";
 import { apiService, TarotCard } from "../services/api";
 
@@ -128,26 +129,101 @@ export default function TarotScreen() {
     }
   };
 
-  const renderCardItem = ({ item }: { item: TarotCard }) => (
-    <TouchableOpacity
-      style={styles.cardItem}
-      onPress={() => handleCardPress(item)}
-    >
-      <Text style={styles.cardEmoji}>{getCardEmoji(item.suit)}</Text>
-      <View style={styles.cardInfo}>
-        <Text style={styles.cardName}>{item.name}</Text>
-        <Text style={styles.cardSuit}>
-          {item.suit} {item.number > 0 && `#${item.number}`}
-        </Text>
-        {item.element && (
-          <Text style={styles.cardElement}>
-            {getElementEmoji(item.element)} {item.element}
-          </Text>
-        )}
-      </View>
-      <Text style={styles.arrow}>›</Text>
-    </TouchableOpacity>
-  );
+  // Static import map for all tarot card images
+  const tarotCardImages: { [key: string]: any } = {
+    // Major Arcana
+    "Major Arcana-0": require("../../assets/images/tarot/RWSa-T-00.png"),
+    "Major Arcana-1": require("../../assets/images/tarot/RWSa-T-01.png"),
+    "Major Arcana-2": require("../../assets/images/tarot/RWSa-T-02.png"),
+    "Major Arcana-3": require("../../assets/images/tarot/RWSa-T-03.png"),
+    "Major Arcana-4": require("../../assets/images/tarot/RWSa-T-04.png"),
+    "Major Arcana-5": require("../../assets/images/tarot/RWSa-T-05.png"),
+    "Major Arcana-6": require("../../assets/images/tarot/RWSa-T-06.png"),
+    "Major Arcana-7": require("../../assets/images/tarot/RWSa-T-07.png"),
+    "Major Arcana-8": require("../../assets/images/tarot/RWSa-T-08.png"),
+    "Major Arcana-9": require("../../assets/images/tarot/RWSa-T-09.png"),
+    "Major Arcana-10": require("../../assets/images/tarot/RWSa-T-10.png"),
+    "Major Arcana-11": require("../../assets/images/tarot/RWSa-T-11.png"),
+    "Major Arcana-12": require("../../assets/images/tarot/RWSa-T-12.png"),
+    "Major Arcana-13": require("../../assets/images/tarot/RWSa-T-13.png"),
+    "Major Arcana-14": require("../../assets/images/tarot/RWSa-T-14.png"),
+    "Major Arcana-15": require("../../assets/images/tarot/RWSa-T-15.png"),
+    "Major Arcana-16": require("../../assets/images/tarot/RWSa-T-16.png"),
+    "Major Arcana-17": require("../../assets/images/tarot/RWSa-T-17.png"),
+    "Major Arcana-18": require("../../assets/images/tarot/RWSa-T-18.png"),
+    "Major Arcana-19": require("../../assets/images/tarot/RWSa-T-19.png"),
+    "Major Arcana-20": require("../../assets/images/tarot/RWSa-T-20.png"),
+    "Major Arcana-21": require("../../assets/images/tarot/RWSa-T-21.png"),
+
+    // Cups
+    "Cups-1": require("../../assets/images/tarot/RWSa-C-0A.png"),
+    "Cups-2": require("../../assets/images/tarot/RWSa-C-02.png"),
+    "Cups-3": require("../../assets/images/tarot/RWSa-C-03.png"),
+    "Cups-4": require("../../assets/images/tarot/RWSa-C-04.png"),
+    "Cups-5": require("../../assets/images/tarot/RWSa-C-05.png"),
+    "Cups-6": require("../../assets/images/tarot/RWSa-C-06.png"),
+    "Cups-7": require("../../assets/images/tarot/RWSa-C-07.png"),
+    "Cups-8": require("../../assets/images/tarot/RWSa-C-08.png"),
+    "Cups-9": require("../../assets/images/tarot/RWSa-C-09.png"),
+    "Cups-10": require("../../assets/images/tarot/RWSa-C-10.png"),
+    "Cups-11": require("../../assets/images/tarot/RWSa-C-J1.png"),
+    "Cups-12": require("../../assets/images/tarot/RWSa-C-J2.png"),
+    "Cups-13": require("../../assets/images/tarot/RWSa-C-QU.png"),
+    "Cups-14": require("../../assets/images/tarot/RWSa-C-KI.png"),
+
+    // Pentacles
+    "Pentacles-1": require("../../assets/images/tarot/RWSa-P-0A.png"),
+    "Pentacles-2": require("../../assets/images/tarot/RWSa-P-02.png"),
+    "Pentacles-3": require("../../assets/images/tarot/RWSa-P-03.png"),
+    "Pentacles-4": require("../../assets/images/tarot/RWSa-P-04.png"),
+    "Pentacles-5": require("../../assets/images/tarot/RWSa-P-05.png"),
+    "Pentacles-6": require("../../assets/images/tarot/RWSa-P-06.png"),
+    "Pentacles-7": require("../../assets/images/tarot/RWSa-P-07.png"),
+    "Pentacles-8": require("../../assets/images/tarot/RWSa-P-08.png"),
+    "Pentacles-9": require("../../assets/images/tarot/RWSa-P-09.png"),
+    "Pentacles-10": require("../../assets/images/tarot/RWSa-P-10.png"),
+    "Pentacles-11": require("../../assets/images/tarot/RWSa-P-J1.png"),
+    "Pentacles-12": require("../../assets/images/tarot/RWSa-P-J2.png"),
+    "Pentacles-13": require("../../assets/images/tarot/RWSa-P-QU.png"),
+    "Pentacles-14": require("../../assets/images/tarot/RWSa-P-KI.png"),
+
+    // Swords
+    "Swords-1": require("../../assets/images/tarot/RWSa-S-0A.png"),
+    "Swords-2": require("../../assets/images/tarot/RWSa-S-02.png"),
+    "Swords-3": require("../../assets/images/tarot/RWSa-S-03.png"),
+    "Swords-4": require("../../assets/images/tarot/RWSa-S-04.png"),
+    "Swords-5": require("../../assets/images/tarot/RWSa-S-05.png"),
+    "Swords-6": require("../../assets/images/tarot/RWSa-S-06.png"),
+    "Swords-7": require("../../assets/images/tarot/RWSa-S-07.png"),
+    "Swords-8": require("../../assets/images/tarot/RWSa-S-08.png"),
+    "Swords-9": require("../../assets/images/tarot/RWSa-S-09.png"),
+    "Swords-10": require("../../assets/images/tarot/RWSa-S-10.png"),
+    "Swords-11": require("../../assets/images/tarot/RWSa-S-J1.png"),
+    "Swords-12": require("../../assets/images/tarot/RWSa-S-J2.png"),
+    "Swords-13": require("../../assets/images/tarot/RWSa-S-QU.png"),
+    "Swords-14": require("../../assets/images/tarot/RWSa-S-KI.png"),
+
+    // Wands
+    "Wands-1": require("../../assets/images/tarot/RWSa-W-0A.png"),
+    "Wands-2": require("../../assets/images/tarot/RWSa-W-02.png"),
+    "Wands-3": require("../../assets/images/tarot/RWSa-W-03.png"),
+    "Wands-4": require("../../assets/images/tarot/RWSa-W-04.png"),
+    "Wands-5": require("../../assets/images/tarot/RWSa-W-05.png"),
+    "Wands-6": require("../../assets/images/tarot/RWSa-W-06.png"),
+    "Wands-7": require("../../assets/images/tarot/RWSa-W-07.png"),
+    "Wands-8": require("../../assets/images/tarot/RWSa-W-08.png"),
+    "Wands-9": require("../../assets/images/tarot/RWSa-W-09.png"),
+    "Wands-10": require("../../assets/images/tarot/RWSa-W-10.png"),
+    "Wands-11": require("../../assets/images/tarot/RWSa-W-J1.png"),
+    "Wands-12": require("../../assets/images/tarot/RWSa-W-J2.png"),
+    "Wands-13": require("../../assets/images/tarot/RWSa-W-QU.png"),
+    "Wands-14": require("../../assets/images/tarot/RWSa-W-KI.png"),
+  };
+
+  const getCardImagePath = (card: TarotCard) => {
+    const key = `${card.suit}-${card.number}`;
+    return tarotCardImages[key] || null;
+  };
 
   const renderCategorySection = (
     title: string,
@@ -220,7 +296,7 @@ export default function TarotScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>🔮 Tarot Cards</Text>
+      <Text style={styles.title}>🔮 Tarot</Text>
       <Text style={styles.subtitle}>Discover the wisdom of the tarot</Text>
 
       <TouchableOpacity style={styles.randomButton} onPress={handleRandomDraw}>
@@ -318,6 +394,14 @@ export default function TarotScreen() {
                     >
                       <Text style={styles.closeButtonText}>✕</Text>
                     </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.cardImageContainer}>
+                    <Image
+                      source={getCardImagePath(selectedCard)}
+                      style={styles.cardImage}
+                      resizeMode="contain"
+                    />
                   </View>
 
                   <View style={styles.section}>
@@ -591,8 +675,6 @@ const styles = StyleSheet.create({
   },
   modalHeader: {
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#4a2c7a",
     position: "relative",
   },
   modalTitle: {
@@ -648,5 +730,15 @@ const styles = StyleSheet.create({
     color: "#e6e6fa",
     marginBottom: 5,
     lineHeight: 22,
+  },
+  cardImageContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  cardImage: {
+    width: 200,
+    height: 300,
+    borderRadius: 8,
   },
 });

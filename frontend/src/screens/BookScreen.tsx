@@ -9,21 +9,24 @@ export default function BookScreen() {
       <Text style={styles.description}>
         This is the full database of correspondences
       </Text>
-      <Text style={styles.description}>Searchable and cross-referenced</Text>
+      <Text style={styles.description}>Glossary</Text>
+      <Text style={styles.description}>Bibliography</Text>
+      <Text style={styles.description}>Library</Text>
       <Text style={styles.description}>Numbers</Text>
       <Text style={styles.description}>Colors</Text>
       <Text style={styles.description}>Plants</Text>
       <Text style={styles.description}>Planets</Text>
+      <Text style={styles.description}>Metals</Text>
       <Text style={styles.description}>Aspects</Text>
       <Text style={styles.description}>Zodiac Signs</Text>
       <Text style={styles.description}>Houses</Text>
       <Text style={styles.description}>Decans</Text>
       <Text style={styles.description}>Moon Phases</Text>
       <Text style={styles.description}>Seasons</Text>
-      <Text style={styles.description}>Tarot</Text>
+      <Text style={styles.description}>Weekdays</Text>
       <Text style={styles.description}>Equinox & Solstices</Text>
+      <Text style={styles.description}>Tarot</Text>
       <Text style={styles.description}>Symbols</Text>
-      <Text style={styles.description}>Glossary</Text>
     </View>
   );
 }
