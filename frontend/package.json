@@ -12,6 +12,7 @@
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.18",
     "expo": "~54.0.10",
+    "expo-location": "^19.0.7",
     "expo-status-bar": "~3.0.8",
     "metro-react-native-babel-transformer": "^0.77.0",
     "react": "19.1.0",

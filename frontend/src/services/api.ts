@@ -392,6 +392,33 @@ class ApiService {
   }> {
     return this.fetchData("/astrology/ephemeris-info");
   }
+
+  async getCurrentChart(
+    latitude: number,
+    longitude: number
+  ): Promise<{
+    success: boolean;
+    data: {
+      julianDay: number;
+      currentTime: {
+        year: number;
+        month: number;
+        day: number;
+        hour: number;
+        timestamp: string;
+      };
+      location: {
+        latitude: number;
+        longitude: number;
+      };
+      planets: Record<string, PlanetPosition>;
+    };
+  }> {
+    return this.fetchData("/astrology/current-chart", {
+      method: "POST",
+      body: JSON.stringify({ latitude, longitude }),
+    });
+  }
 }
 
 // Export a singleton instance

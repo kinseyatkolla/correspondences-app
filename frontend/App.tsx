@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import LoadingScreen from "./src/components/LoadingScreen";
 import AppNavigator from "./src/navigation/AppNavigator";
+import { AstrologyProvider } from "./src/contexts/AstrologyContext";
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -17,8 +18,10 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <AppNavigator />
-      <StatusBar style="light" />
+      <AstrologyProvider>
+        <AppNavigator />
+        <StatusBar style="light" />
+      </AstrologyProvider>
     </SafeAreaProvider>
   );
 }
