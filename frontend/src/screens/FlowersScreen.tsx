@@ -142,6 +142,15 @@ export default function FlowersScreen() {
                     </TouchableOpacity>
                   </View>
 
+                  {/* Flower Image */}
+                  <View style={styles.imageContainer}>
+                    <Image
+                      source={require("../../assets/images/flowers/default.jpg")}
+                      style={styles.flowerImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Description</Text>
                     <Text style={styles.sectionText}>
@@ -310,6 +319,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#4a2c7a",
     position: "relative",
+  },
+  imageContainer: {
+    width: "100%",
+    marginBottom: 0,
+  },
+  flowerImage: {
+    width: "100%",
+    height: undefined,
+    aspectRatio: 1, // This will maintain square aspect ratio, adjust as needed
   },
   modalTitle: {
     fontSize: 24,
