@@ -1,5 +1,11 @@
 import React from "react";
-import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+} from "react-native";
 import DynamicSvgImporter from "../components/DynamicSvgImporter";
 import { useAstrology } from "../contexts/AstrologyContext";
 
@@ -28,7 +34,10 @@ export default function MoonScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+    >
       <DynamicSvgImporter
         svgName={currentMoonPhase.toString()}
         width={140}
@@ -87,16 +96,19 @@ export default function MoonScreen() {
       <Text style={styles.description}>Moon in literature</Text>
       <Text style={styles.description}>moon in pop culture</Text>
       <Text style={styles.description}>moon in myth</Text>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#1a1a2e",
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#1a1a2e",
     padding: 20,
   },
   centered: {
