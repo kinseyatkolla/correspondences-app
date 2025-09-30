@@ -1,10 +1,20 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import DynamicSvgImporter from "../components/DynamicSvgImporter";
 
 export default function MoonScreen() {
+  // For now, using phase 13 as an example
+  // In a real app, you'd calculate this based on current date/time
+  const currentMoonPhase = 30;
+
   return (
     <View style={styles.container}>
-      <Text style={styles.emoji}>🌙</Text>
+      <DynamicSvgImporter
+        svgName={currentMoonPhase.toString()}
+        width={140}
+        height={140}
+        style={styles.emoji}
+      />
       <Text style={styles.title}>Moon</Text>
       <Text style={styles.description}>Tithi</Text>
       <Text style={styles.description}>nakshatra</Text>
@@ -27,7 +37,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   emoji: {
-    fontSize: 80,
     marginBottom: 20,
   },
   title: {
