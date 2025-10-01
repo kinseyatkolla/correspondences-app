@@ -33,7 +33,7 @@ import Moon28 from "../../assets/images/moons/28.svg";
 import Moon29 from "../../assets/images/moons/29.svg";
 import Moon30 from "../../assets/images/moons/30.svg";
 
-interface DynamicSvgImporterProps {
+interface MoonSvgImporterProps {
   svgName: string;
   width?: number;
   height?: number;
@@ -74,7 +74,7 @@ const svgComponents: { [key: string]: React.ComponentType<any> } = {
   "30": Moon30,
 };
 
-const DynamicSvgImporter: React.FC<DynamicSvgImporterProps> = ({
+const MoonSvgImporter: React.FC<MoonSvgImporterProps> = ({
   svgName,
   width = 100,
   height = 100,
@@ -94,4 +94,4 @@ const DynamicSvgImporter: React.FC<DynamicSvgImporterProps> = ({
   );
 };
 
-export default DynamicSvgImporter;
+export default MoonSvgImporter;

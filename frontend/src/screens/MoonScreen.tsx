@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from "react-native";
 import * as Font from "expo-font";
-import DynamicSvgImporter from "../components/DynamicSvgImporter";
+import MoonSvgImporter from "../components/MoonSvgImporter";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { sharedUI } from "../styles/sharedUI";
 import { usePhysisFont, getPhysisSymbolStyle } from "../utils/physisFont";
@@ -392,7 +392,7 @@ export default function MoonScreen() {
       style={styles.container}
       contentContainerStyle={styles.scrollContent}
     >
-      <DynamicSvgImporter
+      <MoonSvgImporter
         svgName={currentMoonPhase.toString()}
         width={140}
         height={140}
