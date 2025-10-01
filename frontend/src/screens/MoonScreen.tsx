@@ -9,30 +9,11 @@ import {
 import * as Font from "expo-font";
 import DynamicSvgImporter from "../components/DynamicSvgImporter";
 import { useAstrology } from "../contexts/AstrologyContext";
+import { sharedUI } from "../styles/sharedUI";
 import {
-  getPlanetSymbols,
-  getZodiacSymbols,
-  getPlanetNames,
-  getZodiacNames,
   getZodiacKeysFromNames,
-  getElementSymbols,
-  getElementNames,
-  getChartPointSymbols,
-  getChartPointNames,
   getPlanetKeysFromNames,
 } from "../utils/physisSymbolMap";
-
-// Helper function to get zodiac symbol from zodiac sign name
-const getZodiacSymbolFromName = (zodiacName: string): string => {
-  const zodiacKeysFromNames = getZodiacKeysFromNames();
-  const zodiacSymbols = getZodiacSymbols();
-
-  // Get the key for the given zodiac name
-  const zodiacKey = zodiacKeysFromNames[zodiacName];
-
-  return zodiacKey ? zodiacSymbols[zodiacKey] : zodiacName;
-};
-
 // Tithi calculation function
 const calculateTithi = (
   moonLongitude: number,
@@ -69,38 +50,6 @@ const calculateTithi = (
   };
 };
 
-// Test function to verify tithi calculation (can be removed later)
-const testTithiCalculation = () => {
-  // Test cases based on expected values
-  const testCases = [
-    { moon: 120, sun: 180, expected: 31, description: "Moon 120°, Sun 180°" }, // Should be tithi 1
-    { moon: 132, sun: 180, expected: 31, description: "Moon 132°, Sun 180°" }, // Should be tithi 1
-    { moon: 144, sun: 180, expected: 32, description: "Moon 144°, Sun 180°" }, // Should be tithi 2
-    { moon: 240, sun: 180, expected: 36, description: "Moon 240°, Sun 180°" }, // Should be tithi 6
-  ];
-
-  console.log("Testing tithi calculations:");
-  testCases.forEach((test) => {
-    const result = calculateTithi(test.moon, test.sun);
-    console.log(
-      `${test.description}: Expected ~${test.expected}, Got ${
-        result.tithi
-      } (${result.percentageRemaining.toFixed(2)}% remaining)`
-    );
-  });
-};
-
-// Uncomment to run test
-// testTithiCalculation();
-
-// Complete tithi data with all astrological information
-interface TithiData {
-  numbers: [number, number];
-  name: string;
-  planetRuler: string;
-  division: string;
-  deity: string;
-}
 // Complete moon phase data
 interface moon30 {
   number: number;
@@ -140,6 +89,15 @@ const moonTithiMap: moon30[] = [
   { number: 29, name: "K14", color: "Red" },
   { number: 30, name: "K15", color: "Red" },
 ];
+
+// Complete tithi data with all astrological information
+interface TithiData {
+  numbers: [number, number];
+  name: string;
+  planetRuler: string;
+  division: string;
+  deity: string;
+}
 
 const tithiData: TithiData[] = [
   {
@@ -415,9 +373,9 @@ export default function MoonScreen() {
 
   if (loading || !fontLoaded) {
     return (
-      <View style={[styles.container, styles.centered]}>
+      <View style={[styles.container, sharedUI.centered]}>
         <ActivityIndicator size="large" color="#e6e6fa" />
-        <Text style={styles.loadingText}>
+        <Text style={sharedUI.loadingText}>
           {loading ? "Loading current positions..." : "Loading fonts..."}
         </Text>
       </View>
@@ -426,9 +384,9 @@ export default function MoonScreen() {
 
   if (error) {
     return (
-      <View style={[styles.container, styles.centered]}>
+      <View style={[styles.container, sharedUI.centered]}>
         <Text style={styles.errorText}>Error: {error}</Text>
-        <Text style={styles.description}>Using default moon phase</Text>
+        <Text style={sharedUI.description}>Using default moon phase</Text>
       </View>
     );
   }
@@ -618,10 +576,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
-  centered: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
   emoji: {
     marginBottom: 20,
   },
@@ -645,11 +599,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 24,
     marginBottom: 8,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: "#e6e6fa",
-    marginTop: 20,
   },
   positionsContainer: {
     backgroundColor: "#0f0f23",

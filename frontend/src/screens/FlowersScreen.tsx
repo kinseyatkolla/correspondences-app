@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { apiService, FlowerEssence } from "../services/api";
 import { getFlowerEmoji } from "../utils/imageHelper";
+import { overlayStyles } from "../styles/overlayStyles";
+import { sharedUI } from "../styles/sharedUI";
 
 // Import all flower images
 const flowerImages: { [key: string]: any } = {
@@ -135,27 +137,30 @@ export default function FlowersScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[sharedUI.loadingContainer, { backgroundColor: "#0e2515" }]}>
         <ActivityIndicator size="large" color="#b19cd9" />
-        <Text style={styles.loadingText}>Loading flower essences...</Text>
+        <Text style={sharedUI.loadingText}>Loading flower essences...</Text>
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>🌸 Flower Essences</Text>
-      <Text style={styles.subtitle}>
+      <Text style={sharedUI.pageTitle}>🌸 Flower Essences</Text>
+      <Text style={sharedUI.pageSubtitle}>
         Discover the healing properties of flowers
       </Text>
 
-      <TouchableOpacity style={styles.randomButton} onPress={handleRandomDraw}>
-        <Text style={styles.randomButtonText}>🔮 Draw a Random Flower</Text>
+      <TouchableOpacity
+        style={sharedUI.primaryButton}
+        onPress={handleRandomDraw}
+      >
+        <Text style={sharedUI.primaryButtonText}>🔮 Draw a Random Flower</Text>
       </TouchableOpacity>
 
-      <View style={styles.searchContainer}>
+      <View style={sharedUI.searchContainer}>
         <TextInput
-          style={styles.searchInput}
+          style={sharedUI.searchInput}
           placeholder="Search flower essences..."
           placeholderTextColor="#8a8a8a"
           value={searchQuery}
@@ -163,15 +168,15 @@ export default function FlowersScreen() {
           returnKeyType="search"
           onSubmitEditing={handleSearch}
         />
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.searchButtonText}>🔍</Text>
+        <TouchableOpacity style={sharedUI.searchButton} onPress={handleSearch}>
+          <Text style={sharedUI.searchButtonText}>🔍</Text>
         </TouchableOpacity>
         {searchQuery.length > 0 && (
           <TouchableOpacity
-            style={styles.clearButton}
+            style={sharedUI.clearButton}
             onPress={handleClearSearch}
           >
-            <Text style={styles.clearButtonText}>✕</Text>
+            <Text style={sharedUI.clearButtonText}>✕</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -179,23 +184,23 @@ export default function FlowersScreen() {
       {flowerEssences.map((flower) => (
         <TouchableOpacity
           key={flower._id}
-          style={styles.flowerItem}
+          style={sharedUI.listItem}
           onPress={() => handleFlowerPress(flower)}
         >
-          <Text style={styles.flowerEmoji}>
+          <Text style={sharedUI.listItemEmoji}>
             {getFlowerEmoji(flower.imageName)}
           </Text>
-          <View style={styles.flowerInfo}>
-            <Text style={styles.flowerName}>{flower.commonName}</Text>
-            <Text style={styles.flowerLatin}>{flower.latinName}</Text>
+          <View style={sharedUI.listItemContent}>
+            <Text style={sharedUI.listItemTitle}>{flower.commonName}</Text>
+            <Text style={sharedUI.listItemSubtitle}>{flower.latinName}</Text>
           </View>
-          <Text style={styles.arrow}>›</Text>
+          <Text style={sharedUI.arrow}>›</Text>
         </TouchableOpacity>
       ))}
 
       {flowerEssences.length > 0 && (
-        <View style={styles.listFooter}>
-          <Text style={styles.footerText}>
+        <View style={sharedUI.listFooter}>
+          <Text style={sharedUI.footerText}>
             Showing {flowerEssences.length} flowers
           </Text>
         </View>
@@ -207,28 +212,28 @@ export default function FlowersScreen() {
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ScrollView style={styles.modalScroll}>
+        <View style={overlayStyles.modalOverlay}>
+          <View style={overlayStyles.modalContent}>
+            <ScrollView style={overlayStyles.modalScroll}>
               {selectedFlower && (
                 <>
-                  <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>
+                  <View style={overlayStyles.modalHeader}>
+                    <Text style={overlayStyles.modalTitle}>
                       {selectedFlower.commonName}
                     </Text>
-                    <Text style={styles.modalLatin}>
+                    <Text style={overlayStyles.modalSubtitle}>
                       {selectedFlower.latinName}
                     </Text>
                     <TouchableOpacity
-                      style={styles.closeButton}
+                      style={overlayStyles.closeButton}
                       onPress={() => setModalVisible(false)}
                     >
-                      <Text style={styles.closeButtonText}>✕</Text>
+                      <Text style={overlayStyles.closeButtonText}>✕</Text>
                     </TouchableOpacity>
                   </View>
 
                   {/* Flower Image */}
-                  <View style={styles.imageContainer}>
+                  <View style={overlayStyles.imageContainer}>
                     <Image
                       source={
                         selectedFlower.imageName &&
@@ -236,44 +241,48 @@ export default function FlowersScreen() {
                           ? flowerImages[selectedFlower.imageName]
                           : flowerImages["default.jpg"]
                       }
-                      style={styles.flowerImage}
+                      style={overlayStyles.flowerImage}
                       resizeMode="contain"
                     />
                   </View>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Description</Text>
-                    <Text style={styles.sectionText}>
+                  <View style={overlayStyles.section}>
+                    <Text style={overlayStyles.sectionTitle}>Description</Text>
+                    <Text style={overlayStyles.sectionText}>
                       {selectedFlower.description}
                     </Text>
                   </View>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Positive Qualities</Text>
+                  <View style={overlayStyles.section}>
+                    <Text style={overlayStyles.sectionTitle}>
+                      Positive Qualities
+                    </Text>
                     {selectedFlower.positiveQualities.map((quality, index) => (
-                      <Text key={index} style={styles.listItem}>
+                      <Text key={index} style={overlayStyles.listItem}>
                         • {quality}
                       </Text>
                     ))}
                   </View>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>
+                  <View style={overlayStyles.section}>
+                    <Text style={overlayStyles.sectionTitle}>
                       Patterns of Imbalance
                     </Text>
                     {selectedFlower.patternsOfImbalance.map(
                       (pattern, index) => (
-                        <Text key={index} style={styles.listItem}>
+                        <Text key={index} style={overlayStyles.listItem}>
                           • {pattern}
                         </Text>
                       )
                     )}
                   </View>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Cross References</Text>
+                  <View style={overlayStyles.section}>
+                    <Text style={overlayStyles.sectionTitle}>
+                      Cross References
+                    </Text>
                     {selectedFlower.crossReferences.map((reference, index) => (
-                      <Text key={index} style={styles.listItem}>
+                      <Text key={index} style={overlayStyles.listItem}>
                         • {reference}
                       </Text>
                     ))}
@@ -293,208 +302,5 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0e2515",
     padding: 20,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#0e2515",
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#b19cd9",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "#e6e6fa",
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#b19cd9",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  randomButton: {
-    backgroundColor: "#4a2c7a",
-    borderRadius: 3,
-    padding: 15,
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  randomButtonText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#e6e6fa",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  searchInput: {
-    backgroundColor: "#1a3d1a",
-    borderRadius: 3,
-    padding: 15,
-    color: "#e6e6fa",
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#2d5016",
-    flex: 1,
-    marginRight: 10,
-  },
-  searchButton: {
-    backgroundColor: "#1a3d1a",
-    borderRadius: 3,
-    padding: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 50,
-  },
-  searchButtonText: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  clearButton: {
-    backgroundColor: "#4a4a4a",
-    borderRadius: 3,
-    padding: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 50,
-    marginLeft: 5,
-  },
-  clearButtonText: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  listFooter: {
-    padding: 20,
-    alignItems: "center",
-  },
-  footerText: {
-    color: "#b19cd9",
-    fontSize: 14,
-  },
-  flowerItem: {
-    backgroundColor: "#3d6b1a",
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#4a7c1f",
-  },
-  flowerEmoji: {
-    fontSize: 40,
-    marginRight: 15,
-  },
-  flowerInfo: {
-    flex: 1,
-  },
-  flowerName: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 5,
-    color: "#e6e6fa",
-  },
-  flowerLatin: {
-    fontSize: 14,
-    color: "#b19cd9",
-    fontStyle: "italic",
-  },
-  arrow: {
-    fontSize: 24,
-    color: "#8a8a8a",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "#1a1a2e",
-    borderRadius: 20,
-    width: "90%",
-    maxHeight: "80%",
-    borderWidth: 2,
-    borderColor: "#4a2c7a",
-  },
-  modalScroll: {
-    maxHeight: "100%",
-  },
-  modalHeader: {
-    padding: 20,
-    position: "relative",
-  },
-  imageContainer: {
-    width: "100%",
-    marginBottom: 0,
-  },
-  flowerImage: {
-    width: "100%",
-    height: undefined,
-    aspectRatio: 1, // This will maintain square aspect ratio, adjust as needed
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#e6e6fa",
-    marginBottom: 5,
-  },
-  modalLatin: {
-    fontSize: 16,
-    color: "#b19cd9",
-    fontStyle: "italic",
-  },
-  closeButton: {
-    position: "absolute",
-    top: 15,
-    right: 15,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#4a2c7a",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  closeButtonText: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  section: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2d1b69",
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#b19cd9",
-    marginBottom: 10,
-  },
-  sectionText: {
-    fontSize: 16,
-    color: "#e6e6fa",
-    lineHeight: 24,
-  },
-  listItem: {
-    fontSize: 16,
-    color: "#e6e6fa",
-    marginBottom: 5,
-    lineHeight: 22,
   },
 });

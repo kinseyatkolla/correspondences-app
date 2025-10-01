@@ -12,6 +12,8 @@ import {
   Alert,
 } from "react-native";
 import { apiService, BookOfShadowsEntry, LibraryItem } from "../services/api";
+import { overlayStyles } from "../styles/overlayStyles";
+import { sharedUI } from "../styles/sharedUI";
 
 export default function BookScreen() {
   const [bosEntries, setBosEntries] = useState<BookOfShadowsEntry[]>([]);
@@ -151,18 +153,18 @@ export default function BookScreen() {
     description: string
   ) => (
     <TouchableOpacity
-      style={styles.categoryCard}
+      style={sharedUI.categoryCard}
       onPress={() => handleCategoryPress(category)}
     >
-      <Text style={styles.categoryEmoji}>{emoji}</Text>
-      <Text style={styles.categoryTitle}>{title}</Text>
-      <Text style={styles.categoryDescription}>{description}</Text>
+      <Text style={sharedUI.categoryEmoji}>{emoji}</Text>
+      <Text style={sharedUI.categoryTitle}>{title}</Text>
+      <Text style={sharedUI.categoryDescription}>{description}</Text>
     </TouchableOpacity>
   );
 
   const renderCategories = () => (
-    <View style={styles.categoriesContainer}>
-      <View style={styles.categoryRow}>
+    <View style={sharedUI.categoriesContainer}>
+      <View style={sharedUI.categoryRow}>
         {renderCategorySection(
           "Numbers",
           "Numbers",
@@ -176,7 +178,7 @@ export default function BookScreen() {
           "Color symbolism & meaning"
         )}
       </View>
-      <View style={styles.categoryRow}>
+      <View style={sharedUI.categoryRow}>
         {renderCategorySection(
           "Plants",
           "Plants",
@@ -190,7 +192,7 @@ export default function BookScreen() {
           "Planetary correspondences"
         )}
       </View>
-      <View style={styles.categoryRow}>
+      <View style={sharedUI.categoryRow}>
         {renderCategorySection(
           "Metals",
           "Metals",
@@ -204,7 +206,7 @@ export default function BookScreen() {
           "Astrological aspects"
         )}
       </View>
-      <View style={styles.categoryRow}>
+      <View style={sharedUI.categoryRow}>
         {renderCategorySection(
           "Zodiac Signs",
           "Zodiac Signs",
@@ -213,7 +215,7 @@ export default function BookScreen() {
         )}
         {renderCategorySection("Houses", "Houses", "🏠", "Astrological houses")}
       </View>
-      <View style={styles.categoryRow}>
+      <View style={sharedUI.categoryRow}>
         {renderCategorySection("Decans", "Decans", "🔗", "Zodiac decans")}
         {renderCategorySection(
           "Moon Phases",
@@ -222,7 +224,7 @@ export default function BookScreen() {
           "Lunar cycles"
         )}
       </View>
-      <View style={styles.categoryRow}>
+      <View style={sharedUI.categoryRow}>
         {renderCategorySection(
           "Seasons",
           "Seasons",
@@ -236,7 +238,7 @@ export default function BookScreen() {
           "Days of the week"
         )}
       </View>
-      <View style={styles.categoryRow}>
+      <View style={sharedUI.categoryRow}>
         {renderCategorySection(
           "Wheel of the Year",
           "Wheel of the Year",
@@ -245,15 +247,15 @@ export default function BookScreen() {
         )}
         {renderCategorySection("Tarot", "Tarot", "🃏", "Tarot correspondences")}
       </View>
-      <View style={styles.categoryRow}>
+      <View style={sharedUI.categoryRow}>
         {renderCategorySection("Symbols", "Symbols", "🔯", "Mystical symbols")}
       </View>
     </View>
   );
 
   const renderFooter = () => (
-    <View style={styles.listFooter}>
-      <Text style={styles.footerText}>
+    <View style={sharedUI.listFooter}>
+      <Text style={sharedUI.footerText}>
         Showing {filteredEntries.length} entries
       </Text>
     </View>
@@ -281,8 +283,8 @@ export default function BookScreen() {
     if (items.length === 0) return null;
 
     return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={overlayStyles.section}>
+        <Text style={overlayStyles.sectionTitle}>{title}</Text>
         {items.map((item) => (
           <View key={item._id} style={styles.resourceItem}>
             <Text style={styles.resourceTitle}>
@@ -306,46 +308,46 @@ export default function BookScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[sharedUI.loadingContainer, { backgroundColor: "#111" }]}>
         <ActivityIndicator size="large" color="#b19cd9" />
-        <Text style={styles.loadingText}>Loading Book of Shadows...</Text>
+        <Text style={sharedUI.loadingText}>Loading Book of Shadows...</Text>
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>📖 Book of Shadows</Text>
-      <Text style={styles.subtitle}>
+      <Text style={sharedUI.pageTitle}>📖 Book of Shadows</Text>
+      <Text style={sharedUI.pageSubtitle}>
         Discover the correspondences of the occult
       </Text>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity
-          style={styles.smallButton}
+          style={sharedUI.smallButton}
           onPress={() => handleButtonPress("Glossary")}
         >
-          <Text style={styles.smallButtonText}>📚 Glossary</Text>
+          <Text style={sharedUI.smallButtonText}>📚 Glossary</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.smallButton}
+          style={sharedUI.smallButton}
           onPress={() => handleButtonPress("Bibliography")}
         >
-          <Text style={styles.smallButtonText}>📖 Bibliography</Text>
+          <Text style={sharedUI.smallButtonText}>📖 Bibliography</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.smallButton}
+          style={sharedUI.smallButton}
           onPress={() => handleButtonPress("Library")}
         >
-          <Text style={styles.smallButtonText}>🏛️ Library</Text>
+          <Text style={sharedUI.smallButtonText}>🏛️ Library</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.searchContainer}>
+      <View style={sharedUI.searchContainer}>
         <TextInput
-          style={styles.searchInput}
+          style={sharedUI.searchInput}
           placeholder="Search correspondences..."
           placeholderTextColor="#8a8a8a"
           value={searchQuery}
@@ -353,50 +355,50 @@ export default function BookScreen() {
           returnKeyType="search"
           onSubmitEditing={handleSearch}
         />
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.searchButtonText}>🔍</Text>
+        <TouchableOpacity style={sharedUI.searchButton} onPress={handleSearch}>
+          <Text style={sharedUI.searchButtonText}>🔍</Text>
         </TouchableOpacity>
         {searchQuery.length > 0 && (
           <TouchableOpacity
-            style={styles.clearButton}
+            style={sharedUI.clearButton}
             onPress={handleClearSearch}
           >
-            <Text style={styles.clearButtonText}>✕</Text>
+            <Text style={sharedUI.clearButtonText}>✕</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {selectedCategory && (
         <TouchableOpacity
-          style={styles.backButton}
+          style={sharedUI.backButton}
           onPress={handleBackToCategories}
         >
-          <Text style={styles.backButtonText}>← Back to Categories</Text>
+          <Text style={sharedUI.backButtonText}>← Back to Categories</Text>
         </TouchableOpacity>
       )}
 
       {filteredEntries.length > 0 && (
-        <View style={styles.resultsContainer}>
+        <View style={sharedUI.resultsContainer}>
           {filteredEntries.map((entry) => (
             <TouchableOpacity
               key={entry._id}
-              style={styles.entryItem}
+              style={sharedUI.listItem}
               onPress={() => handleEntryPress(entry)}
             >
-              <View style={styles.entryContent}>
-                <Text style={styles.entryName}>{entry.name}</Text>
-                <Text style={styles.entryCategory}>{entry.category}</Text>
+              <View style={sharedUI.listItemContent}>
+                <Text style={sharedUI.listItemTitle}>{entry.name}</Text>
+                <Text style={sharedUI.listItemSubtitle}>{entry.category}</Text>
                 {entry.keywords && entry.keywords.length > 0 && (
-                  <Text style={styles.entryKeywords}>
+                  <Text style={sharedUI.listItemKeywords}>
                     {entry.keywords.slice(0, 3).join(" • ")}
                   </Text>
                 )}
               </View>
-              <Text style={styles.arrow}>›</Text>
+              <Text style={sharedUI.arrow}>›</Text>
             </TouchableOpacity>
           ))}
-          <View style={styles.listFooter}>
-            <Text style={styles.footerText}>
+          <View style={sharedUI.listFooter}>
+            <Text style={sharedUI.footerText}>
               Showing {filteredEntries.length} entries
             </Text>
           </View>
@@ -411,37 +413,37 @@ export default function BookScreen() {
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ScrollView style={styles.modalScroll}>
+        <View style={overlayStyles.modalOverlay}>
+          <View style={overlayStyles.modalContent}>
+            <ScrollView style={overlayStyles.modalScroll}>
               {selectedEntry && (
                 <>
-                  <View style={styles.overlayModalHeader}>
-                    <Text style={styles.overlayModalTitle}>
+                  <View style={overlayStyles.modalHeader}>
+                    <Text style={overlayStyles.modalTitle}>
                       {selectedEntry.name}
                     </Text>
-                    <Text style={styles.modalCategory}>
+                    <Text style={overlayStyles.modalSubtitle}>
                       {selectedEntry.category}
                     </Text>
                     <TouchableOpacity
-                      style={styles.closeButton}
+                      style={overlayStyles.closeButton}
                       onPress={() => setModalVisible(false)}
                     >
-                      <Text style={styles.closeButtonText}>✕</Text>
+                      <Text style={overlayStyles.closeButtonText}>✕</Text>
                     </TouchableOpacity>
                   </View>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Description</Text>
-                    <Text style={styles.sectionText}>
+                  <View style={overlayStyles.section}>
+                    <Text style={overlayStyles.sectionTitle}>Description</Text>
+                    <Text style={overlayStyles.sectionText}>
                       {selectedEntry.description}
                     </Text>
                   </View>
 
                   {selectedEntry.content && (
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Details</Text>
-                      <Text style={styles.sectionText}>
+                    <View style={overlayStyles.section}>
+                      <Text style={overlayStyles.sectionTitle}>Details</Text>
+                      <Text style={overlayStyles.sectionText}>
                         {selectedEntry.content}
                       </Text>
                     </View>
@@ -449,10 +451,10 @@ export default function BookScreen() {
 
                   {selectedEntry.keywords &&
                     selectedEntry.keywords.length > 0 && (
-                      <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Keywords</Text>
+                      <View style={overlayStyles.section}>
+                        <Text style={overlayStyles.sectionTitle}>Keywords</Text>
                         {selectedEntry.keywords.map((keyword, index) => (
-                          <Text key={index} style={styles.listItem}>
+                          <Text key={index} style={overlayStyles.listItem}>
                             • {keyword}
                           </Text>
                         ))}
@@ -461,11 +463,13 @@ export default function BookScreen() {
 
                   {selectedEntry.correspondences &&
                     selectedEntry.correspondences.length > 0 && (
-                      <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Correspondences</Text>
+                      <View style={overlayStyles.section}>
+                        <Text style={overlayStyles.sectionTitle}>
+                          Correspondences
+                        </Text>
                         {selectedEntry.correspondences.map(
                           (correspondence, index) => (
-                            <Text key={index} style={styles.listItem}>
+                            <Text key={index} style={overlayStyles.listItem}>
                               • {correspondence}
                             </Text>
                           )
@@ -475,10 +479,12 @@ export default function BookScreen() {
 
                   {selectedEntry.references &&
                     selectedEntry.references.length > 0 && (
-                      <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Related Entries</Text>
+                      <View style={overlayStyles.section}>
+                        <Text style={overlayStyles.sectionTitle}>
+                          Related Entries
+                        </Text>
                         {selectedEntry.references.map((reference, index) => (
-                          <Text key={index} style={styles.listItem}>
+                          <Text key={index} style={overlayStyles.listItem}>
                             • {reference.name}
                           </Text>
                         ))}
@@ -500,19 +506,19 @@ export default function BookScreen() {
         <View style={styles.fullScreenModal}>
           <View style={styles.modalHeader}>
             <TouchableOpacity
-              style={styles.backButton}
+              style={sharedUI.backButton}
               onPress={() => setLibraryModalVisible(false)}
             >
-              <Text style={styles.backButtonText}>← Back</Text>
+              <Text style={sharedUI.backButtonText}>← Back</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>📚 Library</Text>
             <View style={styles.placeholder} />
           </View>
           <ScrollView style={styles.fullScreenModalScroll}>
             {libraryLoading ? (
-              <View style={styles.loadingContainer}>
+              <View style={sharedUI.loadingContainer}>
                 <ActivityIndicator size="large" color="#b19cd9" />
-                <Text style={styles.loadingText}>Loading Library...</Text>
+                <Text style={sharedUI.loadingText}>Loading Library...</Text>
               </View>
             ) : (
               <>
@@ -537,17 +543,17 @@ export default function BookScreen() {
         <View style={styles.fullScreenModal}>
           <View style={styles.modalHeader}>
             <TouchableOpacity
-              style={styles.backButton}
+              style={sharedUI.backButton}
               onPress={() => setBibliographyModalVisible(false)}
             >
-              <Text style={styles.backButtonText}>← Back</Text>
+              <Text style={sharedUI.backButtonText}>← Back</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>📖 Bibliography</Text>
             <View style={styles.placeholder} />
           </View>
           <ScrollView style={styles.fullScreenModalScroll}>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Primary Sources</Text>
+            <View style={overlayStyles.section}>
+              <Text style={overlayStyles.sectionTitle}>Primary Sources</Text>
               <Text style={styles.bibliographyItem}>
                 Cunningham, Scott.{" "}
                 <Text style={styles.bibliographyTitle}>
@@ -571,8 +577,8 @@ export default function BookScreen() {
               </Text>
             </View>
 
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Historical Sources</Text>
+            <View style={overlayStyles.section}>
+              <Text style={overlayStyles.sectionTitle}>Historical Sources</Text>
               <Text style={styles.bibliographyItem}>
                 Agrippa, Heinrich Cornelius.{" "}
                 <Text style={styles.bibliographyTitle}>
@@ -586,8 +592,8 @@ export default function BookScreen() {
               </Text>
             </View>
 
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Modern References</Text>
+            <View style={overlayStyles.section}>
+              <Text style={overlayStyles.sectionTitle}>Modern References</Text>
               <Text style={styles.bibliographyItem}>
                 Conway, D.J.{" "}
                 <Text style={styles.bibliographyTitle}>
@@ -614,16 +620,16 @@ export default function BookScreen() {
         <View style={styles.fullScreenModal}>
           <View style={styles.modalHeader}>
             <TouchableOpacity
-              style={styles.backButton}
+              style={sharedUI.backButton}
               onPress={() => setGlossaryModalVisible(false)}
             >
-              <Text style={styles.backButtonText}>← Back</Text>
+              <Text style={sharedUI.backButtonText}>← Back</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>📚 Glossary</Text>
             <View style={styles.placeholder} />
           </View>
           <ScrollView style={styles.fullScreenModalScroll}>
-            <View style={styles.section}>
+            <View style={overlayStyles.section}>
               <Text style={styles.glossaryTerm}>Correspondence</Text>
               <Text style={styles.glossaryDefinition}>
                 A symbolic relationship between different elements in magic,
@@ -632,7 +638,7 @@ export default function BookScreen() {
               </Text>
             </View>
 
-            <View style={styles.section}>
+            <View style={overlayStyles.section}>
               <Text style={styles.glossaryTerm}>Elemental</Text>
               <Text style={styles.glossaryDefinition}>
                 Relating to the four classical elements: Earth, Air, Fire, and
@@ -641,7 +647,7 @@ export default function BookScreen() {
               </Text>
             </View>
 
-            <View style={styles.section}>
+            <View style={overlayStyles.section}>
               <Text style={styles.glossaryTerm}>Ephemeris</Text>
               <Text style={styles.glossaryDefinition}>
                 A table showing the positions of celestial bodies at specific
@@ -649,7 +655,7 @@ export default function BookScreen() {
               </Text>
             </View>
 
-            <View style={styles.section}>
+            <View style={overlayStyles.section}>
               <Text style={styles.glossaryTerm}>Natal Chart</Text>
               <Text style={styles.glossaryDefinition}>
                 An astrological chart showing the positions of planets at the
@@ -657,7 +663,7 @@ export default function BookScreen() {
               </Text>
             </View>
 
-            <View style={styles.section}>
+            <View style={overlayStyles.section}>
               <Text style={styles.glossaryTerm}>Physis</Text>
               <Text style={styles.glossaryDefinition}>
                 A custom font containing astrological and magical symbols used
@@ -677,222 +683,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#111",
     padding: 20,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#111",
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#b19cd9",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "#e6e6fa",
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#b19cd9",
-    marginBottom: 20,
-    textAlign: "center",
-  },
   buttonContainer: {
     flexDirection: "row",
     marginBottom: 20,
     justifyContent: "space-between",
-  },
-  smallButton: {
-    backgroundColor: "#222",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 3,
-    borderWidth: 1,
-    borderColor: "#333",
-    flex: 1,
-    marginHorizontal: 4,
-    alignItems: "center",
-  },
-  smallButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#e6e6fa",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  searchInput: {
-    backgroundColor: "#222",
-    borderRadius: 3,
-    padding: 15,
-    color: "#e6e6fa",
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#333",
-    flex: 1,
-    marginRight: 10,
-  },
-  searchButton: {
-    backgroundColor: "#222",
-    borderRadius: 3,
-    padding: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 50,
-  },
-  searchButtonText: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  clearButton: {
-    backgroundColor: "#333",
-    borderRadius: 3,
-    padding: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 50,
-    marginLeft: 5,
-  },
-  clearButtonText: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  backButton: {
-    backgroundColor: "#333",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 15,
-    alignItems: "center",
-  },
-  backButtonText: {
-    color: "#e6e6fa",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  resultsContainer: {
-    marginTop: 20,
-  },
-  entryItem: {
-    backgroundColor: "#222",
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  entryContent: {
-    flex: 1,
-  },
-  entryName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#e6e6fa",
-    marginBottom: 4,
-  },
-  entryCategory: {
-    fontSize: 14,
-    color: "#b19cd9",
-    marginBottom: 4,
-  },
-  entryKeywords: {
-    fontSize: 12,
-    color: "#8a8a8a",
-    fontStyle: "italic",
-  },
-  arrow: {
-    fontSize: 24,
-    color: "#8a8a8a",
-  },
-  listFooter: {
-    padding: 20,
-    alignItems: "center",
-  },
-  footerText: {
-    color: "#b19cd9",
-    fontSize: 14,
-  },
-  categoriesContainer: {
-    paddingTop: 10,
-    paddingBottom: 20,
-  },
-  categoryRow: {
-    flexDirection: "row",
-    marginBottom: 15,
-    justifyContent: "space-between",
-  },
-  categoryCard: {
-    backgroundColor: "#222",
-    borderRadius: 3,
-    padding: 20,
-    alignItems: "center",
-    flex: 1,
-    marginHorizontal: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  categoryEmoji: {
-    fontSize: 40,
-    marginBottom: 10,
-  },
-  categoryTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#e6e6fa",
-    marginBottom: 5,
-    textAlign: "center",
-  },
-  categoryDescription: {
-    fontSize: 12,
-    color: "#b19cd9",
-    textAlign: "center",
-    lineHeight: 16,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "#1a1a2e",
-    borderRadius: 20,
-    width: "90%",
-    maxHeight: "80%",
-    borderWidth: 2,
-    borderColor: "#4a2c7a",
-  },
-  modalScroll: {
-    maxHeight: "100%",
-  },
-  overlayModalHeader: {
-    padding: 20,
-    position: "relative",
-  },
-  overlayModalTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#e6e6fa",
-    marginBottom: 5,
   },
   modalHeader: {
     flexDirection: "row",
@@ -911,50 +705,6 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 60, // Same width as back button to center the title
-  },
-  modalCategory: {
-    fontSize: 16,
-    color: "#b19cd9",
-    fontStyle: "italic",
-    marginBottom: 5,
-  },
-  closeButton: {
-    position: "absolute",
-    top: 15,
-    right: 15,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#4a2c7a",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  closeButtonText: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  section: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2d1b69",
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#b19cd9",
-    marginBottom: 10,
-  },
-  sectionText: {
-    fontSize: 16,
-    color: "#e6e6fa",
-    lineHeight: 24,
-  },
-  listItem: {
-    fontSize: 16,
-    color: "#e6e6fa",
-    marginBottom: 5,
-    lineHeight: 22,
   },
   // Full-screen modal styles
   fullScreenModal: {

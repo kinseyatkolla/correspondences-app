@@ -13,6 +13,8 @@ import {
   Image,
 } from "react-native";
 import { apiService, TarotCard } from "../services/api";
+import { overlayStyles } from "../styles/overlayStyles";
+import { sharedUI } from "../styles/sharedUI";
 
 export default function TarotScreen() {
   const [tarotCards, setTarotCards] = useState<TarotCard[]>([]);
@@ -232,18 +234,18 @@ export default function TarotScreen() {
     description: string
   ) => (
     <TouchableOpacity
-      style={styles.categoryCard}
+      style={sharedUI.categoryCard}
       onPress={() => handleCategoryPress(suit)}
     >
-      <Text style={styles.categoryEmoji}>{emoji}</Text>
-      <Text style={styles.categoryTitle}>{title}</Text>
-      <Text style={styles.categoryDescription}>{description}</Text>
+      <Text style={sharedUI.categoryEmoji}>{emoji}</Text>
+      <Text style={sharedUI.categoryTitle}>{title}</Text>
+      <Text style={sharedUI.categoryDescription}>{description}</Text>
     </TouchableOpacity>
   );
 
   const renderCategories = () => (
-    <View style={styles.categoriesContainer}>
-      <View style={styles.categoryRow}>
+    <View style={sharedUI.categoriesContainer}>
+      <View style={sharedUI.categoryRow}>
         {renderCategorySection(
           "Major Arcana",
           "Major Arcana",
@@ -251,7 +253,7 @@ export default function TarotScreen() {
           "22 cards of the major journey"
         )}
       </View>
-      <View style={styles.categoryRow}>
+      <View style={sharedUI.categoryRow}>
         {renderCategorySection(
           "Cups",
           "Cups",
@@ -265,7 +267,7 @@ export default function TarotScreen() {
           "Material & practical"
         )}
       </View>
-      <View style={styles.categoryRow}>
+      <View style={sharedUI.categoryRow}>
         {renderCategorySection(
           "Swords",
           "Swords",
@@ -278,8 +280,8 @@ export default function TarotScreen() {
   );
 
   const renderFooter = () => (
-    <View style={styles.listFooter}>
-      <Text style={styles.footerText}>
+    <View style={sharedUI.listFooter}>
+      <Text style={sharedUI.footerText}>
         Showing {filteredCards.length} cards
       </Text>
     </View>
@@ -287,25 +289,30 @@ export default function TarotScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[sharedUI.loadingContainer, { backgroundColor: "#0f1a3f" }]}>
         <ActivityIndicator size="large" color="#b19cd9" />
-        <Text style={styles.loadingText}>Loading tarot cards...</Text>
+        <Text style={sharedUI.loadingText}>Loading tarot cards...</Text>
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>🔮 Tarot</Text>
-      <Text style={styles.subtitle}>Discover the wisdom of the tarot</Text>
+      <Text style={sharedUI.pageTitle}>🔮 Tarot</Text>
+      <Text style={sharedUI.pageSubtitle}>
+        Discover the wisdom of the tarot
+      </Text>
 
-      <TouchableOpacity style={styles.randomButton} onPress={handleRandomDraw}>
-        <Text style={styles.randomButtonText}>🎲 Draw a Random Card</Text>
+      <TouchableOpacity
+        style={sharedUI.primaryButton}
+        onPress={handleRandomDraw}
+      >
+        <Text style={sharedUI.primaryButtonText}>🎲 Draw a Random Card</Text>
       </TouchableOpacity>
 
-      <View style={styles.searchContainer}>
+      <View style={sharedUI.searchContainer}>
         <TextInput
-          style={styles.searchInput}
+          style={sharedUI.searchInput}
           placeholder="Search tarot cards..."
           placeholderTextColor="#8a8a8a"
           value={searchQuery}
@@ -313,50 +320,50 @@ export default function TarotScreen() {
           returnKeyType="search"
           onSubmitEditing={handleSearch}
         />
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.searchButtonText}>🔍</Text>
+        <TouchableOpacity style={sharedUI.searchButton} onPress={handleSearch}>
+          <Text style={sharedUI.searchButtonText}>🔍</Text>
         </TouchableOpacity>
         {searchQuery.length > 0 && (
           <TouchableOpacity
-            style={styles.clearButton}
+            style={sharedUI.clearButton}
             onPress={handleClearSearch}
           >
-            <Text style={styles.clearButtonText}>✕</Text>
+            <Text style={sharedUI.clearButtonText}>✕</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {selectedCategory && (
         <TouchableOpacity
-          style={styles.backButton}
+          style={sharedUI.backButton}
           onPress={handleBackToCategories}
         >
-          <Text style={styles.backButtonText}>← Back to Categories</Text>
+          <Text style={sharedUI.backButtonText}>← Back to Categories</Text>
         </TouchableOpacity>
       )}
 
       {filteredCards.length > 0 && (
-        <View style={styles.resultsContainer}>
+        <View style={sharedUI.resultsContainer}>
           {filteredCards.map((card) => (
             <TouchableOpacity
               key={card._id}
-              style={styles.cardItem}
+              style={sharedUI.listItem}
               onPress={() => handleCardPress(card)}
             >
-              <View style={styles.cardContent}>
-                <Text style={styles.cardName}>{card.name}</Text>
-                <Text style={styles.cardSuit}>{card.suit}</Text>
+              <View style={sharedUI.listItemContent}>
+                <Text style={sharedUI.listItemTitle}>{card.name}</Text>
+                <Text style={sharedUI.listItemSubtitle}>{card.suit}</Text>
                 {card.keywords && card.keywords.length > 0 && (
-                  <Text style={styles.cardKeywords}>
+                  <Text style={sharedUI.listItemKeywords}>
                     {card.keywords.slice(0, 3).join(" • ")}
                   </Text>
                 )}
               </View>
-              <Text style={styles.arrow}>›</Text>
+              <Text style={sharedUI.arrow}>›</Text>
             </TouchableOpacity>
           ))}
-          <View style={styles.listFooter}>
-            <Text style={styles.footerText}>
+          <View style={sharedUI.listFooter}>
+            <Text style={sharedUI.footerText}>
               Showing {filteredCards.length} cards
             </Text>
           </View>
@@ -371,75 +378,81 @@ export default function TarotScreen() {
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ScrollView style={styles.modalScroll}>
+        <View style={overlayStyles.modalOverlay}>
+          <View style={overlayStyles.modalContent}>
+            <ScrollView style={overlayStyles.modalScroll}>
               {selectedCard && (
                 <>
-                  <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>{selectedCard.name}</Text>
-                    <Text style={styles.modalSuit}>
+                  <View style={overlayStyles.modalHeader}>
+                    <Text style={overlayStyles.modalTitle}>
+                      {selectedCard.name}
+                    </Text>
+                    <Text style={overlayStyles.modalSubtitle}>
                       {selectedCard.suit}{" "}
                       {selectedCard.number > 0 && `#${selectedCard.number}`}
                     </Text>
                     {selectedCard.element && (
-                      <Text style={styles.modalElement}>
+                      <Text style={overlayStyles.modalElement}>
                         {getElementEmoji(selectedCard.element)}{" "}
                         {selectedCard.element}
                       </Text>
                     )}
                     <TouchableOpacity
-                      style={styles.closeButton}
+                      style={overlayStyles.closeButton}
                       onPress={() => setModalVisible(false)}
                     >
-                      <Text style={styles.closeButtonText}>✕</Text>
+                      <Text style={overlayStyles.closeButtonText}>✕</Text>
                     </TouchableOpacity>
                   </View>
 
-                  <View style={styles.cardImageContainer}>
+                  <View style={overlayStyles.cardImageContainer}>
                     <Image
                       source={getCardImagePath(selectedCard)}
-                      style={styles.cardImage}
+                      style={overlayStyles.cardImage}
                       resizeMode="contain"
                     />
                   </View>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Description</Text>
-                    <Text style={styles.sectionText}>
+                  <View style={overlayStyles.section}>
+                    <Text style={overlayStyles.sectionTitle}>Description</Text>
+                    <Text style={overlayStyles.sectionText}>
                       {selectedCard.description}
                     </Text>
                   </View>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Keywords</Text>
+                  <View style={overlayStyles.section}>
+                    <Text style={overlayStyles.sectionTitle}>Keywords</Text>
                     {selectedCard.keywords.map((keyword, index) => (
-                      <Text key={index} style={styles.listItem}>
+                      <Text key={index} style={overlayStyles.listItem}>
                         • {keyword}
                       </Text>
                     ))}
                   </View>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Upright Meaning</Text>
-                    <Text style={styles.sectionText}>
+                  <View style={overlayStyles.section}>
+                    <Text style={overlayStyles.sectionTitle}>
+                      Upright Meaning
+                    </Text>
+                    <Text style={overlayStyles.sectionText}>
                       {selectedCard.uprightMeaning}
                     </Text>
                   </View>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Reversed Meaning</Text>
-                    <Text style={styles.sectionText}>
+                  <View style={overlayStyles.section}>
+                    <Text style={overlayStyles.sectionTitle}>
+                      Reversed Meaning
+                    </Text>
+                    <Text style={overlayStyles.sectionText}>
                       {selectedCard.reversedMeaning}
                     </Text>
                   </View>
 
                   {selectedCard.astrologicalCorrespondence && (
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>
+                    <View style={overlayStyles.section}>
+                      <Text style={overlayStyles.sectionTitle}>
                         Astrological Correspondence
                       </Text>
-                      <Text style={styles.sectionText}>
+                      <Text style={overlayStyles.sectionText}>
                         {selectedCard.astrologicalCorrespondence}
                       </Text>
                     </View>
@@ -459,286 +472,5 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0f1a3f",
     padding: 20,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#0f1a3f",
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#b19cd9",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "#e6e6fa",
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#b19cd9",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  randomButton: {
-    backgroundColor: "#4a2c7a",
-    borderRadius: 3,
-    padding: 15,
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  randomButtonText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#e6e6fa",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  searchInput: {
-    backgroundColor: "#1a2a5f",
-    borderRadius: 3,
-    padding: 15,
-    color: "#e6e6fa",
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#2d3f7f",
-    flex: 1,
-    marginRight: 10,
-  },
-  searchButton: {
-    backgroundColor: "#1a2a5f",
-    borderRadius: 3,
-    padding: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 50,
-  },
-  searchButtonText: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  clearButton: {
-    backgroundColor: "#4a4a4a",
-    borderRadius: 3,
-    padding: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 50,
-    marginLeft: 5,
-  },
-  clearButtonText: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  list: {
-    flex: 1,
-  },
-  listFooter: {
-    padding: 20,
-    alignItems: "center",
-  },
-  footerText: {
-    color: "#b19cd9",
-    fontSize: 14,
-  },
-  categoriesContainer: {
-    paddingTop: 10,
-    paddingBottom: 20,
-  },
-  categoryRow: {
-    flexDirection: "row",
-    marginBottom: 15,
-    justifyContent: "space-between",
-  },
-  categoryCard: {
-    backgroundColor: "#183c9f",
-    borderRadius: 3,
-    padding: 20,
-    alignItems: "center",
-    flex: 1,
-    marginHorizontal: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: "#2d3f7f",
-  },
-  categoryEmoji: {
-    fontSize: 40,
-    marginBottom: 10,
-  },
-  categoryTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#e6e6fa",
-    marginBottom: 5,
-    textAlign: "center",
-  },
-  categoryDescription: {
-    fontSize: 12,
-    color: "#b19cd9",
-    textAlign: "center",
-    lineHeight: 16,
-  },
-  backButton: {
-    backgroundColor: "#4a2c7a",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 15,
-    alignItems: "center",
-  },
-  backButtonText: {
-    color: "#e6e6fa",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  resultsContainer: {
-    marginTop: 20,
-  },
-  cardItem: {
-    backgroundColor: "#183c9f",
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#2d3f7f",
-  },
-  cardContent: {
-    flex: 1,
-  },
-  cardName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#e6e6fa",
-    marginBottom: 4,
-  },
-  cardSuit: {
-    fontSize: 14,
-    color: "#b19cd9",
-    marginBottom: 4,
-  },
-  cardKeywords: {
-    fontSize: 12,
-    color: "#8a8a8a",
-    fontStyle: "italic",
-  },
-  cardEmoji: {
-    fontSize: 40,
-    marginRight: 15,
-  },
-  cardInfo: {
-    flex: 1,
-  },
-  cardElement: {
-    fontSize: 12,
-    color: "#8a8a8a",
-    marginTop: 2,
-  },
-  arrow: {
-    fontSize: 24,
-    color: "#8a8a8a",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "#1a1a2e",
-    borderRadius: 20,
-    width: "90%",
-    maxHeight: "80%",
-    borderWidth: 2,
-    borderColor: "#4a2c7a",
-  },
-  modalScroll: {
-    maxHeight: "100%",
-  },
-  modalHeader: {
-    padding: 20,
-    position: "relative",
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#e6e6fa",
-    marginBottom: 5,
-  },
-  modalSuit: {
-    fontSize: 16,
-    color: "#b19cd9",
-    fontStyle: "italic",
-    marginBottom: 5,
-  },
-  modalElement: {
-    fontSize: 14,
-    color: "#8a8a8a",
-  },
-  closeButton: {
-    position: "absolute",
-    top: 15,
-    right: 15,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#4a2c7a",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  closeButtonText: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  section: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2d1b69",
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#b19cd9",
-    marginBottom: 10,
-  },
-  sectionText: {
-    fontSize: 16,
-    color: "#e6e6fa",
-    lineHeight: 24,
-  },
-  listItem: {
-    fontSize: 16,
-    color: "#e6e6fa",
-    marginBottom: 5,
-    lineHeight: 22,
-  },
-  cardImageContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-    paddingHorizontal: 20,
-  },
-  cardImage: {
-    width: 200,
-    height: 300,
-    borderRadius: 8,
   },
 });

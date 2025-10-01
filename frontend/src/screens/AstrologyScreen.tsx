@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { apiService, BirthData, BirthChart } from "../services/api";
 import { useAstrology } from "../contexts/AstrologyContext";
+import { sharedUI } from "../styles/sharedUI";
 import {
   getPlanetKeysFromNames,
   getPlanetSymbols,
@@ -113,9 +114,11 @@ export default function AstrologyScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered]}>
+      <View style={[styles.container, sharedUI.centered]}>
         <ActivityIndicator size="large" color="#e6e6fa" />
-        <Text style={styles.loadingText}>Calculating your birth chart...</Text>
+        <Text style={sharedUI.loadingText}>
+          Calculating your birth chart...
+        </Text>
       </View>
     );
   }
@@ -367,10 +370,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f0f23",
     padding: 20,
   },
-  centered: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
   header: {
     alignItems: "center",
     marginBottom: 10,
@@ -394,11 +393,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 24,
     marginBottom: 20,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: "#e6e6fa",
-    marginTop: 20,
   },
   resetButton: {
     backgroundColor: "#1a1a2e",
