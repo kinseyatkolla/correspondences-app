@@ -147,24 +147,6 @@ export const getZodiacNames = (): { [key: string]: string } => {
 };
 
 /**
- * Get all number symbols
- */
-export const getNumberSymbols = (): { [key: string]: string } => {
-  return {
-    "0": "0",
-    "1": "1",
-    "2": "2",
-    "3": "3",
-    "4": "4",
-    "5": "5",
-    "6": "6",
-    "7": "7",
-    "8": "8",
-    "9": "9",
-  };
-};
-
-/**
  * Get all element symbols
  */
 export const getElementSymbols = (): { [key: string]: string } => {
