@@ -11,6 +11,10 @@ import {
 } from "react-native";
 import { apiService, BirthData, BirthChart } from "../services/api";
 import { useAstrology } from "../contexts/AstrologyContext";
+import {
+  getPlanetKeysFromNames,
+  getPlanetSymbols,
+} from "../utils/physisSymbolMap";
 
 export default function AstrologyScreen() {
   const { currentChart, loading: ephemerisLoading } = useAstrology();
@@ -93,7 +97,7 @@ export default function AstrologyScreen() {
     return (
       <View key={name} style={styles.planetRow}>
         <Text style={styles.planetName}>
-          {planet.symbol} {name.charAt(0).toUpperCase() + name.slice(1)}
+          {planet.symbol} {name} {name.charAt(0).toUpperCase() + name.slice(1)}
         </Text>
         <Text style={styles.planetPosition}>
           {planet.degreeFormatted} {planet.zodiacSignName}
@@ -187,17 +191,28 @@ export default function AstrologyScreen() {
           <Text style={styles.sectionTitle}>
             🌙 Current Planetary Positions
           </Text>
-          {Object.entries(currentChart.planets).map(([planetName, planet]) => (
-            <View key={planetName} style={styles.planetRow}>
-              <Text style={styles.planetName}>
-                {planet.symbol}{" "}
-                {planetName.charAt(0).toUpperCase() + planetName.slice(1)}
-              </Text>
-              <Text style={styles.planetPosition}>
-                {planet.degreeFormatted} {planet.zodiacSignName}
-              </Text>
-            </View>
-          ))}
+          {Object.entries(currentChart.planets).map(([planetName, planet]) => {
+            const planetKeys = getPlanetKeysFromNames();
+            const planetSymbols = getPlanetSymbols();
+            const capitalizedName =
+              planetName.charAt(0).toUpperCase() + planetName.slice(1);
+            const physisKey = planetKeys[capitalizedName];
+            const physisSymbol = physisKey
+              ? planetSymbols[physisKey]
+              : planet.symbol;
+
+            return (
+              <View key={planetName} style={styles.planetRow}>
+                <Text style={styles.planetName}>
+                  <Text style={styles.physisText}>{physisSymbol}</Text>{" "}
+                  {capitalizedName}
+                </Text>
+                <Text style={styles.planetPosition}>
+                  {planet.degreeFormatted} {planet.zodiacSignName}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       )}
 
@@ -452,6 +467,10 @@ const styles = StyleSheet.create({
     color: "#e6e6fa",
     fontWeight: "600",
     flex: 1,
+  },
+  physisText: {
+    fontFamily: "Physis",
+    fontSize: 18,
   },
   planetPosition: {
     fontSize: 14,
