@@ -10,16 +10,28 @@ import * as Font from "expo-font";
 import DynamicSvgImporter from "../components/DynamicSvgImporter";
 import { useAstrology } from "../contexts/AstrologyContext";
 import {
-  getSymbolFromFont,
   getPlanetSymbols,
   getZodiacSymbols,
   getPlanetNames,
   getZodiacNames,
+  getZodiacKeysFromNames,
   getElementSymbols,
   getElementNames,
   getChartPointSymbols,
   getChartPointNames,
+  getPlanetKeysFromNames,
 } from "../utils/physisSymbolMap";
+
+// Helper function to get zodiac symbol from zodiac sign name
+const getZodiacSymbolFromName = (zodiacName: string): string => {
+  const zodiacKeysFromNames = getZodiacKeysFromNames();
+  const zodiacSymbols = getZodiacSymbols();
+
+  // Get the key for the given zodiac name
+  const zodiacKey = zodiacKeysFromNames[zodiacName];
+
+  return zodiacKey ? zodiacSymbols[zodiacKey] : zodiacName;
+};
 
 // Tithi calculation function
 const calculateTithi = (
@@ -296,6 +308,12 @@ export default function MoonScreen() {
   // Get font family based on loading state
   const getFontFamily = () => (fontLoaded ? "Physis" : "System");
 
+  // Get physis symbol style with fallback
+  const getPhysisSymbolStyle = () => [
+    styles.physisSymbol,
+    { fontFamily: getFontFamily() },
+  ];
+
   // Calculate tithi if we have both Moon and Sun positions
   let currentTithi = null;
   let tithiInfo: TithiData | null = null;
@@ -362,11 +380,20 @@ export default function MoonScreen() {
             {currentChart.planets.sun && !currentChart.planets.sun.error && (
               <View style={styles.positionRow}>
                 <Text style={styles.planetPosition}>
-                  {currentChart.planets.sun.symbol} Sun
+                  <Text style={getPhysisSymbolStyle()}>
+                    {getPlanetKeysFromNames()["Sun"]}
+                  </Text>{" "}
+                  Sun
                 </Text>
                 <Text style={styles.planetPosition}>
                   {currentChart.planets.sun.degreeFormatted}{" "}
-                  {currentChart.planets.sun.zodiacSignName}
+                  <Text style={getPhysisSymbolStyle()}>
+                    {
+                      getZodiacKeysFromNames()[
+                        currentChart.planets.sun.zodiacSignName
+                      ]
+                    }
+                  </Text>
                 </Text>
               </View>
             )}
@@ -374,11 +401,20 @@ export default function MoonScreen() {
             {currentChart.planets.moon && !currentChart.planets.moon.error && (
               <View style={styles.positionRow}>
                 <Text style={styles.planetPosition}>
-                  {currentChart.planets.moon.symbol} Moon
+                  <Text style={getPhysisSymbolStyle()}>
+                    {getPlanetKeysFromNames()["Moon"]}
+                  </Text>{" "}
+                  Moon
                 </Text>
                 <Text style={styles.planetPosition}>
                   {currentChart.planets.moon.degreeFormatted}{" "}
-                  {currentChart.planets.moon.zodiacSignName}
+                  <Text style={getPhysisSymbolStyle()}>
+                    {
+                      getZodiacKeysFromNames()[
+                        currentChart.planets.moon.zodiacSignName
+                      ]
+                    }
+                  </Text>
                 </Text>
               </View>
             )}
@@ -627,5 +663,9 @@ const styles = StyleSheet.create({
     color: "#b8b8b8",
     flex: 1,
     marginLeft: 8,
+  },
+  physisSymbol: {
+    fontFamily: "Physis",
+    fontSize: 36,
   },
 });

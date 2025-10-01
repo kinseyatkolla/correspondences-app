@@ -7,68 +7,59 @@ export interface SymbolMap {
   [key: string]: string;
 }
 
-export const physisSymbolMap: SymbolMap = {
-  // Planets
-  r: "☉", // Sun
-  q: "☽", // Moon
-  w: "☿", // Mercury
-  e: "♀", // Venus
-  t: "♂", // Mars
-  y: "♃", // Jupiter
-  u: "♄", // Saturn
-  i: "♅", // Uranus
-  o: "♆", // Neptune
-  p: "♇", // Pluto
+// export const physisSymbolMap: SymbolMap = {
+//   // Planets
+//   r: "☉", // Sun
+//   q: "☽", // Moon
+//   w: "☿", // Mercury
+//   e: "♀", // Venus
+//   t: "♂", // Mars
+//   y: "♃", // Jupiter
+//   u: "♄", // Saturn
+//   i: "♅", // Uranus
+//   o: "♆", // Neptune
+//   p: "♇", // Pluto
 
-  // Zodiac Signs
-  a: "♈", // Aries
-  s: "♉", // Taurus
-  d: "♊", // Gemini
-  f: "♋", // Cancer
-  g: "♌", // Leo
-  h: "♍", // Virgo
-  j: "♎", // Libra
-  k: "♏", // Scorpio
-  l: "♐", // Sagittarius
-  ";": "♑", // Capricorn
-  "'": "♒", // Aquarius
-  z: "♓", // Pisces
+//   // Zodiac Signs
+//   a: "♈", // Aries
+//   s: "♉", // Taurus
+//   d: "♊", // Gemini
+//   f: "♋", // Cancer
+//   g: "♌", // Leo
+//   h: "♍", // Virgo
+//   j: "♎", // Libra
+//   k: "♏", // Scorpio
+//   l: "♐", // Sagittarius
+//   ";": "♑", // Capricorn
+//   "'": "♒", // Aquarius
+//   z: "♓", // Pisces
 
-  // Numbers for aspects
-  "0": "0",
-  "1": "1",
-  "2": "2",
-  "3": "3",
-  "4": "4",
-  "5": "5",
-  "6": "6",
-  "7": "7",
-  "8": "8",
-  "9": "9",
+//   // Numbers for aspects
+//   "0": "0",
+//   "1": "1",
+//   "2": "2",
+//   "3": "3",
+//   "4": "4",
+//   "5": "5",
+//   "6": "6",
+//   "7": "7",
+//   "8": "8",
+//   "9": "9",
 
-  // Elements
-  "=": "🌊", // Water element
-  "+": "🌍", // Earth element
-  "`": "🔥", // Fire element
-  "~": "💨", // Air element
+//   // Elements
+//   "=": "🌊", // Water element
+//   "+": "🌍", // Earth element
+//   "`": "🔥", // Fire element
+//   "~": "💨", // Air element
 
-  // Chart Points
-  "#": "DC", // Descendant
-  "@": "MC", // Midheaven
-  "!": "AC", // Ascendant
-  $: "IC", // Imum Coeli
-  "[": "SN", // South Node
-  "]": "NN", // North Node
-};
-
-/**
- * Get the astrological symbol for a given keyboard character
- * @param char - The keyboard character
- * @returns The corresponding astrological symbol or the original character if not found
- */
-export const getSymbolFromFont = (char: string): string => {
-  return physisSymbolMap[char] || char;
-};
+//   // Chart Points
+//   "#": "DC", // Descendant
+//   "@": "MC", // Midheaven
+//   "!": "AC", // Ascendant
+//   $: "IC", // Imum Coeli
+//   "[": "SN", // South Node
+//   "]": "NN", // North Node
+// };
 
 /**
  * Get all planet symbols with names
@@ -103,6 +94,24 @@ export const getPlanetNames = (): { [key: string]: string } => {
     i: "Uranus",
     o: "Neptune",
     p: "Pluto",
+  };
+};
+
+/**
+ * Get planet keys from names (reverse mapping)
+ */
+export const getPlanetKeysFromNames = (): { [key: string]: string } => {
+  return {
+    Sun: "r",
+    Moon: "q",
+    Mercury: "w",
+    Venus: "e",
+    Mars: "t",
+    Jupiter: "y",
+    Saturn: "u",
+    Uranus: "i",
+    Neptune: "o",
+    Pluto: "p",
   };
 };
 
@@ -143,6 +152,26 @@ export const getZodiacNames = (): { [key: string]: string } => {
     ";": "Capricorn",
     "'": "Aquarius",
     z: "Pisces",
+  };
+};
+
+/**
+ * Get zodiac keys from names (reverse mapping)
+ */
+export const getZodiacKeysFromNames = (): { [key: string]: string } => {
+  return {
+    Aries: "a",
+    Taurus: "s",
+    Gemini: "d",
+    Cancer: "f",
+    Leo: "g",
+    Virgo: "h",
+    Libra: "j",
+    Scorpio: "k",
+    Sagittarius: "l",
+    Capricorn: ";",
+    Aquarius: "'",
+    Pisces: "z",
   };
 };
 
