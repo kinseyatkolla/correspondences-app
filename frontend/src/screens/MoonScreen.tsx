@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,8 +6,20 @@ import {
   ActivityIndicator,
   ScrollView,
 } from "react-native";
+import * as Font from "expo-font";
 import DynamicSvgImporter from "../components/DynamicSvgImporter";
 import { useAstrology } from "../contexts/AstrologyContext";
+import {
+  getSymbolFromFont,
+  getPlanetSymbols,
+  getZodiacSymbols,
+  getPlanetNames,
+  getZodiacNames,
+  getElementSymbols,
+  getElementNames,
+  getChartPointSymbols,
+  getChartPointNames,
+} from "../utils/physisSymbolMap";
 
 // Tithi calculation function
 const calculateTithi = (
@@ -263,6 +275,26 @@ const getPaksha = (tithi: number): string => {
 
 export default function MoonScreen() {
   const { currentChart, loading, error } = useAstrology();
+  const [fontLoaded, setFontLoaded] = useState(false);
+
+  // Load the PhysisV2 font
+  useEffect(() => {
+    const loadFont = async () => {
+      try {
+        await Font.loadAsync({
+          Physis: require("../../assets/fonts/Physis.ttf"),
+        });
+        setFontLoaded(true);
+      } catch (error) {
+        console.log("Font loading error:", error);
+        setFontLoaded(true); // Continue even if font fails to load
+      }
+    };
+    loadFont();
+  }, []);
+
+  // Get font family based on loading state
+  const getFontFamily = () => (fontLoaded ? "Physis" : "System");
 
   // Calculate tithi if we have both Moon and Sun positions
   let currentTithi = null;
@@ -286,11 +318,13 @@ export default function MoonScreen() {
   // Use calculated tithi for moon phase, fallback to 15 if no tithi available
   const currentMoonPhase = currentTithi || 15;
 
-  if (loading) {
+  if (loading || !fontLoaded) {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color="#e6e6fa" />
-        <Text style={styles.loadingText}>Loading current positions...</Text>
+        <Text style={styles.loadingText}>
+          {loading ? "Loading current positions..." : "Loading fonts..."}
+        </Text>
       </View>
     );
   }
@@ -321,15 +355,106 @@ export default function MoonScreen() {
           <Text style={styles.title}>
             {currentChart.planets.moon?.zodiacSignName || "Moon"} Moon
           </Text>
-          <Text style={styles.description}>Waxing Gibbous</Text>
+          {/* PhysisV2 Font Symbol Map Test */}
+          <View style={styles.symbolMapContainer}>
+            <Text style={styles.symbolMapTitle}>PhysisV2 Font Symbol Map</Text>
+            <ScrollView
+              style={styles.symbolMapScroll}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Planets */}
+              <View style={styles.symbolMapGroup}>
+                <Text style={styles.symbolMapGroupTitle}>Planets</Text>
+                {Object.entries(getPlanetSymbols()).map(([char, symbol]) => (
+                  <View key={char} style={styles.symbolMapRow}>
+                    <Text
+                      style={[styles.fontTest, { fontFamily: getFontFamily() }]}
+                    >
+                      {char}
+                    </Text>
+                    <Text style={styles.symbolMapLabel}>
+                      {getPlanetNames()[char]} ({symbol})
+                    </Text>
+                  </View>
+                ))}
+              </View>
 
+              {/* Zodiac Signs */}
+              <View style={styles.symbolMapGroup}>
+                <Text style={styles.symbolMapGroupTitle}>Zodiac Signs</Text>
+                {Object.entries(getZodiacSymbols()).map(([char, symbol]) => (
+                  <View key={char} style={styles.symbolMapRow}>
+                    <Text
+                      style={[styles.fontTest, { fontFamily: getFontFamily() }]}
+                    >
+                      {char}
+                    </Text>
+                    <Text style={styles.symbolMapLabel}>
+                      {getZodiacNames()[char]} ({symbol})
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Numbers for Aspects */}
+              <View style={styles.symbolMapGroup}>
+                <Text style={styles.symbolMapGroupTitle}>
+                  Numbers (Aspects)
+                </Text>
+                <Text
+                  style={[styles.fontTest, { fontFamily: getFontFamily() }]}
+                >
+                  0 1 2 3 4 5 6 7 8 9
+                </Text>
+              </View>
+
+              {/* Elements */}
+              <View style={styles.symbolMapGroup}>
+                <Text style={styles.symbolMapGroupTitle}>Elements</Text>
+                {Object.entries(getElementSymbols()).map(([char, symbol]) => (
+                  <View key={char} style={styles.symbolMapRow}>
+                    <Text
+                      style={[styles.fontTest, { fontFamily: getFontFamily() }]}
+                    >
+                      {char}
+                    </Text>
+                    <Text style={styles.symbolMapLabel}>
+                      {getElementNames()[char]} ({symbol})
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Chart Points */}
+              <View style={styles.symbolMapGroup}>
+                <Text style={styles.symbolMapGroupTitle}>Chart Points</Text>
+                {Object.entries(getChartPointSymbols()).map(
+                  ([char, symbol]) => (
+                    <View key={char} style={styles.symbolMapRow}>
+                      <Text
+                        style={[
+                          styles.fontTest,
+                          { fontFamily: getFontFamily() },
+                        ]}
+                      >
+                        {char}
+                      </Text>
+                      <Text style={styles.symbolMapLabel}>
+                        {getChartPointNames()[char]} ({symbol})
+                      </Text>
+                    </View>
+                  )
+                )}
+              </View>
+            </ScrollView>
+          </View>
           {/* Current Planetary Positions */}
           <View style={styles.positionsContainer}>
             <Text style={styles.positionsTitle}>Current Positions</Text>
 
             {currentChart.planets.sun && !currentChart.planets.sun.error && (
               <View style={styles.positionRow}>
-                <Text style={styles.planetName}>
+                <Text style={styles.planetPosition}>
                   {currentChart.planets.sun.symbol} Sun
                 </Text>
                 <Text style={styles.planetPosition}>
@@ -341,7 +466,7 @@ export default function MoonScreen() {
 
             {currentChart.planets.moon && !currentChart.planets.moon.error && (
               <View style={styles.positionRow}>
-                <Text style={styles.planetName}>
+                <Text style={styles.planetPosition}>
                   {currentChart.planets.moon.symbol} Moon
                 </Text>
                 <Text style={styles.planetPosition}>
@@ -408,9 +533,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
     alignItems: "center",
     padding: 20,
+    paddingBottom: 40,
   },
   centered: {
     justifyContent: "center",
@@ -441,7 +566,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f0f23",
     padding: 20,
     borderRadius: 12,
-    marginVertical: 20,
+    marginVertical: 10,
     borderWidth: 1,
     borderColor: "#2a2a3e",
     minWidth: 300,
@@ -483,7 +608,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f0f23",
     padding: 20,
     borderRadius: 12,
-    marginVertical: 20,
+    marginVertical: 10,
     borderWidth: 1,
     borderColor: "#2a2a3e",
     minWidth: 300,
@@ -545,5 +670,55 @@ const styles = StyleSheet.create({
     color: "#e6e6fa",
     textAlign: "right",
     flex: 1,
+  },
+  fontTest: {
+    fontSize: 24,
+    color: "#b8b8b8",
+    minWidth: 30,
+    textAlign: "center",
+  },
+  symbolMapContainer: {
+    backgroundColor: "#0f0f23",
+    padding: 15,
+    borderRadius: 12,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: "#2a2a3e",
+    minWidth: 300,
+    maxHeight: 300,
+  },
+  symbolMapScroll: {
+    maxHeight: 250,
+  },
+  symbolMapTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#ffd700",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  symbolMapGroup: {
+    marginBottom: 15,
+  },
+  symbolMapGroupTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#e6e6fa",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  symbolMapRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2a2a3e",
+  },
+  symbolMapLabel: {
+    fontSize: 12,
+    color: "#b8b8b8",
+    flex: 1,
+    marginLeft: 8,
   },
 });
