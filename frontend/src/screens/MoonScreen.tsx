@@ -65,9 +65,47 @@ interface TithiData {
   division: string;
   deity: string;
 }
+// Complete moon phase data
+interface moon30 {
+  number: number;
+  name: string;
+  color: string;
+}
+
+const moonTithiMap: moon30[] = [
+  { number: 1, name: "S1", color: "Blue" },
+  { number: 2, name: "S2", color: "Green" },
+  { number: 3, name: "S3", color: "Green" },
+  { number: 4, name: "S4", color: "Red" },
+  { number: 5, name: "S5", color: "Green" },
+  { number: 6, name: "S6", color: "Green" },
+  { number: 7, name: "S7", color: "Green" },
+  { number: 8, name: "S8", color: "Red" },
+  { number: 9, name: "S9", color: "Red" },
+  { number: 10, name: "S10", color: "Green" },
+  { number: 11, name: "S11", color: "Blue" },
+  { number: 12, name: "S12", color: "Blue" },
+  { number: 13, name: "S13", color: "Green" },
+  { number: 14, name: "S14", color: "Red" },
+  { number: 15, name: "S15", color: "Blue" },
+  { number: 16, name: "K1", color: "Blue" },
+  { number: 17, name: "K2", color: "Green" },
+  { number: 18, name: "K3", color: "Green" },
+  { number: 19, name: "K4", color: "Red" },
+  { number: 20, name: "K5", color: "Green" },
+  { number: 21, name: "K6", color: "Blue" },
+  { number: 22, name: "K7", color: "Blue" },
+  { number: 23, name: "K8", color: "Red" },
+  { number: 24, name: "K9", color: "Red" },
+  { number: 25, name: "K10", color: "Blue" },
+  { number: 26, name: "K11", color: "Red" },
+  { number: 27, name: "K12", color: "Red" },
+  { number: 28, name: "K13", color: "Red" },
+  { number: 29, name: "K14", color: "Red" },
+  { number: 30, name: "K15", color: "Red" },
+];
 
 const tithiData: TithiData[] = [
-  // s1 is 1
   {
     numbers: [1, 16],
     name: "Pratipada",
@@ -371,7 +409,17 @@ export default function MoonScreen() {
       {currentChart ? (
         <>
           <Text style={styles.title}>
-            {currentChart.planets.moon?.zodiacSignName || "Moon"} Moon
+            {(() => {
+              const moonTithi = moonTithiMap.find(
+                (tithi) => tithi.number === currentTithi
+              );
+              return moonTithi ? (
+                <Text style={{ color: moonTithi.color.toLowerCase() }}>
+                  {moonTithi.name}{" "}
+                </Text>
+              ) : null;
+            })()}
+            {currentChart.planets.moon?.zodiacSignName} Moon
           </Text>
           {/* Current Planetary Positions */}
           <View style={styles.positionsContainer}>
