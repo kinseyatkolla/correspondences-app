@@ -28,5 +28,5 @@ async function seedExtendedFlowerEssences() {
   }
 }
 
-// Run the seeding function
-seedExtendedFlowerEssences();
+// Export the function instead of running it
+module.exports = seedExtendedFlowerEssences;

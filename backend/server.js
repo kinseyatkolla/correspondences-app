@@ -17,13 +17,14 @@ const PORT = config.PORT;
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection (optional for now)
+// MongoDB connection
 mongoose
   .connect(config.MONGODB_URI)
-  .then(() => console.log("Connected to MongoDB"))
+  .then(() => console.log("✅ Connected to MongoDB Atlas"))
   .catch((err) => {
-    console.log("MongoDB not available, running without database");
-    console.log("To enable database features, install and start MongoDB");
+    console.error("❌ MongoDB connection failed:", err.message);
+    console.error("Please check your MONGODB_URI and network access settings");
+    process.exit(1);
   });
 
 // Basic route

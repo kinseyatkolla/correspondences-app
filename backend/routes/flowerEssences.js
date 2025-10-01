@@ -1,10 +1,20 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const router = express.Router();
 const FlowerEssence = require("../models/FlowerEssence");
 
 // GET /api/flower-essences - Get all flower essences
 router.get("/", async (req, res) => {
   try {
+    // Check if database is connected
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: "Database not connected",
+        error: "MongoDB connection not established"
+      });
+    }
+
     const { search, limit = 50, page = 1 } = req.query;
 
     let query = {};

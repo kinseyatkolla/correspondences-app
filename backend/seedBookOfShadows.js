@@ -304,5 +304,5 @@ async function seedBookOfShadows() {
   }
 }
 
-// Run the seed function
-seedBookOfShadows();
+// Export the function instead of running it
+module.exports = seedBookOfShadows;

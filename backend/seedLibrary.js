@@ -208,5 +208,5 @@ async function seedLibrary() {
   }
 }
 
-// Run the seed function
-seedLibrary();
+// Export the function instead of running it
+module.exports = seedLibrary;

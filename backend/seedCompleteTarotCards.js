@@ -42,5 +42,5 @@ async function seedCompleteTarotCards() {
   }
 }
 
-// Run the seeding function
-seedCompleteTarotCards();
+// Export the function instead of running it
+module.exports = seedCompleteTarotCards;
