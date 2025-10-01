@@ -20,9 +20,9 @@ router.get("/", async (req, res) => {
       };
     }
 
-    // Filter by type
+    // Filter by mediaType
     if (type) {
-      query.type = type;
+      query.mediaType = type;
     }
 
     const libraryItems = await Library.find(query)

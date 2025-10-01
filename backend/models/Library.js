@@ -34,9 +34,9 @@ const librarySchema = new mongoose.Schema(
     year: {
       type: Number,
     },
-    type: {
+    mediaType: {
       type: String,
-      enum: ["book", "article", "website", "video", "other"],
+      enum: ["book", "videolink", "audiolink", "article", "website", "other"],
       default: "book",
     },
   },
@@ -52,6 +52,6 @@ librarySchema.index({
   author: "text",
 });
 librarySchema.index({ name: 1 });
-librarySchema.index({ type: 1 });
+librarySchema.index({ mediaType: 1 });
 
 module.exports = mongoose.model("Library", librarySchema);

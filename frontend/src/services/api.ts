@@ -126,7 +126,13 @@ export interface LibraryItem {
   author?: string;
   publisher?: string;
   year?: number;
-  type: "book" | "article" | "website" | "video" | "other";
+  mediaType:
+    | "book"
+    | "videolink"
+    | "audiolink"
+    | "article"
+    | "website"
+    | "other";
   createdAt: string;
   updatedAt: string;
 }

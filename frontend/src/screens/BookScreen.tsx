@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { apiService, BookOfShadowsEntry } from "../services/api";
+import { apiService, BookOfShadowsEntry, LibraryItem } from "../services/api";
 
 export default function BookScreen() {
   const [bosEntries, setBosEntries] = useState<BookOfShadowsEntry[]>([]);
@@ -29,6 +29,8 @@ export default function BookScreen() {
   const [bibliographyModalVisible, setBibliographyModalVisible] =
     useState(false);
   const [glossaryModalVisible, setGlossaryModalVisible] = useState(false);
+  const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
+  const [libraryLoading, setLibraryLoading] = useState(false);
 
   useEffect(() => {
     loadBosEntries();
@@ -56,9 +58,24 @@ export default function BookScreen() {
     }
   }, []);
 
+  const loadLibraryItems = useCallback(async () => {
+    try {
+      setLibraryLoading(true);
+      const response = await apiService.getLibraryItems();
+      console.log(`Loaded ${response.data.length} library items`);
+      setLibraryItems(response.data);
+    } catch (error) {
+      console.error("Error loading library items:", error);
+      Alert.alert("Error", "Failed to load library items");
+    } finally {
+      setLibraryLoading(false);
+    }
+  }, []);
+
   const handleButtonPress = (section: string) => {
     switch (section) {
       case "Library":
+        loadLibraryItems();
         setLibraryModalVisible(true);
         break;
       case "Bibliography":
@@ -183,7 +200,7 @@ export default function BookScreen() {
         {renderCategorySection(
           "Aspects",
           "Aspects",
-          "🔗",
+          "📐",
           "Astrological aspects"
         )}
       </View>
@@ -197,7 +214,7 @@ export default function BookScreen() {
         {renderCategorySection("Houses", "Houses", "🏠", "Astrological houses")}
       </View>
       <View style={styles.categoryRow}>
-        {renderCategorySection("Decans", "Decans", "📐", "Zodiac decans")}
+        {renderCategorySection("Decans", "Decans", "🔗", "Zodiac decans")}
         {renderCategorySection(
           "Moon Phases",
           "Moon Phases",
@@ -221,10 +238,10 @@ export default function BookScreen() {
       </View>
       <View style={styles.categoryRow}>
         {renderCategorySection(
-          "Equinox & Solstices",
-          "Equinox & Solstices",
+          "Wheel of the Year",
+          "Wheel of the Year",
           "☀️",
-          "Solar events"
+          "Solar events like Equinox & Solstices"
         )}
         {renderCategorySection("Tarot", "Tarot", "🃏", "Tarot correspondences")}
       </View>
@@ -241,6 +258,51 @@ export default function BookScreen() {
       </Text>
     </View>
   );
+
+  const getMediaTypeIcon = (mediaType: string) => {
+    switch (mediaType) {
+      case "book":
+        return "📖";
+      case "videolink":
+        return "🎥";
+      case "audiolink":
+        return "🎧";
+      case "article":
+        return "📄";
+      case "website":
+        return "🌐";
+      default:
+        return "📚";
+    }
+  };
+
+  const renderLibraryItems = (mediaType: string, title: string) => {
+    const items = libraryItems.filter((item) => item.mediaType === mediaType);
+    if (items.length === 0) return null;
+
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {items.map((item) => (
+          <View key={item._id} style={styles.resourceItem}>
+            <Text style={styles.resourceTitle}>
+              {getMediaTypeIcon(item.mediaType)} {item.name}
+            </Text>
+            <Text style={styles.resourceAuthor}>
+              {item.author && `by ${item.author}`}
+              {item.year && ` (${item.year})`}
+            </Text>
+            {item.description && (
+              <Text style={styles.resourceDescription}>{item.description}</Text>
+            )}
+            {item.sourceUrl && (
+              <Text style={styles.resourceUrl}>🔗 {item.sourceUrl}</Text>
+            )}
+          </View>
+        ))}
+      </View>
+    );
+  };
 
   if (loading) {
     return (
@@ -354,8 +416,10 @@ export default function BookScreen() {
             <ScrollView style={styles.modalScroll}>
               {selectedEntry && (
                 <>
-                  <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>{selectedEntry.name}</Text>
+                  <View style={styles.overlayModalHeader}>
+                    <Text style={styles.overlayModalTitle}>
+                      {selectedEntry.name}
+                    </Text>
                     <Text style={styles.modalCategory}>
                       {selectedEntry.category}
                     </Text>
@@ -444,80 +508,22 @@ export default function BookScreen() {
             <Text style={styles.modalTitle}>📚 Library</Text>
             <View style={styles.placeholder} />
           </View>
-          <ScrollView style={styles.modalScroll}>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>📖 Books</Text>
-              <View style={styles.resourceItem}>
-                <Text style={styles.resourceTitle}>
-                  The Complete Book of Correspondences
-                </Text>
-                <Text style={styles.resourceAuthor}>by Sandra Kynes</Text>
-                <Text style={styles.resourceDescription}>
-                  A comprehensive guide to magical correspondences including
-                  herbs, crystals, colors, and more.
-                </Text>
+          <ScrollView style={styles.fullScreenModalScroll}>
+            {libraryLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#b19cd9" />
+                <Text style={styles.loadingText}>Loading Library...</Text>
               </View>
-              <View style={styles.resourceItem}>
-                <Text style={styles.resourceTitle}>
-                  Cunningham's Encyclopedia of Magical Herbs
-                </Text>
-                <Text style={styles.resourceAuthor}>by Scott Cunningham</Text>
-                <Text style={styles.resourceDescription}>
-                  The definitive guide to magical herbs and their properties,
-                  correspondences, and uses.
-                </Text>
-              </View>
-              <View style={styles.resourceItem}>
-                <Text style={styles.resourceTitle}>The Magical Household</Text>
-                <Text style={styles.resourceAuthor}>
-                  by Scott Cunningham & David Harrington
-                </Text>
-                <Text style={styles.resourceDescription}>
-                  Practical magic for everyday life, including household
-                  correspondences and rituals.
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>🎥 Video Lessons</Text>
-              <View style={styles.resourceItem}>
-                <Text style={styles.resourceTitle}>
-                  Introduction to Magical Correspondences
-                </Text>
-                <Text style={styles.resourceAuthor}>
-                  YouTube Channel: The Witch's Library
-                </Text>
-                <Text style={styles.resourceDescription}>
-                  A beginner-friendly series covering the basics of magical
-                  correspondences and how to use them.
-                </Text>
-              </View>
-              <View style={styles.resourceItem}>
-                <Text style={styles.resourceTitle}>
-                  Herbal Magic Masterclass
-                </Text>
-                <Text style={styles.resourceAuthor}>
-                  YouTube Channel: Green Witch Academy
-                </Text>
-                <Text style={styles.resourceDescription}>
-                  Deep dive into herbal correspondences, harvesting, and magical
-                  applications.
-                </Text>
-              </View>
-              <View style={styles.resourceItem}>
-                <Text style={styles.resourceTitle}>
-                  Crystal Correspondences & Grids
-                </Text>
-                <Text style={styles.resourceAuthor}>
-                  YouTube Channel: Crystal Wisdom
-                </Text>
-                <Text style={styles.resourceDescription}>
-                  Learn about crystal correspondences and how to create
-                  effective crystal grids.
-                </Text>
-              </View>
-            </View>
+            ) : (
+              <>
+                {renderLibraryItems("book", "📖 Books")}
+                {renderLibraryItems("videolink", "🎥 Video Lessons")}
+                {renderLibraryItems("audiolink", "🎧 Audio Resources")}
+                {renderLibraryItems("article", "📄 Articles")}
+                {renderLibraryItems("website", "🌐 Websites")}
+                {renderLibraryItems("other", "📚 Other Resources")}
+              </>
+            )}
           </ScrollView>
         </View>
       </Modal>
@@ -539,7 +545,7 @@ export default function BookScreen() {
             <Text style={styles.modalTitle}>📖 Bibliography</Text>
             <View style={styles.placeholder} />
           </View>
-          <ScrollView style={styles.modalScroll}>
+          <ScrollView style={styles.fullScreenModalScroll}>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Primary Sources</Text>
               <Text style={styles.bibliographyItem}>
@@ -616,7 +622,7 @@ export default function BookScreen() {
             <Text style={styles.modalTitle}>📚 Glossary</Text>
             <View style={styles.placeholder} />
           </View>
-          <ScrollView style={styles.modalScroll}>
+          <ScrollView style={styles.fullScreenModalScroll}>
             <View style={styles.section}>
               <Text style={styles.glossaryTerm}>Correspondence</Text>
               <Text style={styles.glossaryDefinition}>
@@ -878,6 +884,16 @@ const styles = StyleSheet.create({
   modalScroll: {
     maxHeight: "100%",
   },
+  overlayModalHeader: {
+    padding: 20,
+    position: "relative",
+  },
+  overlayModalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#e6e6fa",
+    marginBottom: 5,
+  },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -945,7 +961,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#111",
   },
-  modalScroll: {
+  fullScreenModalScroll: {
     flex: 1,
     padding: 20,
   },
@@ -974,6 +990,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#8a8a8a",
     lineHeight: 20,
+  },
+  resourceUrl: {
+    fontSize: 12,
+    color: "#b19cd9",
+    marginTop: 5,
+    fontStyle: "italic",
   },
   // Bibliography styles
   bibliographyItem: {
