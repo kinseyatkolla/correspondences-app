@@ -7,6 +7,8 @@ const config = require("./config");
 const flowerEssenceRoutes = require("./routes/flowerEssences");
 const tarotCardRoutes = require("./routes/tarotCards");
 const astrologyRoutes = require("./routes/astrology");
+const libraryRoutes = require("./routes/library");
+const bookOfShadowsRoutes = require("./routes/bookOfShadows");
 
 const app = express();
 const PORT = config.PORT;
@@ -88,6 +90,12 @@ app.use("/api/tarot-cards", tarotCardRoutes);
 
 // Use astrology routes
 app.use("/api/astrology", astrologyRoutes);
+
+// Use library routes
+app.use("/api/library", libraryRoutes);
+
+// Use book of shadows routes
+app.use("/api/book-of-shadows", bookOfShadowsRoutes);
 
 // Start server
 app.listen(PORT, () => {

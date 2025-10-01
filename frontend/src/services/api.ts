@@ -116,6 +116,52 @@ export interface EphemerisInfo {
   planetConstants: Record<string, number>;
 }
 
+export interface LibraryItem {
+  _id: string;
+  name: string;
+  sourceUrl?: string;
+  image?: string;
+  isbn?: string;
+  description?: string;
+  author?: string;
+  publisher?: string;
+  year?: number;
+  type: "book" | "article" | "website" | "video" | "other";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BookOfShadowsEntry {
+  _id: string;
+  name: string;
+  description: string;
+  image?: string;
+  category:
+    | "numbers"
+    | "colors"
+    | "plants"
+    | "planets"
+    | "metals"
+    | "aspects"
+    | "zodiac-signs"
+    | "houses"
+    | "decans"
+    | "moon-phases"
+    | "seasons"
+    | "weekdays"
+    | "equinox-solstices"
+    | "tarot"
+    | "symbols"
+    | "other";
+  references: BookOfShadowsEntry[];
+  content?: string;
+  keywords?: string[];
+  correspondences?: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // API service class
 class ApiService {
   private baseUrl: string;
@@ -417,6 +463,163 @@ class ApiService {
     return this.fetchData("/astrology/current-chart", {
       method: "POST",
       body: JSON.stringify({ latitude, longitude }),
+    });
+  }
+
+  // Library API
+  async getLibraryItems(
+    search?: string,
+    type?: string,
+    page = 1,
+    limit = 50
+  ): Promise<{
+    success: boolean;
+    data: LibraryItem[];
+    pagination: {
+      current: number;
+      pages: number;
+      total: number;
+    };
+  }> {
+    const params = new URLSearchParams();
+    if (search) params.append("search", search);
+    if (type) params.append("type", type);
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+
+    return this.fetchData(`/library?${params.toString()}`);
+  }
+
+  async getLibraryItem(id: string): Promise<{
+    success: boolean;
+    data: LibraryItem;
+  }> {
+    return this.fetchData(`/library/${id}`);
+  }
+
+  async getRandomLibraryItem(): Promise<{
+    success: boolean;
+    data: LibraryItem;
+  }> {
+    return this.fetchData("/library/random");
+  }
+
+  async createLibraryItem(
+    libraryItem: Omit<LibraryItem, "_id" | "createdAt" | "updatedAt">
+  ): Promise<{
+    success: boolean;
+    data: LibraryItem;
+    message: string;
+  }> {
+    return this.fetchData("/library", {
+      method: "POST",
+      body: JSON.stringify(libraryItem),
+    });
+  }
+
+  async updateLibraryItem(
+    id: string,
+    libraryItem: Partial<Omit<LibraryItem, "_id" | "createdAt" | "updatedAt">>
+  ): Promise<{
+    success: boolean;
+    data: LibraryItem;
+    message: string;
+  }> {
+    return this.fetchData(`/library/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(libraryItem),
+    });
+  }
+
+  async deleteLibraryItem(id: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    return this.fetchData(`/library/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Book of Shadows API
+  async getBookOfShadowsEntries(
+    search?: string,
+    category?: string,
+    page = 1,
+    limit = 50
+  ): Promise<{
+    success: boolean;
+    data: BookOfShadowsEntry[];
+    pagination: {
+      current: number;
+      pages: number;
+      total: number;
+    };
+  }> {
+    const params = new URLSearchParams();
+    if (search) params.append("search", search);
+    if (category) params.append("category", category);
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+
+    return this.fetchData(`/book-of-shadows?${params.toString()}`);
+  }
+
+  async getBookOfShadowsEntry(id: string): Promise<{
+    success: boolean;
+    data: BookOfShadowsEntry;
+  }> {
+    return this.fetchData(`/book-of-shadows/${id}`);
+  }
+
+  async getRandomBookOfShadowsEntry(): Promise<{
+    success: boolean;
+    data: BookOfShadowsEntry;
+  }> {
+    return this.fetchData("/book-of-shadows/random");
+  }
+
+  async getBookOfShadowsCategories(): Promise<{
+    success: boolean;
+    data: string[];
+  }> {
+    return this.fetchData("/book-of-shadows/categories");
+  }
+
+  async createBookOfShadowsEntry(
+    bosEntry: Omit<BookOfShadowsEntry, "_id" | "createdAt" | "updatedAt">
+  ): Promise<{
+    success: boolean;
+    data: BookOfShadowsEntry;
+    message: string;
+  }> {
+    return this.fetchData("/book-of-shadows", {
+      method: "POST",
+      body: JSON.stringify(bosEntry),
+    });
+  }
+
+  async updateBookOfShadowsEntry(
+    id: string,
+    bosEntry: Partial<
+      Omit<BookOfShadowsEntry, "_id" | "createdAt" | "updatedAt">
+    >
+  ): Promise<{
+    success: boolean;
+    data: BookOfShadowsEntry;
+    message: string;
+  }> {
+    return this.fetchData(`/book-of-shadows/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(bosEntry),
+    });
+  }
+
+  async deleteBookOfShadowsEntry(id: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    return this.fetchData(`/book-of-shadows/${id}`, {
+      method: "DELETE",
     });
   }
 }
