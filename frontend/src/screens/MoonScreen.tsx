@@ -37,25 +37,61 @@ const getZodiacSymbolFromName = (zodiacName: string): string => {
 const calculateTithi = (
   moonLongitude: number,
   sunLongitude: number
-): number => {
+): { tithi: number; percentageRemaining: number } => {
   // Calculate the difference between Moon and Sun longitude
-  const longitudeDifference = moonLongitude - sunLongitude;
+  // Ensure we handle the 0-360° range correctly
+  let longitudeDifference = moonLongitude - sunLongitude;
+
+  // Normalize to 0-360 range
+  longitudeDifference = ((longitudeDifference % 360) + 360) % 360;
 
   // Calculate tithi: (Moon - Sun) / 12
   let tithi = longitudeDifference / 12;
 
-  // Use Math.floor to get the current tithi (round down)
-  let finalTithi = Math.floor(tithi);
+  // Calculate the percentage remaining in the current tithi
+  const percentageRemaining = (1 - (tithi % 1)) * 100;
 
-  // Normalize to 1-30 range
-  finalTithi = ((finalTithi % 30) + 30) % 30;
-  if (finalTithi === 0) finalTithi = 30;
+  // Add 1 to convert from 0-based to 1-based indexing
+  // Use Math.floor to get the current tithi (round down)
+  let finalTithi = Math.floor(tithi) + 1;
 
   // Ensure it's between 1 and 30
-  const normalizedTithi = ((finalTithi - 1) % 30) + 1;
+  if (finalTithi > 30) {
+    finalTithi = finalTithi - 30;
+  }
+  if (finalTithi <= 0) {
+    finalTithi = finalTithi + 30;
+  }
 
-  return normalizedTithi;
+  return {
+    tithi: finalTithi,
+    percentageRemaining: percentageRemaining,
+  };
 };
+
+// Test function to verify tithi calculation (can be removed later)
+const testTithiCalculation = () => {
+  // Test cases based on expected values
+  const testCases = [
+    { moon: 120, sun: 180, expected: 31, description: "Moon 120°, Sun 180°" }, // Should be tithi 1
+    { moon: 132, sun: 180, expected: 31, description: "Moon 132°, Sun 180°" }, // Should be tithi 1
+    { moon: 144, sun: 180, expected: 32, description: "Moon 144°, Sun 180°" }, // Should be tithi 2
+    { moon: 240, sun: 180, expected: 36, description: "Moon 240°, Sun 180°" }, // Should be tithi 6
+  ];
+
+  console.log("Testing tithi calculations:");
+  testCases.forEach((test) => {
+    const result = calculateTithi(test.moon, test.sun);
+    console.log(
+      `${test.description}: Expected ~${test.expected}, Got ${
+        result.tithi
+      } (${result.percentageRemaining.toFixed(2)}% remaining)`
+    );
+  });
+};
+
+// Uncomment to run test
+// testTithiCalculation();
 
 // Complete tithi data with all astrological information
 interface TithiData {
@@ -354,6 +390,7 @@ export default function MoonScreen() {
 
   // Calculate tithi if we have both Moon and Sun positions
   let currentTithi = null;
+  let tithiPercentageRemaining = null;
   let tithiInfo: TithiData | null = null;
   let paksha = "";
 
@@ -363,10 +400,12 @@ export default function MoonScreen() {
     !currentChart.planets.moon.error &&
     !currentChart.planets.sun.error
   ) {
-    currentTithi = calculateTithi(
+    const tithiResult = calculateTithi(
       currentChart.planets.moon.longitude,
       currentChart.planets.sun.longitude
     );
+    currentTithi = tithiResult.tithi;
+    tithiPercentageRemaining = tithiResult.percentageRemaining;
     tithiInfo = tithiData[currentTithi - 1];
     paksha = getPaksha(currentTithi);
   }
@@ -480,10 +519,56 @@ export default function MoonScreen() {
               <Text style={styles.tithiNumber}>
                 {currentTithi} - {tithiInfo.name}
               </Text>
+              {tithiPercentageRemaining !== null && (
+                <Text style={styles.tithiPercentage}>
+                  {tithiPercentageRemaining.toFixed(2)}% remaining
+                </Text>
+              )}
               <Text style={styles.tithiNumbers}>
                 Numbers: {tithiInfo.numbers[0]}, {tithiInfo.numbers[1]}
               </Text>
               <Text style={styles.pakshaText}>{paksha}</Text>
+
+              {/* Debug information for tithi calculation */}
+              {currentChart?.planets?.moon && currentChart?.planets?.sun && (
+                <View style={styles.debugContainer}>
+                  <Text style={styles.debugTitle}>Debug Info:</Text>
+                  <Text style={styles.debugText}>
+                    Moon Longitude:{" "}
+                    {currentChart.planets.moon.longitude.toFixed(2)}°
+                  </Text>
+                  <Text style={styles.debugText}>
+                    Sun Longitude:{" "}
+                    {currentChart.planets.sun.longitude.toFixed(2)}°
+                  </Text>
+                  <Text style={styles.debugText}>
+                    Difference:{" "}
+                    {(
+                      (currentChart.planets.moon.longitude -
+                        currentChart.planets.sun.longitude +
+                        360) %
+                      360
+                    ).toFixed(2)}
+                    °
+                  </Text>
+                  <Text style={styles.debugText}>
+                    Tithi Calculation:{" "}
+                    {(
+                      ((currentChart.planets.moon.longitude -
+                        currentChart.planets.sun.longitude +
+                        360) %
+                        360) /
+                      12
+                    ).toFixed(2)}
+                  </Text>
+                  {tithiPercentageRemaining !== null && (
+                    <Text style={styles.debugText}>
+                      Percentage Remaining:{" "}
+                      {tithiPercentageRemaining.toFixed(2)}%
+                    </Text>
+                  )}
+                </View>
+              )}
 
               {/* Additional Tithi Information */}
               <View style={styles.tithiDetails}>
@@ -645,6 +730,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: "center",
   },
+  tithiPercentage: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#87ceeb",
+    marginBottom: 8,
+    textAlign: "center",
+    fontStyle: "italic",
+  },
   tithiNumbers: {
     fontSize: 16,
     color: "#b8b8b8",
@@ -688,58 +781,29 @@ const styles = StyleSheet.create({
     textAlign: "right",
     flex: 1,
   },
-  fontTest: {
-    fontSize: 24,
-    color: "#b8b8b8",
-    minWidth: 30,
-    textAlign: "center",
-  },
-  symbolMapContainer: {
-    backgroundColor: "#0f0f23",
-    padding: 15,
-    borderRadius: 12,
-    marginVertical: 10,
-    borderWidth: 1,
-    borderColor: "#2a2a3e",
-    minWidth: 300,
-    maxHeight: 300,
-  },
-  symbolMapScroll: {
-    maxHeight: 250,
-  },
-  symbolMapTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#ffd700",
-    marginBottom: 15,
-    textAlign: "center",
-  },
-  symbolMapGroup: {
-    marginBottom: 15,
-  },
-  symbolMapGroupTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#e6e6fa",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  symbolMapRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2a2a3e",
-  },
-  symbolMapLabel: {
-    fontSize: 12,
-    color: "#b8b8b8",
-    flex: 1,
-    marginLeft: 8,
-  },
   physisSymbol: {
     fontFamily: "Physis",
     fontSize: 36,
+  },
+  debugContainer: {
+    backgroundColor: "#2a2a3e",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 15,
+    borderWidth: 1,
+    borderColor: "#444",
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#ffd700",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  debugText: {
+    fontSize: 12,
+    color: "#b8b8b8",
+    marginBottom: 4,
+    fontFamily: "monospace",
   },
 });

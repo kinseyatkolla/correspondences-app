@@ -16,6 +16,7 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Tab.Navigator
+        initialRouteName="Moon"
         screenOptions={{
           tabBarActiveTintColor: "#e6e6fa",
           tabBarInactiveTintColor: "#8a8a8a",
@@ -41,13 +42,13 @@ export default function AppNavigator() {
         }}
       >
         <Tab.Screen
-          name="Moon"
-          component={MoonScreen}
+          name="Flowers"
+          component={FlowersScreen}
           options={{
             tabBarLabel: "",
             tabBarIcon: ({ focused, size }) => (
-              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.5 }}>
-                🌙
+              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
+                🌸
               </Text>
             ),
           }}
@@ -58,20 +59,20 @@ export default function AppNavigator() {
           options={{
             tabBarLabel: "",
             tabBarIcon: ({ focused, size }) => (
-              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.5 }}>
+              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
                 🃏
               </Text>
             ),
           }}
         />
         <Tab.Screen
-          name="Flowers"
-          component={FlowersScreen}
+          name="Moon"
+          component={MoonScreen}
           options={{
             tabBarLabel: "",
             tabBarIcon: ({ focused, size }) => (
-              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.5 }}>
-                🌸
+              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
+                🌙
               </Text>
             ),
           }}
@@ -82,7 +83,7 @@ export default function AppNavigator() {
           options={{
             tabBarLabel: "",
             tabBarIcon: ({ focused, size }) => (
-              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.5 }}>
+              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
                 📖
               </Text>
             ),
@@ -94,7 +95,7 @@ export default function AppNavigator() {
           options={{
             tabBarLabel: "",
             tabBarIcon: ({ focused, size }) => (
-              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.5 }}>
+              <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
                 ⭐
               </Text>
             ),

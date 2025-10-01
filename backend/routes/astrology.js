@@ -4,6 +4,9 @@ const router = express.Router();
 // Swiss Ephemeris - use require to avoid TypeScript issues
 const sweph = require("sweph");
 
+// Swiss Ephemeris flags
+const SEFLG_TOPOCTR = 0x00040000; // Topocentric position flag
+
 // Type definitions for reference (JavaScript comments)
 /**
  * @typedef {Object} BirthData
@@ -109,6 +112,9 @@ router.post("/planets", (req, res) => {
       minute,
       second
     );
+
+    // Note: For /planets endpoint, we don't have location data, so we'll use geocentric
+    // If you want topocentric for this endpoint too, you'll need to add lat/lng parameters
 
     // Calculate planetary positions
     const planets = {};
@@ -297,6 +303,9 @@ router.post("/chart", (req, res) => {
       second
     );
 
+    // Set topocentric location for more accurate calculations
+    sweph.set_topo(longitude, latitude, 0); // 0 altitude for sea level
+
     // Calculate planets
     const planets = {};
     const planetIds = [
@@ -314,7 +323,7 @@ router.post("/chart", (req, res) => {
 
     planetIds.forEach((planet) => {
       try {
-        const result = sweph.calc_ut(julianDay, planet.id, 0);
+        const result = sweph.calc_ut(julianDay, planet.id, SEFLG_TOPOCTR);
 
         if (result.data && result.data.length >= 4) {
           const longitude = result.data[0];
@@ -395,14 +404,14 @@ router.post("/current-chart", (req, res) => {
       });
     }
 
-    // Get current date and time
+    // Get current date and time in UTC
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1; // JavaScript months are 0-based
-    const day = now.getDate();
-    const hour = now.getHours();
-    const minute = now.getMinutes();
-    const second = now.getSeconds();
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth() + 1; // JavaScript months are 0-based
+    const day = now.getUTCDate();
+    const hour = now.getUTCHours();
+    const minute = now.getUTCMinutes();
+    const second = now.getUTCSeconds();
 
     const julianDay = calculateJulianDay(
       year,
@@ -413,6 +422,9 @@ router.post("/current-chart", (req, res) => {
       second
     );
 
+    // Set topocentric location for more accurate calculations
+    sweph.set_topo(longitude, latitude, 0); // 0 altitude for sea level
+
     // Calculate planets (just sun and moon for the moon screen)
     const planets = {};
     const planetIds = [
@@ -422,7 +434,7 @@ router.post("/current-chart", (req, res) => {
 
     planetIds.forEach((planet) => {
       try {
-        const result = sweph.calc_ut(julianDay, planet.id, 0);
+        const result = sweph.calc_ut(julianDay, planet.id, SEFLG_TOPOCTR);
 
         if (result.data && result.data.length >= 4) {
           const longitude = result.data[0];
