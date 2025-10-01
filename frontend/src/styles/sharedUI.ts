@@ -274,4 +274,22 @@ export const sharedUI = StyleSheet.create({
     color: "#e6e6fa",
     lineHeight: 24,
   },
+
+  // Physis font styles
+  physisSymbolLarge: {
+    fontFamily: "Physis",
+    fontSize: 36,
+  },
+  physisSymbolMedium: {
+    fontFamily: "Physis",
+    fontSize: 24,
+  },
+  physisSymbolSmall: {
+    fontFamily: "Physis",
+    fontSize: 18,
+  },
+  physisSymbolExtraSmall: {
+    fontFamily: "Physis",
+    fontSize: 16,
+  },
 });

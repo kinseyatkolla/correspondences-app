@@ -12,6 +12,7 @@ import {
 import { apiService, BirthData, BirthChart } from "../services/api";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { sharedUI } from "../styles/sharedUI";
+import { usePhysisFont, getPhysisSymbolStyle } from "../utils/physisFont";
 import {
   getPlanetKeysFromNames,
   getPlanetSymbols,
@@ -24,6 +25,7 @@ export default function AstrologyScreen() {
     loading: ephemerisLoading,
     refreshChart,
   } = useAstrology();
+  const { fontLoaded } = usePhysisFont();
 
   const [birthData, setBirthData] = useState<BirthData>({
     year: 1990,
@@ -220,8 +222,12 @@ export default function AstrologyScreen() {
             return (
               <View key={planetName} style={styles.planetRow}>
                 <Text style={styles.zodiacSymbol}>
-                  <Text style={styles.physisText}>{physisSymbol}</Text>{" "}
-                  <Text style={styles.physisText}>{physisZodiacSymbol}</Text>{" "}
+                  <Text style={getPhysisSymbolStyle(fontLoaded, "small")}>
+                    {physisSymbol}
+                  </Text>{" "}
+                  <Text style={getPhysisSymbolStyle(fontLoaded, "small")}>
+                    {physisZodiacSymbol}
+                  </Text>{" "}
                 </Text>
                 <Text style={styles.planetPosition}>
                   {planet.zodiacSignName}
@@ -491,10 +497,6 @@ const styles = StyleSheet.create({
     color: "#e6e6fa",
     fontWeight: "600",
     flex: 1,
-  },
-  physisText: {
-    fontFamily: "Physis",
-    fontSize: 18,
   },
   zodiacSymbol: {
     fontSize: 20,

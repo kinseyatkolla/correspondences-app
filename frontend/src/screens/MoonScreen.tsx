@@ -10,6 +10,7 @@ import * as Font from "expo-font";
 import DynamicSvgImporter from "../components/DynamicSvgImporter";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { sharedUI } from "../styles/sharedUI";
+import { usePhysisFont, getPhysisSymbolStyle } from "../utils/physisFont";
 import {
   getZodiacKeysFromNames,
   getPlanetKeysFromNames,
@@ -319,32 +320,7 @@ const getPaksha = (tithi: number): string => {
 
 export default function MoonScreen() {
   const { currentChart, loading, error } = useAstrology();
-  const [fontLoaded, setFontLoaded] = useState(false);
-
-  // Load the PhysisV2 font
-  useEffect(() => {
-    const loadFont = async () => {
-      try {
-        await Font.loadAsync({
-          Physis: require("../../assets/fonts/Physis.ttf"),
-        });
-        setFontLoaded(true);
-      } catch (error) {
-        console.log("Font loading error:", error);
-        setFontLoaded(true); // Continue even if font fails to load
-      }
-    };
-    loadFont();
-  }, []);
-
-  // Get font family based on loading state
-  const getFontFamily = () => (fontLoaded ? "Physis" : "System");
-
-  // Get physis symbol style with fallback
-  const getPhysisSymbolStyle = () => [
-    styles.physisSymbol,
-    { fontFamily: getFontFamily() },
-  ];
+  const { fontLoaded } = usePhysisFont();
 
   // Calculate tithi if we have both Moon and Sun positions
   let currentTithi = null;
@@ -430,14 +406,14 @@ export default function MoonScreen() {
             {currentChart.planets.sun && !currentChart.planets.sun.error && (
               <View style={styles.positionRow}>
                 <Text style={styles.planetName}>
-                  <Text style={getPhysisSymbolStyle()}>
+                  <Text style={getPhysisSymbolStyle(fontLoaded, "large")}>
                     {getPlanetKeysFromNames()["Sun"]}
                   </Text>{" "}
                   Sun
                 </Text>
                 <Text style={styles.planetPosition}>
                   {currentChart.planets.sun.degreeFormatted}{" "}
-                  <Text style={getPhysisSymbolStyle()}>
+                  <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
                     {
                       getZodiacKeysFromNames()[
                         currentChart.planets.sun.zodiacSignName
@@ -451,14 +427,14 @@ export default function MoonScreen() {
             {currentChart.planets.moon && !currentChart.planets.moon.error && (
               <View style={styles.positionRow}>
                 <Text style={styles.planetName}>
-                  <Text style={getPhysisSymbolStyle()}>
+                  <Text style={getPhysisSymbolStyle(fontLoaded, "large")}>
                     {getPlanetKeysFromNames()["Moon"]}
                   </Text>{" "}
                   Moon
                 </Text>
                 <Text style={styles.planetPosition}>
                   {currentChart.planets.moon.degreeFormatted}{" "}
-                  <Text style={getPhysisSymbolStyle()}>
+                  <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
                     {
                       getZodiacKeysFromNames()[
                         currentChart.planets.moon.zodiacSignName
@@ -729,10 +705,6 @@ const styles = StyleSheet.create({
     color: "#e6e6fa",
     textAlign: "right",
     flex: 1,
-  },
-  physisSymbol: {
-    fontFamily: "Physis",
-    fontSize: 36,
   },
   debugContainer: {
     backgroundColor: "#2a2a3e",
