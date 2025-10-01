@@ -1,3 +1,6 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -16,6 +19,9 @@ import { getFlowerEmoji } from "../utils/imageHelper";
 import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 
+// ============================================================================
+// DATA & CONSTANTS
+// ============================================================================
 // Import all flower images
 const flowerImages: { [key: string]: any } = {
   "agrimony.png": require("../../assets/images/flowers/agrimony.png"),
@@ -73,6 +79,9 @@ const flowerImages: { [key: string]: any } = {
   "yarrow.png": require("../../assets/images/flowers/yarrow.png"),
 };
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
 export default function FlowersScreen() {
   const [flowerEssences, setFlowerEssences] = useState<FlowerEssence[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,10 +91,12 @@ export default function FlowersScreen() {
   );
   const [modalVisible, setModalVisible] = useState(false);
 
+  // ===== LIFECYCLE =====
   useEffect(() => {
     loadFlowerEssences();
   }, []);
 
+  // ===== API FUNCTIONS =====
   const loadFlowerEssences = useCallback(async (search = "") => {
     try {
       setLoading(true);
@@ -99,6 +110,7 @@ export default function FlowersScreen() {
     }
   }, []);
 
+  // ===== EVENT HANDLERS =====
   const handleSearchInput = (query: string) => {
     setSearchQuery(query);
   };
@@ -135,6 +147,7 @@ export default function FlowersScreen() {
     }
   };
 
+  // ===== LOADING STATES =====
   if (loading) {
     return (
       <View style={[sharedUI.loadingContainer, { backgroundColor: "#0e2515" }]}>
@@ -144,6 +157,7 @@ export default function FlowersScreen() {
     );
   }
 
+  // ===== MAIN TEMPLATE =====
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={sharedUI.pageTitle}>🌸 Flower Essences</Text>
@@ -297,6 +311,9 @@ export default function FlowersScreen() {
   );
 }
 
+// ============================================================================
+// STYLES
+// ============================================================================
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -1,13 +1,23 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
 import React, { useEffect, useState, useRef } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 
+// ============================================================================
+// TYPES & INTERFACES
+// ============================================================================
 interface LoadingScreenProps {
   onLoadingComplete: () => void;
 }
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
 export default function LoadingScreen({
   onLoadingComplete,
 }: LoadingScreenProps) {
+  // ===== HOOKS & STATE =====
   const [loadingText, setLoadingText] = useState("Initializing...");
 
   // Create animated values for each letter (15 letters total)
@@ -44,6 +54,7 @@ export default function LoadingScreen({
     return () => clearInterval(interval);
   }, [onLoadingComplete]);
 
+  // ===== LIFECYCLE =====
   // Firefly glow animation
   useEffect(() => {
     const createFireflyAnimation = (index: number) => {
@@ -77,12 +88,11 @@ export default function LoadingScreen({
     });
   }, []);
 
+  // ===== DATA & CONSTANTS =====
   // Define the triangular layout of letters
   const triangularLayout = ["C", "O R", "R E S", "P O N D", "E N C E S"];
 
-  // Flatten the letters for animation mapping
-  const allLetters = "CORRESPONDENCES".split("");
-
+  // ===== TEMPLATE (JSX) =====
   return (
     <View style={styles.container}>
       {/* Loading text at top */}
@@ -130,6 +140,9 @@ export default function LoadingScreen({
   );
 }
 
+// ============================================================================
+// STYLES
+// ============================================================================
 const styles = StyleSheet.create({
   container: {
     flex: 1,

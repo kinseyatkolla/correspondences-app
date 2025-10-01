@@ -1,3 +1,6 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -15,48 +18,27 @@ import {
   getZodiacKeysFromNames,
   getPlanetKeysFromNames,
 } from "../utils/physisSymbolMap";
-// Tithi calculation function
-const calculateTithi = (
-  moonLongitude: number,
-  sunLongitude: number
-): { tithi: number; percentageRemaining: number } => {
-  // Calculate the difference between Moon and Sun longitude
-  // Ensure we handle the 0-360° range correctly
-  let longitudeDifference = moonLongitude - sunLongitude;
 
-  // Normalize to 0-360 range
-  longitudeDifference = ((longitudeDifference % 360) + 360) % 360;
-
-  // Calculate tithi: (Moon - Sun) / 12
-  let tithi = longitudeDifference / 12;
-
-  // Calculate the percentage remaining in the current tithi
-  const percentageRemaining = (1 - (tithi % 1)) * 100;
-
-  // Add 1 to convert from 0-based to 1-based indexing
-  // Use Math.floor to get the current tithi (round down)
-  let finalTithi = Math.floor(tithi) + 1;
-
-  // Ensure it's between 1 and 30
-  if (finalTithi > 30) {
-    finalTithi = finalTithi - 30;
-  }
-  if (finalTithi <= 0) {
-    finalTithi = finalTithi + 30;
-  }
-
-  return {
-    tithi: finalTithi,
-    percentageRemaining: percentageRemaining,
-  };
-};
-
-// Complete moon phase data
+// ============================================================================
+// TYPES & INTERFACES
+// ============================================================================
 interface moon30 {
   number: number;
   name: string;
   color: string;
 }
+
+interface TithiData {
+  numbers: [number, number];
+  name: string;
+  planetRuler: string;
+  division: string;
+  deity: string;
+}
+
+// ============================================================================
+// DATA & CONSTANTS
+// ============================================================================
 
 const moonTithiMap: moon30[] = [
   { number: 1, name: "S1", color: "Blue" },
@@ -90,15 +72,6 @@ const moonTithiMap: moon30[] = [
   { number: 29, name: "K14", color: "Red" },
   { number: 30, name: "K15", color: "Red" },
 ];
-
-// Complete tithi data with all astrological information
-interface TithiData {
-  numbers: [number, number];
-  name: string;
-  planetRuler: string;
-  division: string;
-  deity: string;
-}
 
 const tithiData: TithiData[] = [
   {
@@ -313,11 +286,53 @@ const tithiData: TithiData[] = [
   },
 ];
 
+// ============================================================================
+// UTILITY FUNCTIONS & LOGIC
+// ============================================================================
+// Tithi calculation function
+const calculateTithi = (
+  moonLongitude: number,
+  sunLongitude: number
+): { tithi: number; percentageRemaining: number } => {
+  // Calculate the difference between Moon and Sun longitude
+  // Ensure we handle the 0-360° range correctly
+  let longitudeDifference = moonLongitude - sunLongitude;
+
+  // Normalize to 0-360 range
+  longitudeDifference = ((longitudeDifference % 360) + 360) % 360;
+
+  // Calculate tithi: (Moon - Sun) / 12
+  let tithi = longitudeDifference / 12;
+
+  // Calculate the percentage remaining in the current tithi
+  const percentageRemaining = (1 - (tithi % 1)) * 100;
+
+  // Add 1 to convert from 0-based to 1-based indexing
+  // Use Math.floor to get the current tithi (round down)
+  let finalTithi = Math.floor(tithi) + 1;
+
+  // Ensure it's between 1 and 30
+  if (finalTithi > 30) {
+    finalTithi = finalTithi - 30;
+  }
+  if (finalTithi <= 0) {
+    finalTithi = finalTithi + 30;
+  }
+
+  return {
+    tithi: finalTithi,
+    percentageRemaining: percentageRemaining,
+  };
+};
+
 // Paksha (fortnight) determination
 const getPaksha = (tithi: number): string => {
   return tithi <= 15 ? "Shukla Paksha (Waxing)" : "Krishna Paksha (Waning)";
 };
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
 export default function MoonScreen() {
   const { currentChart, loading, error } = useAstrology();
   const { fontLoaded } = usePhysisFont();
@@ -362,11 +377,16 @@ export default function MoonScreen() {
     return (
       <View style={[styles.container, sharedUI.centered]}>
         <Text style={styles.errorText}>Error: {error}</Text>
-        <Text style={sharedUI.description}>Using default moon phase</Text>
+        <Text style={sharedUI.description}>
+          Problem loading current moon phase
+        </Text>
       </View>
     );
   }
 
+  // ============================================================================
+  // TEMPLATE (JSX)
+  // ============================================================================
   return (
     <ScrollView
       style={styles.container}
@@ -541,6 +561,9 @@ export default function MoonScreen() {
   );
 }
 
+// ============================================================================
+// STYLES
+// ============================================================================
 const styles = StyleSheet.create({
   container: {
     flex: 1,

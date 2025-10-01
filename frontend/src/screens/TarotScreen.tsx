@@ -1,3 +1,6 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -16,6 +19,9 @@ import { apiService, TarotCard } from "../services/api";
 import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
 export default function TarotScreen() {
   const [tarotCards, setTarotCards] = useState<TarotCard[]>([]);
   const [filteredCards, setFilteredCards] = useState<TarotCard[]>([]);
@@ -25,10 +31,12 @@ export default function TarotScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+  // ===== LIFECYCLE =====
   useEffect(() => {
     loadTarotCards();
   }, []);
 
+  // ===== API FUNCTIONS =====
   const loadTarotCards = useCallback(async (search = "", suit = "") => {
     try {
       setLoading(true);
@@ -48,6 +56,7 @@ export default function TarotScreen() {
     }
   }, []);
 
+  // ===== EVENT HANDLERS =====
   const handleSearchInput = (query: string) => {
     setSearchQuery(query);
   };
@@ -97,23 +106,6 @@ export default function TarotScreen() {
     }
   };
 
-  const getCardEmoji = (suit: string) => {
-    switch (suit) {
-      case "Major Arcana":
-        return "🔮";
-      case "Cups":
-        return "🏆";
-      case "Wands":
-        return "🪄";
-      case "Swords":
-        return "⚔️";
-      case "Pentacles":
-        return "🪙";
-      default:
-        return "🃏";
-    }
-  };
-
   const getElementEmoji = (element?: string) => {
     switch (element) {
       case "Fire":
@@ -131,6 +123,7 @@ export default function TarotScreen() {
     }
   };
 
+  // ===== DATA & CONSTANTS =====
   // Static import map for all tarot card images
   const tarotCardImages: { [key: string]: any } = {
     // Major Arcana
@@ -227,6 +220,7 @@ export default function TarotScreen() {
     return tarotCardImages[key] || null;
   };
 
+  // ===== RENDER HELPERS =====
   const renderCategorySection = (
     title: string,
     suit: string,
@@ -279,14 +273,7 @@ export default function TarotScreen() {
     </View>
   );
 
-  const renderFooter = () => (
-    <View style={sharedUI.listFooter}>
-      <Text style={sharedUI.footerText}>
-        Showing {filteredCards.length} cards
-      </Text>
-    </View>
-  );
-
+  // ===== LOADING STATES =====
   if (loading) {
     return (
       <View style={[sharedUI.loadingContainer, { backgroundColor: "#0f1a3f" }]}>
@@ -296,6 +283,7 @@ export default function TarotScreen() {
     );
   }
 
+  // ===== MAIN TEMPLATE =====
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={sharedUI.pageTitle}>🔮 Tarot</Text>
@@ -467,6 +455,9 @@ export default function TarotScreen() {
   );
 }
 
+// ============================================================================
+// STYLES
+// ============================================================================
 const styles = StyleSheet.create({
   container: {
     flex: 1,

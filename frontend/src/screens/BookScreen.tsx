@@ -1,3 +1,6 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -15,6 +18,9 @@ import { apiService, BookOfShadowsEntry, LibraryItem } from "../services/api";
 import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
 export default function BookScreen() {
   const [bosEntries, setBosEntries] = useState<BookOfShadowsEntry[]>([]);
   const [filteredEntries, setFilteredEntries] = useState<BookOfShadowsEntry[]>(
@@ -34,10 +40,12 @@ export default function BookScreen() {
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(false);
 
+  // ===== LIFECYCLE =====
   useEffect(() => {
     loadBosEntries();
   }, []);
 
+  // ===== API FUNCTIONS =====
   const loadBosEntries = useCallback(async (search = "", category = "") => {
     try {
       setLoading(true);
@@ -74,6 +82,7 @@ export default function BookScreen() {
     }
   }, []);
 
+  // ===== EVENT HANDLERS =====
   const handleButtonPress = (section: string) => {
     switch (section) {
       case "Library":
@@ -146,6 +155,7 @@ export default function BookScreen() {
     setSelectedCategory(null);
   };
 
+  // ===== RENDER HELPERS =====
   const renderCategorySection = (
     title: string,
     category: string,
@@ -306,6 +316,7 @@ export default function BookScreen() {
     );
   };
 
+  // ===== LOADING STATES =====
   if (loading) {
     return (
       <View style={[sharedUI.loadingContainer, { backgroundColor: "#111" }]}>
@@ -315,6 +326,7 @@ export default function BookScreen() {
     );
   }
 
+  // ===== MAIN TEMPLATE =====
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={sharedUI.pageTitle}>📖 Book of Shadows</Text>
@@ -677,6 +689,9 @@ export default function BookScreen() {
   );
 }
 
+// ============================================================================
+// STYLES
+// ============================================================================
 const styles = StyleSheet.create({
   container: {
     flex: 1,

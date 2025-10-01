@@ -1,3 +1,6 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
 import React, { useState } from "react";
 import {
   View,
@@ -19,6 +22,9 @@ import {
   getZodiacKeysFromNames,
 } from "../utils/physisSymbolMap";
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
 export default function AstrologyScreen() {
   const {
     currentChart,
@@ -40,6 +46,7 @@ export default function AstrologyScreen() {
   const [loading, setLoading] = useState(false);
   const [showInput, setShowInput] = useState(false);
 
+  // ===== HOOKS & STATE =====
   const calculateChart = async () => {
     setLoading(true);
     try {
@@ -63,6 +70,7 @@ export default function AstrologyScreen() {
     setShowInput(true);
   };
 
+  // ===== UTILITY FUNCTIONS =====
   const formatDate = (date: {
     year: number;
     month: number;
@@ -90,6 +98,7 @@ export default function AstrologyScreen() {
       .padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
   };
 
+  // ===== RENDER HELPERS =====
   const renderPlanet = (name: string, planet: any) => {
     if (planet.error) {
       return (
@@ -114,6 +123,7 @@ export default function AstrologyScreen() {
     );
   };
 
+  // ===== LOADING STATES =====
   if (loading) {
     return (
       <View style={[styles.container, sharedUI.centered]}>
@@ -125,6 +135,7 @@ export default function AstrologyScreen() {
     );
   }
 
+  // ===== BIRTH CHART DISPLAY =====
   if (chart && !showInput) {
     return (
       <ScrollView style={styles.container}>
@@ -181,6 +192,7 @@ export default function AstrologyScreen() {
     );
   }
 
+  // ===== MAIN TEMPLATE =====
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -370,6 +382,9 @@ export default function AstrologyScreen() {
   );
 }
 
+// ============================================================================
+// STYLES
+// ============================================================================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
