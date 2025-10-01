@@ -105,6 +105,14 @@ export function AstrologyProvider({ children }: AstrologyProviderProps) {
 
   useEffect(() => {
     fetchCurrentChart();
+
+    // Set up automatic refresh every 5 minutes
+    const interval = setInterval(() => {
+      fetchCurrentChart();
+    }, 5 * 60 * 1000); // 5 minutes in milliseconds
+
+    // Cleanup interval on unmount
+    return () => clearInterval(interval);
   }, []);
 
   return (

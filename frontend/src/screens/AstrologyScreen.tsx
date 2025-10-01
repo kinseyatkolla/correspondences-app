@@ -14,10 +14,15 @@ import { useAstrology } from "../contexts/AstrologyContext";
 import {
   getPlanetKeysFromNames,
   getPlanetSymbols,
+  getZodiacKeysFromNames,
 } from "../utils/physisSymbolMap";
 
 export default function AstrologyScreen() {
-  const { currentChart, loading: ephemerisLoading } = useAstrology();
+  const {
+    currentChart,
+    loading: ephemerisLoading,
+    refreshChart,
+  } = useAstrology();
 
   const [birthData, setBirthData] = useState<BirthData>({
     year: 1990,
@@ -188,27 +193,38 @@ export default function AstrologyScreen() {
       {/* Current Planetary Positions */}
       {currentChart && !ephemerisLoading && (
         <View style={styles.currentPositionsSection}>
-          <Text style={styles.sectionTitle}>
-            🌙 Current Planetary Positions
-          </Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              🌙 Current Planetary Positions
+            </Text>
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={refreshChart}
+            >
+              <Text style={styles.refreshButtonText}>🔄</Text>
+            </TouchableOpacity>
+          </View>
           {Object.entries(currentChart.planets).map(([planetName, planet]) => {
             const planetKeys = getPlanetKeysFromNames();
-            const planetSymbols = getPlanetSymbols();
+            const zodiacKeys = getZodiacKeysFromNames();
             const capitalizedName =
               planetName.charAt(0).toUpperCase() + planetName.slice(1);
             const physisKey = planetKeys[capitalizedName];
-            const physisSymbol = physisKey
-              ? planetSymbols[physisKey]
-              : planet.symbol;
+            const physisSymbol = physisKey;
+            const zodiacKey = zodiacKeys[planet.zodiacSignName];
+            const physisZodiacSymbol = zodiacKey;
 
             return (
               <View key={planetName} style={styles.planetRow}>
-                <Text style={styles.planetName}>
+                <Text style={styles.zodiacSymbol}>
                   <Text style={styles.physisText}>{physisSymbol}</Text>{" "}
-                  {capitalizedName}
+                  <Text style={styles.physisText}>{physisZodiacSymbol}</Text>{" "}
                 </Text>
                 <Text style={styles.planetPosition}>
-                  {planet.degreeFormatted} {planet.zodiacSignName}
+                  {planet.zodiacSignName}
+                </Text>
+                <Text style={styles.planetPosition}>
+                  {capitalizedName} {planet.degreeFormatted}
                 </Text>
               </View>
             );
@@ -216,125 +232,130 @@ export default function AstrologyScreen() {
         </View>
       )}
 
-      <View style={styles.inputSection}>
+      <View style={styles.birthChartSection}>
         <Text style={styles.sectionTitle}>⭐ Birth Chart Calculator</Text>
         <Text style={styles.description}>
           Enter your birth information to calculate your natal chart
         </Text>
 
-        <View style={styles.inputRow}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Year</Text>
-            <TextInput
-              style={styles.input}
-              value={birthData.year.toString()}
-              onChangeText={(text) =>
-                setBirthData({ ...birthData, year: parseInt(text) || 1990 })
-              }
-              keyboardType="numeric"
-              placeholder="1990"
-            />
+        <View style={styles.inputSubsection}>
+          <Text style={styles.subsectionTitle}>Birth Date & Time</Text>
+          <View style={styles.inputRow}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Year</Text>
+              <TextInput
+                style={styles.input}
+                value={birthData.year.toString()}
+                onChangeText={(text) =>
+                  setBirthData({ ...birthData, year: parseInt(text) || 1990 })
+                }
+                keyboardType="numeric"
+                placeholder="1990"
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Month</Text>
+              <TextInput
+                style={styles.input}
+                value={birthData.month.toString()}
+                onChangeText={(text) =>
+                  setBirthData({ ...birthData, month: parseInt(text) || 1 })
+                }
+                keyboardType="numeric"
+                placeholder="1"
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Day</Text>
+              <TextInput
+                style={styles.input}
+                value={birthData.day.toString()}
+                onChangeText={(text) =>
+                  setBirthData({ ...birthData, day: parseInt(text) || 1 })
+                }
+                keyboardType="numeric"
+                placeholder="1"
+              />
+            </View>
           </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Month</Text>
-            <TextInput
-              style={styles.input}
-              value={birthData.month.toString()}
-              onChangeText={(text) =>
-                setBirthData({ ...birthData, month: parseInt(text) || 1 })
-              }
-              keyboardType="numeric"
-              placeholder="1"
-            />
-          </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Day</Text>
-            <TextInput
-              style={styles.input}
-              value={birthData.day.toString()}
-              onChangeText={(text) =>
-                setBirthData({ ...birthData, day: parseInt(text) || 1 })
-              }
-              keyboardType="numeric"
-              placeholder="1"
-            />
+
+          <View style={styles.inputRow}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Hour (24h)</Text>
+              <TextInput
+                style={styles.input}
+                value={birthData.hour?.toString() || "12"}
+                onChangeText={(text) =>
+                  setBirthData({ ...birthData, hour: parseInt(text) || 12 })
+                }
+                keyboardType="numeric"
+                placeholder="12"
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Minute</Text>
+              <TextInput
+                style={styles.input}
+                value={birthData.minute?.toString() || "0"}
+                onChangeText={(text) =>
+                  setBirthData({ ...birthData, minute: parseInt(text) || 0 })
+                }
+                keyboardType="numeric"
+                placeholder="0"
+              />
+            </View>
           </View>
         </View>
 
-        <View style={styles.inputRow}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Hour (24h)</Text>
-            <TextInput
-              style={styles.input}
-              value={birthData.hour?.toString() || "12"}
-              onChangeText={(text) =>
-                setBirthData({ ...birthData, hour: parseInt(text) || 12 })
-              }
-              keyboardType="numeric"
-              placeholder="12"
-            />
-          </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Minute</Text>
-            <TextInput
-              style={styles.input}
-              value={birthData.minute?.toString() || "0"}
-              onChangeText={(text) =>
-                setBirthData({ ...birthData, minute: parseInt(text) || 0 })
-              }
-              keyboardType="numeric"
-              placeholder="0"
-            />
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.inputSection}>
-        <Text style={styles.sectionTitle}>Birth Location</Text>
-
-        <View style={styles.inputRow}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Latitude</Text>
-            <TextInput
-              style={styles.input}
-              value={birthData.latitude?.toString() || "40.7128"}
-              onChangeText={(text) =>
-                setBirthData({
-                  ...birthData,
-                  latitude: parseFloat(text) || 40.7128,
-                })
-              }
-              keyboardType="numeric"
-              placeholder="40.7128"
-            />
-          </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Longitude</Text>
-            <TextInput
-              style={styles.input}
-              value={birthData.longitude?.toString() || "-74.0060"}
-              onChangeText={(text) =>
-                setBirthData({
-                  ...birthData,
-                  longitude: parseFloat(text) || -74.006,
-                })
-              }
-              keyboardType="numeric"
-              placeholder="-74.0060"
-            />
+        <View style={styles.inputSubsection}>
+          <Text style={styles.subsectionTitle}>Birth Location</Text>
+          <View style={styles.inputRow}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Latitude</Text>
+              <TextInput
+                style={styles.input}
+                value={birthData.latitude?.toString() || "40.7128"}
+                onChangeText={(text) =>
+                  setBirthData({
+                    ...birthData,
+                    latitude: parseFloat(text) || 40.7128,
+                  })
+                }
+                keyboardType="numeric"
+                placeholder="40.7128"
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Longitude</Text>
+              <TextInput
+                style={styles.input}
+                value={birthData.longitude?.toString() || "-74.0060"}
+                onChangeText={(text) =>
+                  setBirthData({
+                    ...birthData,
+                    longitude: parseFloat(text) || -74.006,
+                  })
+                }
+                keyboardType="numeric"
+                placeholder="-74.0060"
+              />
+            </View>
           </View>
         </View>
-      </View>
 
-      <TouchableOpacity style={styles.calculateButton} onPress={calculateChart}>
-        <Text style={styles.calculateButtonText}>Calculate Birth Chart</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.calculateButton}
+          onPress={calculateChart}
+        >
+          <Text style={styles.calculateButtonText}>Calculate Birth Chart</Text>
+        </TouchableOpacity>
 
-      <View style={styles.infoSection}>
-        <Text style={styles.infoText}>
-          💡 Tip: Use decimal degrees for coordinates. For example, New York
-          City is approximately 40.7128°N, 74.0060°W
-        </Text>
+        <View style={styles.infoSection}>
+          <Text style={styles.infoText}>
+            💡 Tip: Use decimal degrees for coordinates. For example, New York
+            City is approximately 40.7128°N, 74.0060°W
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );
@@ -400,13 +421,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#2a2a3e",
   },
-  inputSection: {
+  birthChartSection: {
     backgroundColor: "#1a1a2e",
     padding: 20,
     borderRadius: 12,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: "#2a2a3e",
+  },
+  inputSubsection: {
+    marginBottom: 20,
+  },
+  subsectionTitle: {
+    fontSize: 16,
+    color: "#e6e6fa",
+    fontWeight: "600",
+    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 18,
@@ -472,10 +502,16 @@ const styles = StyleSheet.create({
     fontFamily: "Physis",
     fontSize: 18,
   },
+  zodiacSymbol: {
+    fontSize: 20,
+    color: "#e6e6fa",
+    textAlign: "left",
+    flex: 1,
+  },
   planetPosition: {
     fontSize: 14,
     color: "#8a8a8a",
-    textAlign: "right",
+    textAlign: "left",
     flex: 1,
   },
   errorText: {
@@ -497,6 +533,25 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     borderColor: "#2a2a3e",
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  refreshButton: {
+    backgroundColor: "#4a4a6e",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#6a6a8e",
+  },
+  refreshButtonText: {
+    color: "#e6e6fa",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   infoSection: {
     backgroundColor: "#1a1a2e",
