@@ -1,5 +1,5 @@
 // API configuration
-const API_BASE_URL = "http://192.168.0.42:3000/api";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.0.42:3000/api";
 
 // Types for our API responses
 export interface Correspondence {

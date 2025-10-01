@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CORRESPONDENCES",
-    "slug": "correspondences-app",
+    "slug": "correspondences",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -26,6 +26,14 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "assetBundlePatterns": ["**/*"]
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a920bc1c-1bbe-4155-affc-863174eef137"
+      }
+    },
+    "owner": "kinsey.kinsey"
   }
 }
