@@ -16,6 +16,10 @@ interface CurrentChart {
   currentTime: {
     timestamp: string;
   };
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 interface AstrologyContextType {
@@ -84,6 +88,10 @@ export function AstrologyProvider({ children }: AstrologyProviderProps) {
           },
           currentTime: {
             timestamp: response.data.currentTime.timestamp,
+          },
+          location: {
+            latitude: response.data.location.latitude,
+            longitude: response.data.location.longitude,
           },
         });
       } else {
