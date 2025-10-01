@@ -10,8 +10,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { apiService, BirthData, BirthChart } from "../services/api";
+import { useAstrology } from "../contexts/AstrologyContext";
 
 export default function AstrologyScreen() {
+  const { currentChart, loading: ephemerisLoading } = useAstrology();
+
   const [birthData, setBirthData] = useState<BirthData>({
     year: 1990,
     month: 1,
@@ -167,14 +170,42 @@ export default function AstrologyScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>⭐ Birth Chart Calculator</Text>
+        <Text style={styles.title}>⭐ Astrology</Text>
+        <Text style={styles.subtitle}>
+          {new Date().toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+        </Text>
       </View>
-      <Text style={styles.description}>
-        Enter your birth information to calculate your natal chart
-      </Text>
+
+      {/* Current Planetary Positions */}
+      {currentChart && !ephemerisLoading && (
+        <View style={styles.currentPositionsSection}>
+          <Text style={styles.sectionTitle}>
+            🌙 Current Planetary Positions
+          </Text>
+          {Object.entries(currentChart.planets).map(([planetName, planet]) => (
+            <View key={planetName} style={styles.planetRow}>
+              <Text style={styles.planetName}>
+                {planet.symbol}{" "}
+                {planetName.charAt(0).toUpperCase() + planetName.slice(1)}
+              </Text>
+              <Text style={styles.planetPosition}>
+                {planet.degreeFormatted} {planet.zodiacSignName}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       <View style={styles.inputSection}>
-        <Text style={styles.sectionTitle}>Birth Date & Time</Text>
+        <Text style={styles.sectionTitle}>⭐ Birth Chart Calculator</Text>
+        <Text style={styles.description}>
+          Enter your birth information to calculate your natal chart
+        </Text>
 
         <View style={styles.inputRow}>
           <View style={styles.inputGroup}>
@@ -312,6 +343,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#e6e6fa",
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#8a8a8a",
+    textAlign: "center",
+    marginBottom: 10,
   },
   description: {
     fontSize: 16,
@@ -431,6 +470,14 @@ const styles = StyleSheet.create({
     color: "#8a8a8a",
     lineHeight: 20,
     marginBottom: 8,
+  },
+  currentPositionsSection: {
+    backgroundColor: "#1a1a2e",
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#2a2a3e",
   },
   infoSection: {
     backgroundColor: "#1a1a2e",

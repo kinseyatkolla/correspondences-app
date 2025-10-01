@@ -9,10 +9,7 @@ import * as Location from "expo-location";
 import { apiService, PlanetPosition } from "../services/api";
 
 interface CurrentChart {
-  planets: {
-    sun: PlanetPosition;
-    moon: PlanetPosition;
-  };
+  planets: Record<string, PlanetPosition>;
   currentTime: {
     timestamp: string;
   };
@@ -82,10 +79,7 @@ export function AstrologyProvider({ children }: AstrologyProviderProps) {
 
       if (response.success) {
         setCurrentChart({
-          planets: {
-            sun: response.data.planets.sun,
-            moon: response.data.planets.moon,
-          },
+          planets: response.data.planets,
           currentTime: {
             timestamp: response.data.currentTime.timestamp,
           },

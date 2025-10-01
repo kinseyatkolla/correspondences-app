@@ -425,11 +425,19 @@ router.post("/current-chart", (req, res) => {
     // Set topocentric location for more accurate calculations
     sweph.set_topo(longitude, latitude, 0); // 0 altitude for sea level
 
-    // Calculate planets (just sun and moon for the moon screen)
+    // Calculate all planets for current chart
     const planets = {};
     const planetIds = [
       { name: "sun", id: 0, symbol: "☉" },
       { name: "moon", id: 1, symbol: "☽" },
+      { name: "mercury", id: 2, symbol: "☿" },
+      { name: "venus", id: 3, symbol: "♀" },
+      { name: "mars", id: 4, symbol: "♂" },
+      { name: "jupiter", id: 5, symbol: "♃" },
+      { name: "saturn", id: 6, symbol: "♄" },
+      { name: "uranus", id: 7, symbol: "♅" },
+      { name: "neptune", id: 8, symbol: "♆" },
+      { name: "pluto", id: 9, symbol: "♇" },
     ];
 
     planetIds.forEach((planet) => {
