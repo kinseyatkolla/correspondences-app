@@ -421,13 +421,18 @@ export default function MoonScreen() {
             })()}
             {currentChart.planets.moon?.zodiacSignName} Moon
           </Text>
+          {currentTithi && (
+            <Text style={styles.subtitle}>
+              {currentTithi <= 15 ? "Waxing Moon" : "Waning Moon"}
+            </Text>
+          )}
           {/* Current Planetary Positions */}
           <View style={styles.positionsContainer}>
             <Text style={styles.positionsTitle}>Current Positions</Text>
 
             {currentChart.planets.sun && !currentChart.planets.sun.error && (
               <View style={styles.positionRow}>
-                <Text style={styles.planetPosition}>
+                <Text style={styles.planetName}>
                   <Text style={getPhysisSymbolStyle()}>
                     {getPlanetKeysFromNames()["Sun"]}
                   </Text>{" "}
@@ -448,7 +453,7 @@ export default function MoonScreen() {
 
             {currentChart.planets.moon && !currentChart.planets.moon.error && (
               <View style={styles.positionRow}>
-                <Text style={styles.planetPosition}>
+                <Text style={styles.planetName}>
                   <Text style={getPhysisSymbolStyle()}>
                     {getPlanetKeysFromNames()["Moon"]}
                   </Text>{" "}
@@ -538,8 +543,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 8,
     color: "#e6e6fa",
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 20,
+    color: "#b8b8b8",
+    textAlign: "center",
+    fontStyle: "italic",
   },
   description: {
     fontSize: 16,
@@ -555,27 +568,39 @@ const styles = StyleSheet.create({
   },
   positionsContainer: {
     backgroundColor: "#0f0f23",
-    padding: 20,
+    padding: 24,
     borderRadius: 12,
     marginVertical: 10,
     borderWidth: 1,
     borderColor: "#2a2a3e",
     minWidth: 300,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   positionsTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#e6e6fa",
-    marginBottom: 15,
+    marginBottom: 20,
     textAlign: "center",
+    letterSpacing: 0.5,
   },
   positionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
     borderBottomWidth: 1,
     borderBottomColor: "#2a2a3e",
+    marginBottom: 4,
   },
   planetName: {
     fontSize: 16,
@@ -584,10 +609,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   planetPosition: {
-    fontSize: 14,
-    color: "#8a8a8a",
+    fontSize: 16,
+    color: "#b8b8b8",
     textAlign: "right",
     flex: 1,
+    fontWeight: "500",
   },
   errorText: {
     fontSize: 16,
