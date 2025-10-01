@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Animated,
 } from "react-native";
 import { apiService, FlowerEssence } from "../services/api";
 import { getFlowerEmoji } from "../utils/imageHelper";
@@ -90,6 +91,8 @@ export default function FlowersScreen() {
     null
   );
   const [modalVisible, setModalVisible] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const flipAnimation = useState(new Animated.Value(0))[0];
 
   // ===== LIFECYCLE =====
   useEffect(() => {
@@ -131,6 +134,9 @@ export default function FlowersScreen() {
   const handleFlowerPress = (flower: FlowerEssence) => {
     setSelectedFlower(flower);
     setModalVisible(true);
+    // Reset flip state when opening a new flower
+    setIsFlipped(false);
+    flipAnimation.setValue(0);
   };
 
   const handleRandomDraw = async () => {
@@ -139,12 +145,26 @@ export default function FlowersScreen() {
       const response = await apiService.getRandomFlowerEssence();
       setSelectedFlower(response.data);
       setModalVisible(true);
+      // Reset flip state when opening a new flower
+      setIsFlipped(false);
+      flipAnimation.setValue(0);
     } catch (error) {
       console.error("Error drawing random flower:", error);
       Alert.alert("Error", "Failed to draw random flower");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImageFlip = () => {
+    const toValue = isFlipped ? 0 : 1;
+    setIsFlipped(!isFlipped);
+
+    Animated.timing(flipAnimation, {
+      toValue,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
   };
 
   // ===== LOADING STATES =====
@@ -248,16 +268,34 @@ export default function FlowersScreen() {
 
                   {/* Flower Image */}
                   <View style={overlayStyles.imageContainer}>
-                    <Image
-                      source={
-                        selectedFlower.imageName &&
-                        flowerImages[selectedFlower.imageName]
-                          ? flowerImages[selectedFlower.imageName]
-                          : flowerImages["default.jpg"]
-                      }
-                      style={overlayStyles.flowerImage}
-                      resizeMode="contain"
-                    />
+                    <TouchableOpacity
+                      onPress={handleImageFlip}
+                      activeOpacity={0.8}
+                    >
+                      <Animated.View
+                        style={{
+                          transform: [
+                            {
+                              rotateZ: flipAnimation.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: ["0deg", "180deg"],
+                              }),
+                            },
+                          ],
+                        }}
+                      >
+                        <Image
+                          source={
+                            selectedFlower.imageName &&
+                            flowerImages[selectedFlower.imageName]
+                              ? flowerImages[selectedFlower.imageName]
+                              : flowerImages["default.jpg"]
+                          }
+                          style={overlayStyles.flowerImage}
+                          resizeMode="contain"
+                        />
+                      </Animated.View>
+                    </TouchableOpacity>
                   </View>
 
                   <View style={overlayStyles.section}>
