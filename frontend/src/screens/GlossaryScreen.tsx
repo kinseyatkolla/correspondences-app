@@ -1,3 +1,6 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
 import React from "react";
 import {
   View,
@@ -10,11 +13,17 @@ import {
 import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 
+// ============================================================================
+// TYPES & INTERFACES
+// ============================================================================
 interface GlossaryScreenProps {
   visible: boolean;
   onClose: () => void;
 }
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
 export default function GlossaryScreen({
   visible,
   onClose,
@@ -82,6 +91,9 @@ export default function GlossaryScreen({
   );
 }
 
+// ============================================================================
+// STYLES
+// ============================================================================
 const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: "row",

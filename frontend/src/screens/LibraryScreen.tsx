@@ -1,3 +1,6 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
 import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
@@ -14,11 +17,17 @@ import { apiService, LibraryItem, ISBNBookData } from "../services/api";
 import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 
+// ============================================================================
+// TYPES & INTERFACES
+// ============================================================================
 interface LibraryScreenProps {
   visible: boolean;
   onClose: () => void;
 }
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
 export default function LibraryScreen({
   visible,
   onClose,
@@ -30,7 +39,9 @@ export default function LibraryScreen({
   const [lookupResult, setLookupResult] = useState<ISBNBookData | null>(null);
   const [showLookupResult, setShowLookupResult] = useState(false);
 
-  // ===== API FUNCTIONS =====
+  // ============================================================================
+  // API FUNCTIONS
+  // ============================================================================
   const loadLibraryItems = useCallback(async () => {
     try {
       setLibraryLoading(true);
@@ -99,14 +110,18 @@ export default function LibraryScreen({
     [loadLibraryItems]
   );
 
-  // ===== LIFECYCLE =====
+  // ============================================================================
+  // LIFECYCLE
+  // ============================================================================
   useEffect(() => {
     if (visible) {
       loadLibraryItems();
     }
   }, [visible, loadLibraryItems]);
 
-  // ===== RENDER HELPERS =====
+  // ============================================================================
+  // RENDER HELPERS
+  // ============================================================================
   const getMediaTypeIcon = (mediaType: string) => {
     switch (mediaType) {
       case "book":
@@ -251,6 +266,9 @@ export default function LibraryScreen({
   );
 }
 
+// ============================================================================
+// STYLES
+// ============================================================================
 const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: "row",

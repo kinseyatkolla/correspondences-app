@@ -1,3 +1,6 @@
+// ============================================================================
+// IMPORTS
+// ============================================================================
 import React from "react";
 import {
   View,
@@ -10,11 +13,17 @@ import {
 import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 
+// ============================================================================
+// TYPES & INTERFACES
+// ============================================================================
 interface BibliographyScreenProps {
   visible: boolean;
   onClose: () => void;
 }
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
 export default function BibliographyScreen({
   visible,
   onClose,
@@ -92,6 +101,9 @@ export default function BibliographyScreen({
   );
 }
 
+// ============================================================================
+// STYLES
+// ============================================================================
 const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: "row",
