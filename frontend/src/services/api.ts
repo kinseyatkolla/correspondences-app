@@ -137,6 +137,25 @@ export interface LibraryItem {
   updatedAt: string;
 }
 
+export interface ISBNBookData {
+  title: string;
+  authors: string[];
+  publisher: string;
+  publishedDate: string;
+  description: string;
+  isbn: string;
+  pageCount: number;
+  categories: string[];
+  imageLinks?: {
+    thumbnail?: string;
+    small?: string;
+    medium?: string;
+    large?: string;
+  };
+  language: string;
+  previewLink?: string;
+}
+
 export interface BookOfShadowsEntry {
   _id: string;
   name: string;
@@ -627,6 +646,15 @@ class ApiService {
     return this.fetchData(`/book-of-shadows/${id}`, {
       method: "DELETE",
     });
+  }
+
+  // ISBN Lookup API
+  async lookupISBN(isbn: string): Promise<{
+    success: boolean;
+    data: ISBNBookData;
+    message?: string;
+  }> {
+    return this.fetchData(`/library/lookup-isbn/${isbn}`);
   }
 }
 

@@ -14,7 +14,12 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { apiService, BookOfShadowsEntry, LibraryItem } from "../services/api";
+import {
+  apiService,
+  BookOfShadowsEntry,
+  LibraryItem,
+  ISBNBookData,
+} from "../services/api";
 import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 
@@ -39,6 +44,10 @@ export default function BookScreen() {
   const [glossaryModalVisible, setGlossaryModalVisible] = useState(false);
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(false);
+  const [isbnInput, setIsbnInput] = useState("");
+  const [isbnLookupLoading, setIsbnLookupLoading] = useState(false);
+  const [lookupResult, setLookupResult] = useState<ISBNBookData | null>(null);
+  const [showLookupResult, setShowLookupResult] = useState(false);
 
   // ===== LIFECYCLE =====
   useEffect(() => {
@@ -81,6 +90,60 @@ export default function BookScreen() {
       setLibraryLoading(false);
     }
   }, []);
+
+  const handleISBNLookup = useCallback(async () => {
+    if (!isbnInput.trim()) {
+      Alert.alert("Error", "Please enter an ISBN");
+      return;
+    }
+
+    try {
+      setIsbnLookupLoading(true);
+      const response = await apiService.lookupISBN(isbnInput.trim());
+      setLookupResult(response.data);
+      setShowLookupResult(true);
+    } catch (error) {
+      console.error("Error looking up ISBN:", error);
+      Alert.alert("Error", "Failed to look up book information");
+    } finally {
+      setIsbnLookupLoading(false);
+    }
+  }, [isbnInput]);
+
+  const handleAddBookToLibrary = useCallback(
+    async (bookData: ISBNBookData) => {
+      try {
+        const libraryItem = {
+          name: bookData.title,
+          author: bookData.authors.join(", "),
+          publisher: bookData.publisher,
+          year: bookData.publishedDate
+            ? parseInt(bookData.publishedDate.split("-")[0])
+            : undefined,
+          description: bookData.description,
+          isbn: bookData.isbn,
+          image: bookData.imageLinks?.thumbnail || bookData.imageLinks?.small,
+          sourceUrl: bookData.previewLink,
+          mediaType: "book" as const,
+        };
+
+        await apiService.createLibraryItem(libraryItem);
+        Alert.alert("Success", "Book added to library successfully!");
+
+        // Refresh library items
+        await loadLibraryItems();
+
+        // Clear lookup result
+        setLookupResult(null);
+        setShowLookupResult(false);
+        setIsbnInput("");
+      } catch (error) {
+        console.error("Error adding book to library:", error);
+        Alert.alert("Error", "Failed to add book to library");
+      }
+    },
+    [loadLibraryItems]
+  );
 
   // ===== EVENT HANDLERS =====
   const handleButtonPress = (section: string) => {
@@ -316,6 +379,36 @@ export default function BookScreen() {
     );
   };
 
+  const renderISBNLookupResult = () => {
+    if (!lookupResult) return null;
+
+    return (
+      <View style={overlayStyles.section}>
+        <Text style={overlayStyles.sectionTitle}>📖 Book Found</Text>
+        <View style={styles.lookupResultItem}>
+          <Text style={styles.resourceTitle}>{lookupResult.title}</Text>
+          <Text style={styles.resourceAuthor}>
+            by {lookupResult.authors.join(", ")}
+          </Text>
+          <Text style={styles.resourceDescription}>
+            {lookupResult.publisher} • {lookupResult.publishedDate}
+          </Text>
+          {lookupResult.description && (
+            <Text style={styles.resourceDescription}>
+              {lookupResult.description}
+            </Text>
+          )}
+          <TouchableOpacity
+            style={styles.addBookButton}
+            onPress={() => handleAddBookToLibrary(lookupResult)}
+          >
+            <Text style={styles.addBookButtonText}>+ Add to Library</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   // ===== LOADING STATES =====
   if (loading) {
     return (
@@ -527,6 +620,40 @@ export default function BookScreen() {
             <View style={styles.placeholder} />
           </View>
           <ScrollView style={styles.fullScreenModalScroll}>
+            {/* ISBN Lookup Section */}
+            <View style={overlayStyles.section}>
+              <Text style={overlayStyles.sectionTitle}>
+                🔍 Add Book by ISBN
+              </Text>
+              <View style={styles.isbnLookupContainer}>
+                <TextInput
+                  style={styles.isbnInput}
+                  placeholder="Enter ISBN (10 or 13 digits)"
+                  placeholderTextColor="#8a8a8a"
+                  value={isbnInput}
+                  onChangeText={setIsbnInput}
+                  keyboardType="numeric"
+                  returnKeyType="search"
+                  onSubmitEditing={handleISBNLookup}
+                />
+                <TouchableOpacity
+                  style={styles.isbnLookupButton}
+                  onPress={handleISBNLookup}
+                  disabled={isbnLookupLoading}
+                >
+                  {isbnLookupLoading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.isbnLookupButtonText}>🔍 Lookup</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* ISBN Lookup Result */}
+            {showLookupResult && renderISBNLookupResult()}
+
+            {/* Library Items */}
             {libraryLoading ? (
               <View style={sharedUI.loadingContainer}>
                 <ActivityIndicator size="large" color="#b19cd9" />
@@ -785,5 +912,56 @@ const styles = StyleSheet.create({
     color: "#8a8a8a",
     lineHeight: 20,
     marginBottom: 20,
+  },
+  // ISBN Lookup styles
+  isbnLookupContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  isbnInput: {
+    flex: 1,
+    backgroundColor: "#222",
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 8,
+    padding: 12,
+    color: "#e6e6fa",
+    fontSize: 16,
+    marginRight: 10,
+  },
+  isbnLookupButton: {
+    backgroundColor: "#b19cd9",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  isbnLookupButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+  lookupResultItem: {
+    backgroundColor: "#222",
+    padding: 15,
+    marginTop: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  addBookButton: {
+    backgroundColor: "#4CAF50",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+    marginTop: 10,
+    alignSelf: "flex-start",
+  },
+  addBookButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });
