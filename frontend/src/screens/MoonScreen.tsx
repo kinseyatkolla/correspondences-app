@@ -438,9 +438,23 @@ export default function MoonScreen() {
             })()}
             {currentChart.planets.moon?.zodiacSignName} Moon
           </Text>
+
+          {/* Moon degree and zodiac sign */}
           {currentTithi && (
             <Text style={styles.subtitle}>
               {currentTithi <= 15 ? "Waxing Moon" : "Waning Moon"}
+            </Text>
+          )}
+          {currentChart.planets.moon && !currentChart.planets.moon.error && (
+            <Text style={styles.subtitle}>
+              {currentChart.planets.moon.degreeFormatted}{" "}
+              <Text style={getPhysisSymbolStyle(fontLoaded, "large")}>
+                {
+                  getZodiacKeysFromNames()[
+                    currentChart.planets.moon.zodiacSignName
+                  ]
+                }
+              </Text>
             </Text>
           )}
 
@@ -479,53 +493,6 @@ export default function MoonScreen() {
               })()}
             </View>
           )}
-
-          {/* Current Planetary Positions */}
-          <View style={styles.positionsContainer}>
-            <Text style={styles.positionsTitle}>Current Positions</Text>
-
-            {currentChart.planets.sun && !currentChart.planets.sun.error && (
-              <View style={styles.positionRow}>
-                <Text style={styles.planetName}>
-                  <Text style={getPhysisSymbolStyle(fontLoaded, "large")}>
-                    {getPlanetKeysFromNames()["Sun"]}
-                  </Text>{" "}
-                  Sun
-                </Text>
-                <Text style={styles.planetPosition}>
-                  {currentChart.planets.sun.degreeFormatted}{" "}
-                  <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
-                    {
-                      getZodiacKeysFromNames()[
-                        currentChart.planets.sun.zodiacSignName
-                      ]
-                    }
-                  </Text>
-                </Text>
-              </View>
-            )}
-
-            {currentChart.planets.moon && !currentChart.planets.moon.error && (
-              <View style={styles.positionRow}>
-                <Text style={styles.planetName}>
-                  <Text style={getPhysisSymbolStyle(fontLoaded, "large")}>
-                    {getPlanetKeysFromNames()["Moon"]}
-                  </Text>{" "}
-                  Moon
-                </Text>
-                <Text style={styles.planetPosition}>
-                  {currentChart.planets.moon.degreeFormatted}{" "}
-                  <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
-                    {
-                      getZodiacKeysFromNames()[
-                        currentChart.planets.moon.zodiacSignName
-                      ]
-                    }
-                  </Text>
-                </Text>
-              </View>
-            )}
-          </View>
 
           {/* Aspects between Sun and Moon */}
           {currentChart?.planets?.sun &&
@@ -1189,5 +1156,13 @@ const styles = StyleSheet.create({
   },
   fallColor: {
     color: "#ff6b6b", // Red for fall (very weak)
+  },
+  // Moon position style
+  moonPosition: {
+    fontSize: 18,
+    fontWeight: "500",
+    marginBottom: 12,
+    color: "#b8b8b8",
+    textAlign: "center",
   },
 });
