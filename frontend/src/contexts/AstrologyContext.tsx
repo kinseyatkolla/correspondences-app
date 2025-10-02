@@ -17,6 +17,21 @@ interface CurrentChart {
     latitude: number;
     longitude: number;
   };
+  houses?: {
+    cusps: number[];
+    ascendant: number;
+    ascendantSign: string;
+    ascendantDegree: string;
+    mc: number;
+    mcSign: string;
+    mcDegree: string;
+    armc: number;
+    vertex: number;
+    equatorialAscendant: number;
+    coAscendant: number;
+    polarAscendant: number;
+    houseSystem: string;
+  };
 }
 
 interface AstrologyContextType {
@@ -87,6 +102,7 @@ export function AstrologyProvider({ children }: AstrologyProviderProps) {
             latitude: response.data.location.latitude,
             longitude: response.data.location.longitude,
           },
+          houses: response.data.houses,
         });
       } else {
         setError("Failed to fetch current chart");

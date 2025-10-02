@@ -438,6 +438,7 @@ router.post("/current-chart", (req, res) => {
       { name: "uranus", id: 7, symbol: "♅" },
       { name: "neptune", id: 8, symbol: "♆" },
       { name: "pluto", id: 9, symbol: "♇" },
+      { name: "northNode", id: 11, symbol: "☊" }, // True Node
     ];
 
     planetIds.forEach((planet) => {
@@ -466,6 +467,54 @@ router.post("/current-chart", (req, res) => {
       }
     });
 
+    // Calculate ascendant and midheaven using houses function
+    let ascendantDegree, mcDegree, ascendantSign, mcSign;
+
+    try {
+      // Use houses function with whole sign houses ('W')
+      const houses = sweph.houses(julianDay, latitude, longitude, "W");
+      console.log("houses result:", houses);
+
+      // Extract ascendant and MC from points array
+      // points[0] = Ascendant, points[1] = MC
+      ascendantDegree = houses.data.points[0];
+      mcDegree = houses.data.points[1];
+
+      console.log(
+        "Extracted ascendantDegree:",
+        ascendantDegree,
+        "mcDegree:",
+        mcDegree
+      );
+    } catch (housesError) {
+      console.log("houses function failed:", housesError.message);
+      // Set default values if it fails
+      ascendantDegree = 0;
+      mcDegree = 0;
+    }
+
+    ascendantSign = getZodiacSign(ascendantDegree);
+    mcSign = getZodiacSign(mcDegree);
+
+    // For whole sign houses, each house corresponds to a complete zodiac sign
+    // House 1 starts at 0° of the ascendant's sign, House 2 at 0° of the next sign, etc.
+    const ascendantSignNumber = Math.floor(ascendantDegree / 30);
+    const wholeSignCusps = Array.from(
+      { length: 13 }, // 12 houses + 1 for the next house
+      (_, i) => ((ascendantSignNumber + i) * 30) % 360
+    );
+
+    const houseData = {
+      ascendant: ascendantDegree,
+      ascendantSign: ascendantSign,
+      ascendantDegree: formatDegree(ascendantDegree),
+      mc: mcDegree,
+      mcSign: mcSign,
+      mcDegree: formatDegree(mcDegree),
+      houseSystem: "W", // Whole sign houses
+      cusps: wholeSignCusps,
+    };
+
     res.json({
       success: true,
       data: {
@@ -479,6 +528,7 @@ router.post("/current-chart", (req, res) => {
         },
         location: { latitude, longitude },
         planets,
+        houses: houseData,
       },
     });
   } catch (error) {

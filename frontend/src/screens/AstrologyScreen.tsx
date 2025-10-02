@@ -207,6 +207,20 @@ export default function AstrologyScreen() {
         </Text>
       </View>
 
+      {/* Debug Section */}
+      {currentChart && (
+        <View style={styles.debugSection}>
+          <Text style={styles.debugTitle}>
+            🔍 Debug: AstrologyContext Payload
+          </Text>
+          <ScrollView style={styles.debugScrollView} nestedScrollEnabled={true}>
+            <Text style={styles.debugText}>
+              {JSON.stringify(currentChart, null, 2)}
+            </Text>
+          </ScrollView>
+        </View>
+      )}
+
       {/* Current Planetary Positions */}
       {currentChart && !ephemerisLoading && (
         <View style={styles.currentPositionsSection}>
@@ -571,5 +585,31 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#2a2a3e",
     marginTop: 10,
+  },
+  debugSection: {
+    backgroundColor: "#2a1a1a",
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#4a2a2a",
+  },
+  debugTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#ff9999",
+    marginBottom: 10,
+  },
+  debugScrollView: {
+    maxHeight: 200,
+    backgroundColor: "#1a1a1a",
+    borderRadius: 8,
+    padding: 10,
+  },
+  debugText: {
+    fontSize: 12,
+    color: "#cccccc",
+    fontFamily: "monospace",
+    lineHeight: 16,
   },
 });

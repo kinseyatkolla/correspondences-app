@@ -484,6 +484,21 @@ class ApiService {
         longitude: number;
       };
       planets: Record<string, PlanetPosition>;
+      houses: {
+        cusps: number[];
+        ascendant: number;
+        ascendantSign: string;
+        ascendantDegree: string;
+        mc: number;
+        mcSign: string;
+        mcDegree: string;
+        armc: number;
+        vertex: number;
+        equatorialAscendant: number;
+        coAscendant: number;
+        polarAscendant: number;
+        houseSystem: string;
+      };
     };
   }> {
     return this.fetchData("/astrology/current-chart", {
