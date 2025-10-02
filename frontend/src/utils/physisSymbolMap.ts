@@ -112,6 +112,7 @@ export const getPlanetKeysFromNames = (): { [key: string]: string } => {
     Uranus: "i",
     Neptune: "o",
     Pluto: "p",
+    NorthNode: "]",
   };
 };
 

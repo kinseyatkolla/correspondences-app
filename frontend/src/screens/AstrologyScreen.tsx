@@ -235,12 +235,39 @@ export default function AstrologyScreen() {
               <Text style={styles.refreshButtonText}>🔄</Text>
             </TouchableOpacity>
           </View>
+          {/* Ascendant */}
+          {currentChart.houses && (
+            <View style={styles.planetRow}>
+              <Text style={styles.zodiacSymbol}>
+                {/* ascendant symbol */}
+                <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
+                  !
+                </Text>{" "}
+                {/* zodiac symbol */}
+                <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
+                  {getZodiacKeysFromNames()[currentChart.houses.ascendantSign]}
+                </Text>{" "}
+              </Text>
+              <Text style={styles.planetPosition}>
+                {currentChart.houses.ascendantSign} Ascendant
+              </Text>
+              <Text style={styles.planetPosition}>
+                {currentChart.houses.ascendantDegree}
+              </Text>
+            </View>
+          )}
           {Object.entries(currentChart.planets).map(([planetName, planet]) => {
             const planetKeys = getPlanetKeysFromNames();
             const zodiacKeys = getZodiacKeysFromNames();
             const capitalizedName =
               planetName.charAt(0).toUpperCase() + planetName.slice(1);
-            const physisKey = planetKeys[capitalizedName];
+            // Special handling for north node
+            const displayName =
+              planetName === "northNode" ? "N. Node" : capitalizedName;
+            const physisKey =
+              planetKeys[
+                planetName === "northNode" ? "NorthNode" : capitalizedName
+              ];
             const physisSymbol = physisKey;
             const zodiacKey = zodiacKeys[planet.zodiacSignName];
             const physisZodiacSymbol = zodiacKey;
@@ -248,18 +275,20 @@ export default function AstrologyScreen() {
             return (
               <View key={planetName} style={styles.planetRow}>
                 <Text style={styles.zodiacSymbol}>
-                  <Text style={getPhysisSymbolStyle(fontLoaded, "small")}>
+                  {/* planet symbol  */}
+                  <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
                     {physisSymbol}
                   </Text>{" "}
-                  <Text style={getPhysisSymbolStyle(fontLoaded, "small")}>
+                  {/* zodiac symbol */}
+                  <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
                     {physisZodiacSymbol}
                   </Text>{" "}
                 </Text>
                 <Text style={styles.planetPosition}>
-                  {planet.zodiacSignName}
+                  {planet.zodiacSignName} {displayName}
                 </Text>
                 <Text style={styles.planetPosition}>
-                  {capitalizedName} {planet.degreeFormatted}
+                  {planet.degreeFormatted}
                 </Text>
               </View>
             );
