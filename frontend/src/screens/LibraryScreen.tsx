@@ -34,10 +34,12 @@ export default function LibraryScreen({
 }: LibraryScreenProps) {
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(false);
+  const [titleInput, setTitleInput] = useState("");
+  const [authorInput, setAuthorInput] = useState("");
   const [isbnInput, setIsbnInput] = useState("");
-  const [isbnLookupLoading, setIsbnLookupLoading] = useState(false);
-  const [lookupResult, setLookupResult] = useState<ISBNBookData | null>(null);
-  const [showLookupResult, setShowLookupResult] = useState(false);
+  const [bookLookupLoading, setBookLookupLoading] = useState(false);
+  const [lookupResults, setLookupResults] = useState<ISBNBookData[]>([]);
+  const [showLookupResults, setShowLookupResults] = useState(false);
 
   // ============================================================================
   // API FUNCTIONS
@@ -56,24 +58,32 @@ export default function LibraryScreen({
     }
   }, []);
 
-  const handleISBNLookup = useCallback(async () => {
-    if (!isbnInput.trim()) {
-      Alert.alert("Error", "Please enter an ISBN");
+  const handleBookLookup = useCallback(async () => {
+    const title = titleInput.trim();
+    const author = authorInput.trim();
+    const isbn = isbnInput.trim();
+
+    if (!title && !author && !isbn) {
+      Alert.alert("Error", "Please enter at least a title, author, or ISBN");
       return;
     }
 
     try {
-      setIsbnLookupLoading(true);
-      const response = await apiService.lookupISBN(isbnInput.trim());
-      setLookupResult(response.data);
-      setShowLookupResult(true);
+      setBookLookupLoading(true);
+      const response = await apiService.searchBooks({
+        title: title || undefined,
+        author: author || undefined,
+        isbn: isbn || undefined,
+      });
+      setLookupResults(response.data);
+      setShowLookupResults(true);
     } catch (error) {
-      console.error("Error looking up ISBN:", error);
-      Alert.alert("Error", "Failed to look up book information");
+      console.error("Error searching for books:", error);
+      Alert.alert("Error", "Failed to search for books");
     } finally {
-      setIsbnLookupLoading(false);
+      setBookLookupLoading(false);
     }
-  }, [isbnInput]);
+  }, [titleInput, authorInput, isbnInput]);
 
   const handleAddBookToLibrary = useCallback(
     async (bookData: ISBNBookData) => {
@@ -98,9 +108,11 @@ export default function LibraryScreen({
         // Refresh library items
         await loadLibraryItems();
 
-        // Clear lookup result
-        setLookupResult(null);
-        setShowLookupResult(false);
+        // Clear lookup results and inputs
+        setLookupResults([]);
+        setShowLookupResults(false);
+        setTitleInput("");
+        setAuthorInput("");
         setIsbnInput("");
       } catch (error) {
         console.error("Error adding book to library:", error);
@@ -167,32 +179,40 @@ export default function LibraryScreen({
     );
   };
 
-  const renderISBNLookupResult = () => {
-    if (!lookupResult) return null;
+  const renderBookLookupResults = () => {
+    if (!lookupResults || lookupResults.length === 0) return null;
 
     return (
       <View style={overlayStyles.section}>
-        <Text style={overlayStyles.sectionTitle}>📖 Book Found</Text>
-        <View style={styles.lookupResultItem}>
-          <Text style={styles.resourceTitle}>{lookupResult.title}</Text>
-          <Text style={styles.resourceAuthor}>
-            by {lookupResult.authors.join(", ")}
-          </Text>
-          <Text style={styles.resourceDescription}>
-            {lookupResult.publisher} • {lookupResult.publishedDate}
-          </Text>
-          {lookupResult.description && (
-            <Text style={styles.resourceDescription}>
-              {lookupResult.description}
+        <Text style={overlayStyles.sectionTitle}>
+          📖{" "}
+          {lookupResults.length === 1
+            ? "Book Found"
+            : `${lookupResults.length} Books Found`}
+        </Text>
+        {lookupResults.map((book, index) => (
+          <View key={index} style={styles.lookupResultItem}>
+            <Text style={styles.resourceTitle}>{book.title}</Text>
+            <Text style={styles.resourceAuthor}>
+              by {book.authors.join(", ")}
             </Text>
-          )}
-          <TouchableOpacity
-            style={styles.addBookButton}
-            onPress={() => handleAddBookToLibrary(lookupResult)}
-          >
-            <Text style={styles.addBookButtonText}>+ Add to Library</Text>
-          </TouchableOpacity>
-        </View>
+            <Text style={styles.resourceDescription}>
+              {book.publisher} • {book.publishedDate}
+              {book.isbn && ` • ISBN: ${book.isbn}`}
+            </Text>
+            {book.description && (
+              <Text style={styles.resourceDescription} numberOfLines={3}>
+                {book.description}
+              </Text>
+            )}
+            <TouchableOpacity
+              style={styles.addBookButton}
+              onPress={() => handleAddBookToLibrary(book)}
+            >
+              <Text style={styles.addBookButtonText}>+ Add to Library</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
       </View>
     );
   };
@@ -213,36 +233,64 @@ export default function LibraryScreen({
           <View style={styles.placeholder} />
         </View>
         <ScrollView style={styles.fullScreenModalScroll}>
-          {/* ISBN Lookup Section */}
+          {/* Book Search Section */}
           <View style={overlayStyles.section}>
-            <Text style={overlayStyles.sectionTitle}>🔍 Add Book by ISBN</Text>
-            <View style={styles.isbnLookupContainer}>
+            <Text style={overlayStyles.sectionTitle}>🔍 Search for Books</Text>
+
+            {/* Title Input */}
+            <View style={styles.inputContainer}>
               <TextInput
-                style={styles.isbnInput}
-                placeholder="Enter ISBN (10 or 13 digits)"
+                style={styles.searchInput}
+                placeholder="Book Title (optional)"
+                placeholderTextColor="#8a8a8a"
+                value={titleInput}
+                onChangeText={setTitleInput}
+                returnKeyType="next"
+              />
+            </View>
+
+            {/* Author Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Author Name (optional)"
+                placeholderTextColor="#8a8a8a"
+                value={authorInput}
+                onChangeText={setAuthorInput}
+                returnKeyType="next"
+              />
+            </View>
+
+            {/* ISBN Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="ISBN (10 or 13 digits, optional)"
                 placeholderTextColor="#8a8a8a"
                 value={isbnInput}
                 onChangeText={setIsbnInput}
                 keyboardType="numeric"
                 returnKeyType="search"
-                onSubmitEditing={handleISBNLookup}
+                onSubmitEditing={handleBookLookup}
               />
-              <TouchableOpacity
-                style={styles.isbnLookupButton}
-                onPress={handleISBNLookup}
-                disabled={isbnLookupLoading}
-              >
-                {isbnLookupLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.isbnLookupButtonText}>🔍 Lookup</Text>
-                )}
-              </TouchableOpacity>
             </View>
+
+            {/* Search Button */}
+            <TouchableOpacity
+              style={styles.searchButton}
+              onPress={handleBookLookup}
+              disabled={bookLookupLoading}
+            >
+              {bookLookupLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.searchButtonText}>🔍 Search Books</Text>
+              )}
+            </TouchableOpacity>
           </View>
 
-          {/* ISBN Lookup Result */}
-          {showLookupResult && renderISBNLookupResult()}
+          {/* Book Search Results */}
+          {showLookupResults && renderBookLookupResults()}
 
           {/* Library Items */}
           {libraryLoading ? (
@@ -327,13 +375,10 @@ const styles = StyleSheet.create({
     marginTop: 5,
     fontStyle: "italic",
   },
-  isbnLookupContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
+  inputContainer: {
+    marginBottom: 12,
   },
-  isbnInput: {
-    flex: 1,
+  searchInput: {
     backgroundColor: "#222",
     borderWidth: 1,
     borderColor: "#333",
@@ -341,17 +386,16 @@ const styles = StyleSheet.create({
     padding: 12,
     color: "#e6e6fa",
     fontSize: 16,
-    marginRight: 10,
   },
-  isbnLookupButton: {
+  searchButton: {
     backgroundColor: "#b19cd9",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
-    minWidth: 80,
     alignItems: "center",
+    marginTop: 8,
   },
-  isbnLookupButtonText: {
+  searchButtonText: {
     color: "#fff",
     fontWeight: "bold",
     fontSize: 14,

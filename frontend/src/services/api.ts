@@ -1,5 +1,6 @@
 // API configuration
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.0.42:3000/api";
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL || "http://192.168.0.42:3000/api";
 
 // Types for our API responses
 export interface Correspondence {
@@ -655,6 +656,32 @@ class ApiService {
     message?: string;
   }> {
     return this.fetchData(`/library/lookup-isbn/${isbn}`);
+  }
+
+  // Book Search API - search by title, author, and/or ISBN
+  async searchBooks(params: {
+    title?: string;
+    author?: string;
+    isbn?: string;
+  }): Promise<{
+    success: boolean;
+    data: ISBNBookData[];
+    message?: string;
+  }> {
+    const queryParams = new URLSearchParams();
+    if (params.title && params.title.trim())
+      queryParams.append("title", params.title.trim());
+    if (params.author && params.author.trim())
+      queryParams.append("author", params.author.trim());
+    if (params.isbn && params.isbn.trim())
+      queryParams.append("isbn", params.isbn.trim());
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString
+      ? `/library/search-book?${queryString}`
+      : "/library/search-book";
+
+    return this.fetchData(endpoint);
   }
 }
 

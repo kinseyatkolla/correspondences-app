@@ -80,6 +80,119 @@ router.get("/random", async (req, res) => {
   }
 });
 
+// GET /api/library/search-book - Search for books by title and/or author using Google Books API
+router.get("/search-book", async (req, res) => {
+  try {
+    const { title, author, isbn } = req.query;
+
+    // If ISBN is provided, use the existing ISBN lookup
+    if (isbn && isbn.trim()) {
+      const cleanISBN = isbn.replace(/[-\s]/g, "");
+      if (/^\d{10}(\d{3})?$/.test(cleanISBN)) {
+        const response = await axios.get(
+          `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanISBN}`
+        );
+
+        if (response.data.items && response.data.items.length > 0) {
+          const bookData = response.data.items[0].volumeInfo;
+          const isbn13 = bookData.industryIdentifiers?.find(
+            (id) => id.type === "ISBN_13"
+          )?.identifier;
+          const isbn10 = bookData.industryIdentifiers?.find(
+            (id) => id.type === "ISBN_10"
+          )?.identifier;
+
+          const transformedData = {
+            title: bookData.title || "Unknown Title",
+            authors: bookData.authors || ["Unknown Author"],
+            publisher: bookData.publisher || "Unknown Publisher",
+            publishedDate: bookData.publishedDate || "",
+            description: bookData.description || "",
+            isbn: isbn13 || isbn10 || cleanISBN,
+            pageCount: bookData.pageCount || 0,
+            categories: bookData.categories || [],
+            imageLinks: bookData.imageLinks || {},
+            language: bookData.language || "en",
+            previewLink: bookData.previewLink || "",
+          };
+
+          return res.json({
+            success: true,
+            data: [transformedData], // Return as array for consistency
+          });
+        }
+      }
+    }
+
+    // Build search query for title and/or author
+    if (!title && !author && !isbn) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide at least a title, author, or ISBN to search.",
+      });
+    }
+
+    let searchQuery = "";
+    if (title && title.trim()) {
+      searchQuery += `intitle:"${encodeURIComponent(title.trim())}"`;
+    }
+    if (author && author.trim()) {
+      searchQuery += `${searchQuery ? "+" : ""}inauthor:"${encodeURIComponent(
+        author.trim()
+      )}"`;
+    }
+
+    // Call Google Books API
+    const response = await axios.get(
+      `https://www.googleapis.com/books/v1/volumes?q=${searchQuery}&maxResults=10`
+    );
+
+    if (!response.data.items || response.data.items.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No books found matching the search criteria",
+      });
+    }
+
+    // Transform results
+    const books = response.data.items.map((item) => {
+      const bookData = item.volumeInfo;
+      const isbn13 = bookData.industryIdentifiers?.find(
+        (id) => id.type === "ISBN_13"
+      )?.identifier;
+      const isbn10 = bookData.industryIdentifiers?.find(
+        (id) => id.type === "ISBN_10"
+      )?.identifier;
+
+      return {
+        title: bookData.title || "Unknown Title",
+        authors: bookData.authors || ["Unknown Author"],
+        publisher: bookData.publisher || "Unknown Publisher",
+        publishedDate: bookData.publishedDate || "",
+        description: bookData.description || "",
+        isbn: isbn13 || isbn10 || "",
+        pageCount: bookData.pageCount || 0,
+        categories: bookData.categories || [],
+        imageLinks: bookData.imageLinks || {},
+        language: bookData.language || "en",
+        previewLink: bookData.previewLink || "",
+      };
+    });
+
+    res.json({
+      success: true,
+      data: books,
+    });
+  } catch (error) {
+    console.error("Error searching for books:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error searching for books",
+      error: error.message,
+    });
+  }
+});
+
 // GET /api/library/:id - Get a specific library item
 router.get("/:id", async (req, res) => {
   try {
@@ -188,10 +301,10 @@ router.delete("/:id", async (req, res) => {
 router.get("/lookup-isbn/:isbn", async (req, res) => {
   try {
     const { isbn } = req.params;
-    
+
     // Clean ISBN (remove hyphens and spaces)
     const cleanISBN = isbn.replace(/[-\s]/g, "");
-    
+
     // Validate ISBN format (10 or 13 digits)
     if (!/^\d{10}(\d{3})?$/.test(cleanISBN)) {
       return res.status(400).json({
@@ -213,7 +326,7 @@ router.get("/lookup-isbn/:isbn", async (req, res) => {
     }
 
     const bookData = response.data.items[0].volumeInfo;
-    
+
     // Transform the data to match our ISBNBookData interface
     const transformedData = {
       title: bookData.title || "Unknown Title",
