@@ -407,3 +407,90 @@ export const getActiveWholeSignAspects = (
 
   return activeAspects;
 };
+
+// ============================================================================
+// ESSENTIAL DIGNITIES
+// ============================================================================
+
+export interface EssentialDignity {
+  type: "domicile" | "exaltation" | "detriment" | "fall";
+  planet: string;
+  sign: string;
+}
+
+export interface DignityResult {
+  hasDignity: boolean;
+  dignities: EssentialDignity[];
+}
+
+// Essential dignities mapping
+const ESSENTIAL_DIGNITIES: EssentialDignity[] = [
+  // Domiciles (Rulerships)
+  { type: "domicile", planet: "sun", sign: "Leo" },
+  { type: "domicile", planet: "moon", sign: "Cancer" },
+  { type: "domicile", planet: "mercury", sign: "Gemini" },
+  { type: "domicile", planet: "mercury", sign: "Virgo" },
+  { type: "domicile", planet: "venus", sign: "Taurus" },
+  { type: "domicile", planet: "venus", sign: "Libra" },
+  { type: "domicile", planet: "mars", sign: "Aries" },
+  { type: "domicile", planet: "mars", sign: "Scorpio" },
+  { type: "domicile", planet: "jupiter", sign: "Sagittarius" },
+  { type: "domicile", planet: "jupiter", sign: "Pisces" },
+  { type: "domicile", planet: "saturn", sign: "Capricorn" },
+  { type: "domicile", planet: "saturn", sign: "Aquarius" },
+
+  // Exaltations
+  { type: "exaltation", planet: "sun", sign: "Aries" },
+  { type: "exaltation", planet: "moon", sign: "Taurus" },
+  { type: "exaltation", planet: "mercury", sign: "Virgo" },
+  { type: "exaltation", planet: "venus", sign: "Pisces" },
+  { type: "exaltation", planet: "mars", sign: "Capricorn" },
+  { type: "exaltation", planet: "jupiter", sign: "Cancer" },
+  { type: "exaltation", planet: "saturn", sign: "Libra" },
+
+  // Detriments (opposite of domicile)
+  { type: "detriment", planet: "sun", sign: "Aquarius" },
+  { type: "detriment", planet: "moon", sign: "Capricorn" },
+  { type: "detriment", planet: "mercury", sign: "Sagittarius" },
+  { type: "detriment", planet: "mercury", sign: "Pisces" },
+  { type: "detriment", planet: "venus", sign: "Scorpio" },
+  { type: "detriment", planet: "venus", sign: "Aries" },
+  { type: "detriment", planet: "mars", sign: "Libra" },
+  { type: "detriment", planet: "mars", sign: "Taurus" },
+  { type: "detriment", planet: "jupiter", sign: "Gemini" },
+  { type: "detriment", planet: "jupiter", sign: "Virgo" },
+  { type: "detriment", planet: "saturn", sign: "Cancer" },
+  { type: "detriment", planet: "saturn", sign: "Leo" },
+
+  // Falls (opposite of exaltation)
+  { type: "fall", planet: "sun", sign: "Libra" },
+  { type: "fall", planet: "moon", sign: "Scorpio" },
+  { type: "fall", planet: "mercury", sign: "Pisces" },
+  { type: "fall", planet: "venus", sign: "Virgo" },
+  { type: "fall", planet: "mars", sign: "Cancer" },
+  { type: "fall", planet: "jupiter", sign: "Capricorn" },
+  { type: "fall", planet: "saturn", sign: "Aries" },
+];
+
+/**
+ * Check essential dignities for a planet
+ * @param planet Planet position object
+ * @param planetName Name of the planet (sun, moon, mercury, etc.)
+ * @returns DignityResult with dignity information
+ */
+export const checkEssentialDignities = (
+  planet: PlanetPosition,
+  planetName: string
+): DignityResult => {
+  const planetKey = planetName.toLowerCase();
+  const currentSign = planet.zodiacSignName;
+
+  const activeDignities = ESSENTIAL_DIGNITIES.filter(
+    (dignity) => dignity.planet === planetKey && dignity.sign === currentSign
+  );
+
+  return {
+    hasDignity: activeDignities.length > 0,
+    dignities: activeDignities,
+  };
+};

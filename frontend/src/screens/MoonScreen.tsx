@@ -31,6 +31,7 @@ import {
   checkForWholeSignSextile,
   getActiveAspects,
   getActiveWholeSignAspects,
+  checkEssentialDignities,
 } from "../utils/aspectUtils";
 import {
   getAspectColorStyle,
@@ -442,6 +443,43 @@ export default function MoonScreen() {
               {currentTithi <= 15 ? "Waxing Moon" : "Waning Moon"}
             </Text>
           )}
+
+          {/* Essential Dignities */}
+          {currentChart.planets.moon && !currentChart.planets.moon.error && (
+            <View style={styles.dignityContainer}>
+              {(() => {
+                const moonDignities = checkEssentialDignities(
+                  currentChart.planets.moon,
+                  "moon"
+                );
+
+                if (!moonDignities.hasDignity) {
+                  return null;
+                }
+
+                return moonDignities.dignities.map((dignity, index) => (
+                  <Text
+                    key={index}
+                    style={[
+                      styles.dignityText,
+                      dignity.type === "domicile"
+                        ? styles.domicileColor
+                        : dignity.type === "exaltation"
+                        ? styles.exaltationColor
+                        : dignity.type === "detriment"
+                        ? styles.detrimentColor
+                        : dignity.type === "fall"
+                        ? styles.fallColor
+                        : styles.dignityText,
+                    ]}
+                  >
+                    Moon in {dignity.type} ({dignity.sign})
+                  </Text>
+                ));
+              })()}
+            </View>
+          )}
+
           {/* Current Planetary Positions */}
           <View style={styles.positionsContainer}>
             <Text style={styles.positionsTitle}>Current Positions</Text>
@@ -1128,4 +1166,28 @@ const styles = StyleSheet.create({
     textAlign: "left",
   },
   // Color styles moved to colorUtils.ts for DRY principle
+  // Essential dignities styles
+  dignityContainer: {
+    marginVertical: 10,
+    alignItems: "center",
+  },
+  dignityText: {
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  // Essential dignity colors
+  domicileColor: {
+    color: "#4ecdc4", // Teal for domicile (strong)
+  },
+  exaltationColor: {
+    color: "#51cf66", // Green for exaltation (very strong)
+  },
+  detrimentColor: {
+    color: "#ff8c42", // Orange for detriment (weak)
+  },
+  fallColor: {
+    color: "#ff6b6b", // Red for fall (very weak)
+  },
 });
