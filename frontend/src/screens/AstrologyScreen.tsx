@@ -21,6 +21,7 @@ import {
   getPlanetSymbols,
   getZodiacKeysFromNames,
 } from "../utils/physisSymbolMap";
+import AstrologyChart from "../components/AstrologyChart";
 
 // ============================================================================
 // COMPONENT
@@ -115,6 +116,9 @@ export default function AstrologyScreen() {
       <View key={name} style={styles.planetRow}>
         <Text style={styles.planetName}>
           {planet.symbol} {name} {name.charAt(0).toUpperCase() + name.slice(1)}
+          {planet.isRetrograde && (
+            <Text style={styles.retrogradeIndicator}> R</Text>
+          )}
         </Text>
         <Text style={styles.planetPosition}>
           {planet.degreeFormatted} {planet.zodiacSignName}
@@ -203,21 +207,23 @@ export default function AstrologyScreen() {
             year: "numeric",
             month: "long",
             day: "numeric",
+          })}{" "}
+          at{" "}
+          {new Date().toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
           })}
         </Text>
       </View>
 
-      {/* Debug Section */}
-      {currentChart && (
-        <View style={styles.debugSection}>
-          <Text style={styles.debugTitle}>
-            🔍 Debug: AstrologyContext Payload
-          </Text>
-          <ScrollView style={styles.debugScrollView} nestedScrollEnabled={true}>
-            <Text style={styles.debugText}>
-              {JSON.stringify(currentChart, null, 2)}
-            </Text>
-          </ScrollView>
+      {/* Current Chart Display */}
+      {currentChart && !ephemerisLoading && (
+        <View style={styles.chartContainer}>
+          <AstrologyChart
+            planets={currentChart.planets}
+            houses={currentChart.houses}
+          />
         </View>
       )}
 
@@ -257,6 +263,11 @@ export default function AstrologyScreen() {
             </View>
           )}
           {Object.entries(currentChart.planets).map(([planetName, planet]) => {
+            // Temporary test: force Pluto to be retrograde for testing
+            const testPlanet =
+              planetName === "pluto"
+                ? { ...planet, isRetrograde: true }
+                : planet;
             const planetKeys = getPlanetKeysFromNames();
             const zodiacKeys = getZodiacKeysFromNames();
             const capitalizedName =
@@ -269,7 +280,7 @@ export default function AstrologyScreen() {
                 planetName === "northNode" ? "NorthNode" : capitalizedName
               ];
             const physisSymbol = physisKey;
-            const zodiacKey = zodiacKeys[planet.zodiacSignName];
+            const zodiacKey = zodiacKeys[testPlanet.zodiacSignName];
             const physisZodiacSymbol = zodiacKey;
 
             return (
@@ -285,10 +296,13 @@ export default function AstrologyScreen() {
                   </Text>{" "}
                 </Text>
                 <Text style={styles.planetPosition}>
-                  {planet.zodiacSignName} {displayName}
+                  {testPlanet.zodiacSignName} {displayName}
+                  {testPlanet.isRetrograde && (
+                    <Text style={styles.retrogradeIndicator}> R</Text>
+                  )}
                 </Text>
                 <Text style={styles.planetPosition}>
-                  {planet.degreeFormatted}
+                  {testPlanet.degreeFormatted}
                 </Text>
               </View>
             );
@@ -487,6 +501,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#2a2a3e",
   },
+  chartContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
   inputSubsection: {
     marginBottom: 20,
   },
@@ -574,6 +592,11 @@ const styles = StyleSheet.create({
     textAlign: "right",
     flex: 1,
   },
+  retrogradeIndicator: {
+    fontSize: 12,
+    color: "#ff6b6b",
+    fontWeight: "bold",
+  },
   infoText: {
     fontSize: 14,
     color: "#8a8a8a",
@@ -614,31 +637,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#2a2a3e",
     marginTop: 10,
-  },
-  debugSection: {
-    backgroundColor: "#2a1a1a",
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#4a2a2a",
-  },
-  debugTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#ff9999",
-    marginBottom: 10,
-  },
-  debugScrollView: {
-    maxHeight: 200,
-    backgroundColor: "#1a1a1a",
-    borderRadius: 8,
-    padding: 10,
-  },
-  debugText: {
-    fontSize: 12,
-    color: "#cccccc",
-    fontFamily: "monospace",
-    lineHeight: 16,
   },
 });

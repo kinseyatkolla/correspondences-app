@@ -6,10 +6,13 @@ import React, {
   ReactNode,
 } from "react";
 import * as Location from "expo-location";
-import { apiService, PlanetPosition } from "../services/api";
+import {
+  apiService,
+  PlanetPosition as ApiPlanetPosition,
+} from "../services/api";
 
 interface CurrentChart {
-  planets: Record<string, PlanetPosition>;
+  planets: Record<string, ApiPlanetPosition>;
   currentTime: {
     timestamp: string;
   };

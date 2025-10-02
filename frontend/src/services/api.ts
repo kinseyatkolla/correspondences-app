@@ -70,6 +70,7 @@ export interface PlanetPosition {
   degree: number;
   degreeFormatted: string;
   symbol: string;
+  isRetrograde?: boolean;
   error?: string;
 }
 

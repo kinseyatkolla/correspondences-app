@@ -6,6 +6,7 @@ const sweph = require("sweph");
 
 // Swiss Ephemeris flags
 const SEFLG_TOPOCTR = 0x00040000; // Topocentric position flag
+const SEFLG_SPEED = 0x00000002; // Include speed in calculation
 
 // Type definitions for reference (JavaScript comments)
 /**
@@ -133,20 +134,22 @@ router.post("/planets", (req, res) => {
 
     planetIds.forEach((planet) => {
       try {
-        const result = sweph.calc_ut(julianDay, planet.id, 0);
+        const result = sweph.calc_ut(julianDay, planet.id, SEFLG_SPEED);
 
         if (result.data && result.data.length >= 4) {
           const longitude = result.data[0];
+          const speed = result.data[3];
           planets[planet.name] = {
             longitude,
             latitude: result.data[1],
             distance: result.data[2],
-            speed: result.data[3],
+            speed,
             zodiacSign: Math.floor(longitude / 30),
             zodiacSignName: getZodiacSign(longitude),
             degree: longitude % 30,
             degreeFormatted: formatDegree(longitude),
             symbol: planet.symbol,
+            isRetrograde: speed < 0,
           };
         } else {
           planets[planet.name] = { error: "Invalid result format" };
@@ -323,20 +326,26 @@ router.post("/chart", (req, res) => {
 
     planetIds.forEach((planet) => {
       try {
-        const result = sweph.calc_ut(julianDay, planet.id, SEFLG_TOPOCTR);
+        const result = sweph.calc_ut(
+          julianDay,
+          planet.id,
+          SEFLG_TOPOCTR | SEFLG_SPEED
+        );
 
         if (result.data && result.data.length >= 4) {
           const longitude = result.data[0];
+          const speed = result.data[3];
           planets[planet.name] = {
             longitude,
             latitude: result.data[1],
             distance: result.data[2],
-            speed: result.data[3],
+            speed,
             zodiacSign: Math.floor(longitude / 30),
             zodiacSignName: getZodiacSign(longitude),
             degree: longitude % 30,
             degreeFormatted: formatDegree(longitude),
             symbol: planet.symbol,
+            isRetrograde: speed < 0,
           };
         } else {
           planets[planet.name] = { error: "Invalid result format" };
@@ -443,20 +452,26 @@ router.post("/current-chart", (req, res) => {
 
     planetIds.forEach((planet) => {
       try {
-        const result = sweph.calc_ut(julianDay, planet.id, SEFLG_TOPOCTR);
+        const result = sweph.calc_ut(
+          julianDay,
+          planet.id,
+          SEFLG_TOPOCTR | SEFLG_SPEED
+        );
 
         if (result.data && result.data.length >= 4) {
           const longitude = result.data[0];
+          const speed = result.data[3];
           planets[planet.name] = {
             longitude,
             latitude: result.data[1],
             distance: result.data[2],
-            speed: result.data[3],
+            speed,
             zodiacSign: Math.floor(longitude / 30),
             zodiacSignName: getZodiacSign(longitude),
             degree: longitude % 30,
             degreeFormatted: formatDegree(longitude),
             symbol: planet.symbol,
+            isRetrograde: speed < 0,
           };
         } else {
           planets[planet.name] = { error: "Invalid result format" };
