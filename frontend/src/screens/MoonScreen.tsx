@@ -18,6 +18,26 @@ import {
   getZodiacKeysFromNames,
   getPlanetKeysFromNames,
 } from "../utils/physisSymbolMap";
+import {
+  checkForConjunct,
+  checkForOpposition,
+  checkForSquare,
+  checkForTrine,
+  checkForSextile,
+  checkForWholeSignConjunct,
+  checkForWholeSignOpposition,
+  checkForWholeSignSquare,
+  checkForWholeSignTrine,
+  checkForWholeSignSextile,
+  getActiveAspects,
+  getActiveWholeSignAspects,
+} from "../utils/aspectUtils";
+import {
+  getAspectColorStyle,
+  getZodiacColorStyle,
+  aspectColorStyles,
+  zodiacColorStyles,
+} from "../utils/colorUtils";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -337,6 +357,9 @@ export default function MoonScreen() {
   const { currentChart, loading, error } = useAstrology();
   const { fontLoaded } = usePhysisFont();
 
+  // Debug flag to control aspect debugging display
+  const DEBUG_ASPECTS = true;
+
   // Calculate tithi if we have both Moon and Sun positions
   let currentTithi = null;
   let tithiPercentageRemaining = null;
@@ -465,6 +488,201 @@ export default function MoonScreen() {
               </View>
             )}
           </View>
+
+          {/* Aspects between Sun and Moon */}
+          {currentChart?.planets?.sun &&
+            currentChart?.planets?.moon &&
+            !currentChart.planets.sun.error &&
+            !currentChart.planets.moon.error && (
+              <View style={styles.aspectsContainer}>
+                <Text style={styles.aspectsTitle}>Aspects</Text>
+
+                {(() => {
+                  const moonPlanet = currentChart.planets.moon;
+
+                  // Get all planets except moon for comparison
+                  const otherPlanets = Object.entries(
+                    currentChart.planets
+                  ).filter(
+                    ([name, planet]) =>
+                      name !== "moon" && planet && !planet.error
+                  );
+
+                  return (
+                    <View style={styles.aspectsList}>
+                      {/* Data rows */}
+                      {otherPlanets
+                        .filter(([planetName, planet]) => {
+                          const activeAspects = getActiveAspects(
+                            moonPlanet,
+                            planet
+                          );
+                          const activeWholeSignAspects =
+                            getActiveWholeSignAspects(moonPlanet, planet);
+                          return (
+                            activeAspects.length > 0 ||
+                            activeWholeSignAspects.length > 0
+                          );
+                        })
+                        .map(([planetName, planet]) => {
+                          const activeAspects = getActiveAspects(
+                            moonPlanet,
+                            planet
+                          );
+                          const activeWholeSignAspects =
+                            getActiveWholeSignAspects(moonPlanet, planet);
+
+                          // Get exact degrees for display
+                          const conjunction = checkForConjunct(
+                            moonPlanet,
+                            planet
+                          );
+                          const exactDegrees =
+                            conjunction.exactDegrees?.toFixed(1);
+
+                          // Format whole sign aspects with zodiac info
+                          const wholeSignAspects =
+                            activeWholeSignAspects.length > 0
+                              ? activeWholeSignAspects.map((aspect) => {
+                                  const aspectName = aspect.replace(
+                                    "whole sign ",
+                                    ""
+                                  );
+                                  const otherPlanetSign = planet.zodiacSignName;
+                                  const zodiacSymbol =
+                                    getZodiacKeysFromNames()[otherPlanetSign];
+                                  return {
+                                    aspectName,
+                                    otherPlanetSign,
+                                    zodiacSymbol,
+                                  };
+                                })
+                              : [];
+
+                          // Format 3-degree aspects with orb info only
+                          const degreeAspectsDisplay =
+                            activeAspects.length > 0
+                              ? activeAspects
+                                  .map((aspectName) => {
+                                    let aspectResult;
+                                    switch (aspectName) {
+                                      case "conjunct":
+                                        aspectResult = checkForConjunct(
+                                          moonPlanet,
+                                          planet
+                                        );
+                                        break;
+                                      case "opposition":
+                                        aspectResult = checkForOpposition(
+                                          moonPlanet,
+                                          planet
+                                        );
+                                        break;
+                                      case "square":
+                                        aspectResult = checkForSquare(
+                                          moonPlanet,
+                                          planet
+                                        );
+                                        break;
+                                      case "trine":
+                                        aspectResult = checkForTrine(
+                                          moonPlanet,
+                                          planet
+                                        );
+                                        break;
+                                      case "sextile":
+                                        aspectResult = checkForSextile(
+                                          moonPlanet,
+                                          planet
+                                        );
+                                        break;
+                                      default:
+                                        return "";
+                                    }
+                                    return `(${aspectResult.orb?.toFixed(
+                                      1
+                                    )}° orb)`;
+                                  })
+                                  .join(", ")
+                              : "";
+
+                          return (
+                            <View
+                              key={planetName}
+                              style={styles.aspectTableRow}
+                            >
+                              <Text style={styles.aspectLabelText}>
+                                {wholeSignAspects.length > 0
+                                  ? wholeSignAspects.map(
+                                      (aspectInfo, index) => (
+                                        <Text key={index}>
+                                          <Text
+                                            style={[
+                                              getPhysisSymbolStyle(
+                                                fontLoaded,
+                                                "large"
+                                              ),
+                                              getZodiacColorStyle(
+                                                moonPlanet.zodiacSignName
+                                              ),
+                                            ]}
+                                          >
+                                            {
+                                              getZodiacKeysFromNames()[
+                                                moonPlanet.zodiacSignName
+                                              ]
+                                            }
+                                          </Text>{" "}
+                                          Moon{" "}
+                                          <Text
+                                            style={[
+                                              getAspectColorStyle(
+                                                aspectInfo.aspectName
+                                              ),
+                                            ]}
+                                          >
+                                            {aspectInfo.aspectName}
+                                          </Text>{" "}
+                                          {planetName.charAt(0).toUpperCase() +
+                                            planetName.slice(1)}{" "}
+                                          <Text
+                                            style={[
+                                              getZodiacColorStyle(
+                                                aspectInfo.otherPlanetSign
+                                              ),
+                                            ]}
+                                          >
+                                            {aspectInfo.otherPlanetSign}
+                                          </Text>{" "}
+                                          <Text
+                                            style={[
+                                              getPhysisSymbolStyle(
+                                                fontLoaded,
+                                                "large"
+                                              ),
+                                              getZodiacColorStyle(
+                                                aspectInfo.otherPlanetSign
+                                              ),
+                                            ]}
+                                          >
+                                            {aspectInfo.zodiacSymbol}
+                                          </Text>
+                                        </Text>
+                                      )
+                                    )
+                                  : ""}
+                                <Text style={styles.aspectDataText}>
+                                  {degreeAspectsDisplay || ""}
+                                </Text>
+                              </Text>
+                            </View>
+                          );
+                        })}
+                    </View>
+                  );
+                })()}
+              </View>
+            )}
 
           {/* Tithi Information */}
           {currentTithi && tithiInfo && (
@@ -750,4 +968,164 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontFamily: "monospace",
   },
+  // Aspects styles
+  aspectsContainer: {
+    backgroundColor: "#0f0f23",
+    padding: 24,
+    borderRadius: 12,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: "#2a2a3e",
+    minWidth: 300,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  aspectsTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#e6e6fa",
+    marginBottom: 20,
+    textAlign: "center",
+    letterSpacing: 0.5,
+  },
+  aspectsList: {
+    width: "100%",
+    minWidth: 300,
+  },
+  aspectRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2a2a3e",
+    marginBottom: 4,
+  },
+  aspectName: {
+    fontSize: 16,
+    fontWeight: "600",
+    flex: 1,
+  },
+  aspectDetails: {
+    fontSize: 14,
+    color: "#b8b8b8",
+    textAlign: "right",
+    flex: 1,
+    fontWeight: "500",
+  },
+  noAspectsText: {
+    fontSize: 16,
+    color: "#8a8a8a",
+    textAlign: "center",
+    fontStyle: "italic",
+    paddingVertical: 20,
+  },
+  aspectDebug: {
+    backgroundColor: "#2a2a3e",
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#444",
+  },
+  // Aspect colors
+  conjunctionColor: {
+    color: "#ffd700", // Gold
+  },
+  oppositionColor: {
+    color: "#ff6b6b", // Red
+  },
+  squareColor: {
+    color: "#ff8c42", // Orange
+  },
+  trineColor: {
+    color: "#4ecdc4", // Teal
+  },
+  sextileColor: {
+    color: "#45b7d1", // Blue
+  },
+  wholeSignColor: {
+    color: "#9b59b6", // Purple
+  },
+  // New debugging styles
+  planetAspectsSection: {
+    backgroundColor: "#1a1a2e",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#2a2a3e",
+  },
+  planetSectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#e6e6fa",
+    marginBottom: 12,
+    textAlign: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#2a2a3e",
+    paddingBottom: 8,
+  },
+  aspectMethodsGroup: {
+    marginBottom: 12,
+    padding: 8,
+    backgroundColor: "#0f0f23",
+    borderRadius: 6,
+  },
+  aspectGroupTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#ffd700",
+    marginBottom: 8,
+  },
+  positionReference: {
+    backgroundColor: "#2a2a3e",
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  positionText: {
+    fontSize: 12,
+    color: "#b8b8b8",
+    marginBottom: 2,
+    fontFamily: "monospace",
+  },
+  activeAspectText: {
+    fontSize: 14,
+    color: "#4ecdc4",
+    marginBottom: 4,
+    fontWeight: "500",
+  },
+  // Table-style layout for aspects
+  aspectTableRow: {
+    flexDirection: "row",
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2a2a3e",
+    alignItems: "flex-start",
+  },
+  aspectLabelText: {
+    fontSize: 14,
+    color: "#e6e6fa",
+    fontWeight: "600",
+    flex: 1,
+    flexGrow: 1,
+  },
+  aspectDataText: {
+    fontSize: 12,
+    color: "#b8b8b8",
+    flex: 1,
+    fontFamily: "monospace",
+    textAlign: "left",
+  },
+  // Color styles moved to colorUtils.ts for DRY principle
 });
