@@ -73,6 +73,7 @@ const CHART_SIZE = Math.min(screenWidth - 40, 300);
 const CENTER_X = CHART_SIZE / 2;
 const CENTER_Y = CHART_SIZE / 2;
 const ZODIAC_RADIUS = CHART_SIZE * 0.35;
+const ZODIAC_SYMBOLS_RADIUS = CHART_SIZE * 0.3; // Separate radius for zodiac symbols (smaller)
 const HOUSES_RADIUS = CHART_SIZE * 0.25;
 const PLANETS_RADIUS = CHART_SIZE * 0.35; // For aspect line connections (on zodiac circle)
 const PLANET_LABELS_RADIUS = CHART_SIZE * 0.45; // For symbol/label display (outside)
@@ -225,7 +226,7 @@ const getAspectLines = (planets: ChartPlanetPosition[]) => {
           y1: planet1.y,
           x2: planet2.x,
           y2: planet2.y,
-          color: "#FF6B6B",
+          color: "#FF0000", // Pure red
           type: "conjunct",
         });
       } else if (opposition.hasAspect) {
@@ -234,7 +235,7 @@ const getAspectLines = (planets: ChartPlanetPosition[]) => {
           y1: planet1.y,
           x2: planet2.x,
           y2: planet2.y,
-          color: "#FF6B6B",
+          color: "#FF0000", // Pure red
           type: "opposition",
         });
       } else if (square.hasAspect) {
@@ -243,7 +244,7 @@ const getAspectLines = (planets: ChartPlanetPosition[]) => {
           y1: planet1.y,
           x2: planet2.x,
           y2: planet2.y,
-          color: "#FF6B6B",
+          color: "#FF0000", // Pure red
           type: "square",
         });
       } else if (trine.hasAspect) {
@@ -252,7 +253,7 @@ const getAspectLines = (planets: ChartPlanetPosition[]) => {
           y1: planet1.y,
           x2: planet2.x,
           y2: planet2.y,
-          color: "#4ECDC4",
+          color: "#00FF00", // Pure green
           type: "trine",
         });
       } else if (sextile.hasAspect) {
@@ -261,7 +262,7 @@ const getAspectLines = (planets: ChartPlanetPosition[]) => {
           y1: planet1.y,
           x2: planet2.x,
           y2: planet2.y,
-          color: "#45B7D1",
+          color: "#0000FF", // Pure blue
           type: "sextile",
         });
       }
@@ -283,9 +284,16 @@ export default function AstrologyChart({
 }: AstrologyChartProps) {
   const { fontLoaded } = usePhysisFont();
 
+  // Always maintain the container height to prevent layout shifts
+  const containerStyle = [
+    styles.container,
+    { height: size, width: size, minHeight: size },
+  ];
+
+  // Show loading state if no planets data
   if (!planets || Object.keys(planets).length === 0) {
     return (
-      <View style={[styles.container, { height: size }]}>
+      <View style={containerStyle}>
         <ActivityIndicator size="large" color="#e6e6fa" />
         <Text style={styles.loadingText}>Loading chart...</Text>
       </View>
@@ -304,7 +312,7 @@ export default function AstrologyChart({
   });
 
   return (
-    <View style={[styles.container, { height: size, width: size }]}>
+    <View style={containerStyle}>
       <Svg width={size} height={size}>
         <Defs>
           <LinearGradient
@@ -325,8 +333,6 @@ export default function AstrologyChart({
           cy={CENTER_Y}
           r={ZODIAC_RADIUS}
           fill="url(#zodiacGradient)"
-          stroke="#4a4a6e"
-          strokeWidth="2"
         />
 
         {/* Zodiac signs ring */}
@@ -337,7 +343,7 @@ export default function AstrologyChart({
           // Use the same positioning logic as planets
           const position = longitudeToPosition(
             signCenterLongitude,
-            ZODIAC_RADIUS
+            ZODIAC_SYMBOLS_RADIUS
           );
 
           // Calculate the start and end angles for the pie slice
@@ -355,14 +361,12 @@ export default function AstrologyChart({
                 d={`M ${CENTER_X} ${CENTER_Y} L ${startPos.x} ${startPos.y} A ${ZODIAC_RADIUS} ${ZODIAC_RADIUS} 0 0 1 ${endPos.x} ${endPos.y} Z`}
                 fill={sign.color}
                 fillOpacity={0.3}
-                stroke={sign.color}
-                strokeWidth="1"
               />
               {/* Sign symbol */}
               <SvgText
                 x={position.x}
                 y={position.y + 5}
-                fontSize="16"
+                fontSize="20"
                 fill="#e6e6fa"
                 textAnchor="middle"
                 fontFamily={fontLoaded ? "Physis" : "System"}
@@ -372,16 +376,6 @@ export default function AstrologyChart({
             </G>
           );
         })}
-
-        {/* Houses ring */}
-        <Circle
-          cx={CENTER_X}
-          cy={CENTER_Y}
-          r={HOUSES_RADIUS}
-          fill="none"
-          stroke="#4a4a6e"
-          strokeWidth="2"
-        />
 
         {/* House numbers */}
         {houses &&
@@ -401,7 +395,7 @@ export default function AstrologyChart({
                 key={i + 1}
                 x={position.x}
                 y={position.y + 5}
-                fontSize="12"
+                fontSize="8"
                 fill="#e6e6fa"
                 textAnchor="middle"
                 fontFamily="System"
@@ -430,6 +424,16 @@ export default function AstrologyChart({
           const signColor = getZodiacSignColor(planet.sign);
           return (
             <G key={planet.name}>
+              {/* Line marker from zodiac circle to planet (50% length) */}
+              <Line
+                x1={planet.x}
+                y1={planet.y}
+                x2={planet.x + (planet.labelX - planet.x) * 0.5}
+                y2={planet.y + (planet.labelY - planet.y) * 0.5}
+                stroke={signColor}
+                strokeWidth="1"
+                opacity={0.6}
+              />
               {/* Planet symbol with Physis font */}
               <SvgText
                 x={planet.labelX - 8}
@@ -515,16 +519,6 @@ export default function AstrologyChart({
             })()}
           </G>
         )}
-
-        {/* Center circle */}
-        <Circle
-          cx={CENTER_X}
-          cy={CENTER_Y}
-          r="20"
-          fill="#1a1a2e"
-          stroke="#4a4a6e"
-          strokeWidth="2"
-        />
       </Svg>
 
       {/* Loading overlay */}
