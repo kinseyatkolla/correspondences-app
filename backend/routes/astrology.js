@@ -488,19 +488,11 @@ router.post("/current-chart", (req, res) => {
     try {
       // Use houses function with whole sign houses ('W')
       const houses = sweph.houses(julianDay, latitude, longitude, "W");
-      console.log("houses result:", houses);
 
       // Extract ascendant and MC from points array
       // points[0] = Ascendant, points[1] = MC
       ascendantDegree = houses.data.points[0];
       mcDegree = houses.data.points[1];
-
-      console.log(
-        "Extracted ascendantDegree:",
-        ascendantDegree,
-        "mcDegree:",
-        mcDegree
-      );
     } catch (housesError) {
       console.log("houses function failed:", housesError.message);
       // Set default values if it fails

@@ -2,7 +2,13 @@
 // IMPORTS
 // ============================================================================
 import React from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  ActivityIndicator,
+} from "react-native";
 import Svg, {
   Circle,
   Line,
@@ -43,6 +49,8 @@ interface AstrologyChartProps {
     mcDegree: string;
   };
   size?: number;
+  loading?: boolean;
+  error?: string | null;
 }
 
 interface ChartPlanetPosition {
@@ -270,12 +278,15 @@ export default function AstrologyChart({
   planets,
   houses,
   size = CHART_SIZE,
+  loading = false,
+  error = null,
 }: AstrologyChartProps) {
   const { fontLoaded } = usePhysisFont();
 
   if (!planets || Object.keys(planets).length === 0) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { height: size }]}>
+        <ActivityIndicator size="large" color="#e6e6fa" />
         <Text style={styles.loadingText}>Loading chart...</Text>
       </View>
     );
@@ -293,219 +304,244 @@ export default function AstrologyChart({
   });
 
   return (
-    <Svg width={size} height={size}>
-      <Defs>
-        <LinearGradient id="zodiacGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor="#1a1a2e" />
-          <Stop offset="100%" stopColor="#2a2a3e" />
-        </LinearGradient>
-      </Defs>
+    <View style={[styles.container, { height: size, width: size }]}>
+      <Svg width={size} height={size}>
+        <Defs>
+          <LinearGradient
+            id="zodiacGradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
+            <Stop offset="0%" stopColor="#1a1a2e" />
+            <Stop offset="100%" stopColor="#2a2a3e" />
+          </LinearGradient>
+        </Defs>
 
-      {/* Background circle */}
-      <Circle
-        cx={CENTER_X}
-        cy={CENTER_Y}
-        r={ZODIAC_RADIUS}
-        fill="url(#zodiacGradient)"
-        stroke="#4a4a6e"
-        strokeWidth="2"
-      />
+        {/* Background circle */}
+        <Circle
+          cx={CENTER_X}
+          cy={CENTER_Y}
+          r={ZODIAC_RADIUS}
+          fill="url(#zodiacGradient)"
+          stroke="#4a4a6e"
+          strokeWidth="2"
+        />
 
-      {/* Zodiac signs ring */}
-      {ZODIAC_SIGNS.map((sign, index) => {
-        // Calculate the center longitude of each sign (15° mark within each 30° sign)
-        const signCenterLongitude = index * 30 + 15;
+        {/* Zodiac signs ring */}
+        {ZODIAC_SIGNS.map((sign, index) => {
+          // Calculate the center longitude of each sign (15° mark within each 30° sign)
+          const signCenterLongitude = index * 30 + 15;
 
-        // Use the same positioning logic as planets
-        const position = longitudeToPosition(
-          signCenterLongitude,
-          ZODIAC_RADIUS
-        );
-
-        // Calculate the start and end angles for the pie slice
-        const startAngle = index * 30;
-        const endAngle = (index + 1) * 30;
-
-        // Convert to chart coordinates for the pie slice edges
-        const startPos = longitudeToPosition(startAngle, ZODIAC_RADIUS);
-        const endPos = longitudeToPosition(endAngle, ZODIAC_RADIUS);
-
-        return (
-          <G key={sign.name}>
-            {/* Sign segment background */}
-            <Path
-              d={`M ${CENTER_X} ${CENTER_Y} L ${startPos.x} ${startPos.y} A ${ZODIAC_RADIUS} ${ZODIAC_RADIUS} 0 0 1 ${endPos.x} ${endPos.y} Z`}
-              fill={sign.color}
-              fillOpacity={0.3}
-              stroke={sign.color}
-              strokeWidth="1"
-            />
-            {/* Sign symbol */}
-            <SvgText
-              x={position.x}
-              y={position.y + 5}
-              fontSize="16"
-              fill="#e6e6fa"
-              textAnchor="middle"
-              fontFamily={fontLoaded ? "Physis" : "System"}
-            >
-              {sign.symbol}
-            </SvgText>
-          </G>
-        );
-      })}
-
-      {/* Houses ring */}
-      <Circle
-        cx={CENTER_X}
-        cy={CENTER_Y}
-        r={HOUSES_RADIUS}
-        fill="none"
-        stroke="#4a4a6e"
-        strokeWidth="2"
-      />
-
-      {/* House numbers */}
-      {houses &&
-        Array.from({ length: 12 }, (_, i) => {
-          // Calculate the cusp position for each house starting from the Ascendant
-          // House 1 is at the Ascendant, then increment counter-clockwise
-          const houseCuspLongitude = houses.ascendant - i * 30;
-
-          // Use the same positioning logic as planets and zodiac signs
+          // Use the same positioning logic as planets
           const position = longitudeToPosition(
-            houseCuspLongitude,
-            HOUSES_RADIUS
+            signCenterLongitude,
+            ZODIAC_RADIUS
           );
 
+          // Calculate the start and end angles for the pie slice
+          const startAngle = index * 30;
+          const endAngle = (index + 1) * 30;
+
+          // Convert to chart coordinates for the pie slice edges
+          const startPos = longitudeToPosition(startAngle, ZODIAC_RADIUS);
+          const endPos = longitudeToPosition(endAngle, ZODIAC_RADIUS);
+
           return (
-            <SvgText
-              key={i + 1}
-              x={position.x}
-              y={position.y + 5}
-              fontSize="12"
-              fill="#e6e6fa"
-              textAnchor="middle"
-              fontFamily="System"
-            >
-              {i + 1}
-            </SvgText>
+            <G key={sign.name}>
+              {/* Sign segment background */}
+              <Path
+                d={`M ${CENTER_X} ${CENTER_Y} L ${startPos.x} ${startPos.y} A ${ZODIAC_RADIUS} ${ZODIAC_RADIUS} 0 0 1 ${endPos.x} ${endPos.y} Z`}
+                fill={sign.color}
+                fillOpacity={0.3}
+                stroke={sign.color}
+                strokeWidth="1"
+              />
+              {/* Sign symbol */}
+              <SvgText
+                x={position.x}
+                y={position.y + 5}
+                fontSize="16"
+                fill="#e6e6fa"
+                textAnchor="middle"
+                fontFamily={fontLoaded ? "Physis" : "System"}
+              >
+                {sign.symbol}
+              </SvgText>
+            </G>
           );
         })}
 
-      {/* Aspect lines */}
-      {aspectLines.map((line, index) => (
-        <Line
-          key={index}
-          x1={line.x1}
-          y1={line.y1}
-          x2={line.x2}
-          y2={line.y2}
-          stroke={line.color}
-          strokeWidth="1"
-          opacity={0.7}
+        {/* Houses ring */}
+        <Circle
+          cx={CENTER_X}
+          cy={CENTER_Y}
+          r={HOUSES_RADIUS}
+          fill="none"
+          stroke="#4a4a6e"
+          strokeWidth="2"
         />
-      ))}
 
-      {/* Planets */}
-      {testPlanetPositions.map((planet, index) => {
-        const signColor = getZodiacSignColor(planet.sign);
-        return (
-          <G key={planet.name}>
-            {/* Planet symbol with Physis font */}
-            <SvgText
-              x={planet.labelX - 8}
-              y={planet.labelY + 5}
-              fontSize="14"
-              fill={signColor}
-              textAnchor="middle"
-              fontFamily={fontLoaded ? "Physis" : "System"}
-            >
-              {planet.symbol}
-            </SvgText>
-            {/* Planet degree with system font */}
-            <SvgText
-              x={planet.labelX + 8}
-              y={planet.labelY + 5}
-              fontSize="12"
-              fill={signColor}
-              textAnchor="middle"
-              fontFamily="System"
-            >
-              {Math.floor(planet.degree % 30)}
-            </SvgText>
-            {/* Retrograde indicator */}
-            {planet.isRetrograde && (
-              <SvgText
-                x={planet.labelX}
-                y={planet.labelY - 8}
-                fontSize="10"
-                fill="#FF6B6B"
-                textAnchor="middle"
-                fontFamily="System"
-                fontWeight="bold"
-              >
-                R
-              </SvgText>
-            )}
-          </G>
-        );
-      })}
+        {/* House numbers */}
+        {houses &&
+          Array.from({ length: 12 }, (_, i) => {
+            // Calculate the cusp position for each house starting from the Ascendant
+            // House 1 is at the Ascendant, then increment counter-clockwise
+            const houseCuspLongitude = houses.ascendant - i * 30;
 
-      {/* Ascendant */}
-      {houses && (
-        <G key="ascendant">
-          {(() => {
-            const ascendantPosition = longitudeToPosition(
-              houses.ascendant,
-              PLANETS_RADIUS
+            // Use the same positioning logic as planets and zodiac signs
+            const position = longitudeToPosition(
+              houseCuspLongitude,
+              HOUSES_RADIUS
             );
-            const ascendantLabelPosition = longitudeToPosition(
-              houses.ascendant,
-              PLANET_LABELS_RADIUS
-            );
-            const ascendantSignColor = getZodiacSignColor(houses.ascendantSign);
 
             return (
-              <>
-                {/* Ascendant symbol with Physis font */}
+              <SvgText
+                key={i + 1}
+                x={position.x}
+                y={position.y + 5}
+                fontSize="12"
+                fill="#e6e6fa"
+                textAnchor="middle"
+                fontFamily="System"
+              >
+                {i + 1}
+              </SvgText>
+            );
+          })}
+
+        {/* Aspect lines */}
+        {aspectLines.map((line, index) => (
+          <Line
+            key={index}
+            x1={line.x1}
+            y1={line.y1}
+            x2={line.x2}
+            y2={line.y2}
+            stroke={line.color}
+            strokeWidth="1"
+            opacity={0.7}
+          />
+        ))}
+
+        {/* Planets */}
+        {testPlanetPositions.map((planet, index) => {
+          const signColor = getZodiacSignColor(planet.sign);
+          return (
+            <G key={planet.name}>
+              {/* Planet symbol with Physis font */}
+              <SvgText
+                x={planet.labelX - 8}
+                y={planet.labelY + 5}
+                fontSize="14"
+                fill={signColor}
+                textAnchor="middle"
+                fontFamily={fontLoaded ? "Physis" : "System"}
+              >
+                {planet.symbol}
+              </SvgText>
+              {/* Planet degree with system font */}
+              <SvgText
+                x={planet.labelX + 8}
+                y={planet.labelY + 5}
+                fontSize="12"
+                fill={signColor}
+                textAnchor="middle"
+                fontFamily="System"
+              >
+                {Math.floor(planet.degree % 30)}
+              </SvgText>
+              {/* Retrograde indicator */}
+              {planet.isRetrograde && (
                 <SvgText
-                  x={ascendantLabelPosition.x - 8}
-                  y={ascendantLabelPosition.y + 5}
-                  fontSize="14"
-                  fill={ascendantSignColor}
-                  textAnchor="middle"
-                  fontFamily={fontLoaded ? "Physis" : "System"}
-                >
-                  !
-                </SvgText>
-                {/* Ascendant degree with system font */}
-                <SvgText
-                  x={ascendantLabelPosition.x + 8}
-                  y={ascendantLabelPosition.y + 5}
-                  fontSize="12"
-                  fill={ascendantSignColor}
+                  x={planet.labelX}
+                  y={planet.labelY - 8}
+                  fontSize="10"
+                  fill="#FF6B6B"
                   textAnchor="middle"
                   fontFamily="System"
+                  fontWeight="bold"
                 >
-                  {Math.floor(houses.ascendant % 30)}
+                  R
                 </SvgText>
-              </>
-            );
-          })()}
-        </G>
+              )}
+            </G>
+          );
+        })}
+
+        {/* Ascendant */}
+        {houses && (
+          <G key="ascendant">
+            {(() => {
+              const ascendantPosition = longitudeToPosition(
+                houses.ascendant,
+                PLANETS_RADIUS
+              );
+              const ascendantLabelPosition = longitudeToPosition(
+                houses.ascendant,
+                PLANET_LABELS_RADIUS
+              );
+              const ascendantSignColor = getZodiacSignColor(
+                houses.ascendantSign
+              );
+
+              return (
+                <>
+                  {/* Ascendant symbol with Physis font */}
+                  <SvgText
+                    x={ascendantLabelPosition.x - 8}
+                    y={ascendantLabelPosition.y + 5}
+                    fontSize="14"
+                    fill={ascendantSignColor}
+                    textAnchor="middle"
+                    fontFamily={fontLoaded ? "Physis" : "System"}
+                  >
+                    !
+                  </SvgText>
+                  {/* Ascendant degree with system font */}
+                  <SvgText
+                    x={ascendantLabelPosition.x + 8}
+                    y={ascendantLabelPosition.y + 5}
+                    fontSize="12"
+                    fill={ascendantSignColor}
+                    textAnchor="middle"
+                    fontFamily="System"
+                  >
+                    {Math.floor(houses.ascendant % 30)}
+                  </SvgText>
+                </>
+              );
+            })()}
+          </G>
+        )}
+
+        {/* Center circle */}
+        <Circle
+          cx={CENTER_X}
+          cy={CENTER_Y}
+          r="20"
+          fill="#1a1a2e"
+          stroke="#4a4a6e"
+          strokeWidth="2"
+        />
+      </Svg>
+
+      {/* Loading overlay */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#e6e6fa" />
+          <Text style={styles.loadingText}>Updating chart...</Text>
+        </View>
       )}
 
-      {/* Center circle */}
-      <Circle
-        cx={CENTER_X}
-        cy={CENTER_Y}
-        r="20"
-        fill="#1a1a2e"
-        stroke="#4a4a6e"
-        strokeWidth="2"
-      />
-    </Svg>
+      {/* Error message */}
+      {error && (
+        <View style={styles.errorOverlay}>
+          <Text style={styles.errorText}>⚠️ {error}</Text>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -519,10 +555,40 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f0f23",
     borderRadius: 12,
     marginVertical: 10,
+    position: "relative",
   },
   loadingText: {
     color: "#8a8a8a",
     fontSize: 16,
     textAlign: "center",
+    marginTop: 10,
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(15, 15, 35, 0.8)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+  },
+  errorOverlay: {
+    position: "absolute",
+    bottom: 10,
+    left: 10,
+    right: 10,
+    backgroundColor: "rgba(255, 107, 107, 0.9)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#ffffff",
+    fontSize: 12,
+    textAlign: "center",
+    fontWeight: "600",
   },
 });

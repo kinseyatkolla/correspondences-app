@@ -41,6 +41,8 @@ interface AstrologyContextType {
   currentChart: CurrentChart | null;
   loading: boolean;
   error: string | null;
+  refreshLoading: boolean;
+  refreshError: string | null;
   refreshChart: () => Promise<void>;
 }
 
@@ -56,6 +58,8 @@ export function AstrologyProvider({ children }: AstrologyProviderProps) {
   const [currentChart, setCurrentChart] = useState<CurrentChart | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshLoading, setRefreshLoading] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
 
   const getCurrentLocation = async (): Promise<{
     latitude: number;
@@ -119,7 +123,37 @@ export function AstrologyProvider({ children }: AstrologyProviderProps) {
   };
 
   const refreshChart = async () => {
-    await fetchCurrentChart();
+    try {
+      setRefreshLoading(true);
+      setRefreshError(null);
+
+      const location = await getCurrentLocation();
+      const response = await apiService.getCurrentChart(
+        location.latitude,
+        location.longitude
+      );
+
+      if (response.success) {
+        setCurrentChart({
+          planets: response.data.planets,
+          currentTime: {
+            timestamp: response.data.currentTime.timestamp,
+          },
+          location: {
+            latitude: response.data.location.latitude,
+            longitude: response.data.location.longitude,
+          },
+          houses: response.data.houses,
+        });
+      } else {
+        setRefreshError("Failed to refresh chart data");
+      }
+    } catch (err) {
+      console.error("Error refreshing chart:", err);
+      setRefreshError("Connection error - using previous data");
+    } finally {
+      setRefreshLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -140,6 +174,8 @@ export function AstrologyProvider({ children }: AstrologyProviderProps) {
         currentChart,
         loading,
         error,
+        refreshLoading,
+        refreshError,
         refreshChart,
       }}
     >

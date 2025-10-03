@@ -30,6 +30,8 @@ export default function AstrologyScreen() {
   const {
     currentChart,
     loading: ephemerisLoading,
+    refreshLoading,
+    refreshError,
     refreshChart,
   } = useAstrology();
   const { fontLoaded } = usePhysisFont();
@@ -97,6 +99,23 @@ export default function AstrologyScreen() {
     return `${monthNames[date.month - 1]} ${date.day}, ${date.year} at ${hour
       .toString()
       .padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+  };
+
+  const formatChartTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return {
+      dateString: date.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      timeString: date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }),
+    };
   };
 
   // ===== RENDER HELPERS =====
@@ -202,18 +221,25 @@ export default function AstrologyScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>⭐ Astrology</Text>
         <Text style={styles.subtitle}>
-          {new Date().toLocaleDateString("en-US", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}{" "}
-          at{" "}
-          {new Date().toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-          })}
+          {currentChart && currentChart.currentTime
+            ? (() => {
+                const { dateString, timeString } = formatChartTimestamp(
+                  currentChart.currentTime.timestamp
+                );
+                return `${dateString} at ${timeString}`;
+              })()
+            : new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }) +
+              " at " +
+              new Date().toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })}
         </Text>
       </View>
 
@@ -223,7 +249,23 @@ export default function AstrologyScreen() {
           <AstrologyChart
             planets={currentChart.planets}
             houses={currentChart.houses}
+            loading={refreshLoading}
+            error={refreshError}
           />
+          {currentChart.currentTime && (
+            <Text style={styles.lastUpdatedText}>
+              Last updated:{" "}
+              {
+                formatChartTimestamp(currentChart.currentTime.timestamp)
+                  .dateString
+              }{" "}
+              at{" "}
+              {
+                formatChartTimestamp(currentChart.currentTime.timestamp)
+                  .timeString
+              }
+            </Text>
+          )}
         </View>
       )}
 
@@ -504,6 +546,13 @@ const styles = StyleSheet.create({
   chartContainer: {
     alignItems: "center",
     marginBottom: 20,
+  },
+  lastUpdatedText: {
+    fontSize: 12,
+    color: "#8a8a8a",
+    textAlign: "center",
+    marginTop: 8,
+    fontStyle: "italic",
   },
   inputSubsection: {
     marginBottom: 20,
