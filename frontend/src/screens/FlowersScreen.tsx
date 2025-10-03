@@ -83,7 +83,7 @@ const flowerImages: { [key: string]: any } = {
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function FlowersScreen() {
+export default function FlowersScreen({ navigation }: any) {
   const [flowerEssences, setFlowerEssences] = useState<FlowerEssence[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -140,20 +140,8 @@ export default function FlowersScreen() {
   };
 
   const handleRandomDraw = async () => {
-    try {
-      setLoading(true);
-      const response = await apiService.getRandomFlowerEssence();
-      setSelectedFlower(response.data);
-      setModalVisible(true);
-      // Reset flip state when opening a new flower
-      setIsFlipped(false);
-      flipAnimation.setValue(0);
-    } catch (error) {
-      console.error("Error drawing random flower:", error);
-      Alert.alert("Error", "Failed to draw random flower");
-    } finally {
-      setLoading(false);
-    }
+    // Navigate to the flower draw screen with the already loaded flowers
+    navigation.navigate("FlowerDraw", { flowers: flowerEssences });
   };
 
   const handleImageFlip = () => {
@@ -179,173 +167,190 @@ export default function FlowersScreen() {
 
   // ===== MAIN TEMPLATE =====
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={sharedUI.pageTitle}>🌸 Flower Essences</Text>
-      <Text style={sharedUI.pageSubtitle}>
-        Discover the healing properties of flowers
-      </Text>
-
+    <View style={styles.container}>
+      {/* Draw Navigation Bar */}
       <TouchableOpacity
-        style={sharedUI.primaryButton}
-        onPress={handleRandomDraw}
+        style={styles.drawNavBar}
+        onPress={() => navigation.navigate("FlowerDraw")}
+        activeOpacity={0.8}
       >
-        <Text style={sharedUI.primaryButtonText}>🔮 Draw a Random Flower</Text>
+        <Text style={styles.drawNavArrow}>‹</Text>
+        <Text style={styles.drawNavText}>DRAW A RANDOM FLOWER</Text>
       </TouchableOpacity>
 
-      <View style={sharedUI.searchContainer}>
-        <TextInput
-          style={sharedUI.searchInput}
-          placeholder="Search flower essences..."
-          placeholderTextColor="#8a8a8a"
-          value={searchQuery}
-          onChangeText={handleSearchInput}
-          returnKeyType="search"
-          onSubmitEditing={handleSearch}
-        />
-        <TouchableOpacity style={sharedUI.searchButton} onPress={handleSearch}>
-          <Text style={sharedUI.searchButtonText}>🔍</Text>
-        </TouchableOpacity>
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            style={sharedUI.clearButton}
-            onPress={handleClearSearch}
-          >
-            <Text style={sharedUI.clearButtonText}>✕</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {flowerEssences.map((flower) => (
-        <TouchableOpacity
-          key={flower._id}
-          style={sharedUI.listItem}
-          onPress={() => handleFlowerPress(flower)}
-        >
-          <Text style={sharedUI.listItemEmoji}>
-            {getFlowerEmoji(flower.imageName)}
-          </Text>
-          <View style={sharedUI.listItemContent}>
-            <Text style={sharedUI.listItemTitle}>{flower.commonName}</Text>
-            <Text style={sharedUI.listItemSubtitle}>{flower.latinName}</Text>
-          </View>
-          <Text style={sharedUI.arrow}>›</Text>
-        </TouchableOpacity>
-      ))}
-
-      {flowerEssences.length > 0 && (
-        <View style={sharedUI.listFooter}>
-          <Text style={sharedUI.footerText}>
-            Showing {flowerEssences.length} flowers
-          </Text>
-        </View>
-      )}
-
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={overlayStyles.modalOverlay}>
-          <View style={overlayStyles.modalContent}>
-            <ScrollView style={overlayStyles.modalScroll}>
-              {selectedFlower && (
-                <>
-                  <View style={overlayStyles.modalHeader}>
-                    <Text style={overlayStyles.modalTitle}>
-                      {selectedFlower.commonName}
-                    </Text>
-                    <Text style={overlayStyles.modalSubtitle}>
-                      {selectedFlower.latinName}
-                    </Text>
-                    <TouchableOpacity
-                      style={overlayStyles.closeButton}
-                      onPress={() => setModalVisible(false)}
-                    >
-                      <Text style={overlayStyles.closeButtonText}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
+        <Text style={sharedUI.pageTitle}>🌸 Flower Essences</Text>
+        <Text style={sharedUI.pageSubtitle}>
+          Discover the healing properties of flowers
+        </Text>
 
-                  {/* Flower Image */}
-                  <View style={overlayStyles.imageContainer}>
-                    <TouchableOpacity
-                      onPress={handleImageFlip}
-                      activeOpacity={0.8}
-                    >
-                      <Animated.View
-                        style={{
-                          transform: [
-                            {
-                              rotateZ: flipAnimation.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: ["0deg", "180deg"],
-                              }),
-                            },
-                          ],
-                        }}
-                      >
-                        <Image
-                          source={
-                            selectedFlower.imageName &&
-                            flowerImages[selectedFlower.imageName]
-                              ? flowerImages[selectedFlower.imageName]
-                              : flowerImages["default.jpg"]
-                          }
-                          style={overlayStyles.flowerImage}
-                          resizeMode="contain"
-                        />
-                      </Animated.View>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={overlayStyles.section}>
-                    <Text style={overlayStyles.sectionTitle}>Description</Text>
-                    <Text style={overlayStyles.sectionText}>
-                      {selectedFlower.description}
-                    </Text>
-                  </View>
-
-                  <View style={overlayStyles.section}>
-                    <Text style={overlayStyles.sectionTitle}>
-                      Positive Qualities
-                    </Text>
-                    {selectedFlower.positiveQualities.map((quality, index) => (
-                      <Text key={index} style={overlayStyles.listItem}>
-                        • {quality}
-                      </Text>
-                    ))}
-                  </View>
-
-                  <View style={overlayStyles.section}>
-                    <Text style={overlayStyles.sectionTitle}>
-                      Patterns of Imbalance
-                    </Text>
-                    {selectedFlower.patternsOfImbalance.map(
-                      (pattern, index) => (
-                        <Text key={index} style={overlayStyles.listItem}>
-                          • {pattern}
-                        </Text>
-                      )
-                    )}
-                  </View>
-
-                  <View style={overlayStyles.section}>
-                    <Text style={overlayStyles.sectionTitle}>
-                      Cross References
-                    </Text>
-                    {selectedFlower.crossReferences.map((reference, index) => (
-                      <Text key={index} style={overlayStyles.listItem}>
-                        • {reference}
-                      </Text>
-                    ))}
-                  </View>
-                </>
-              )}
-            </ScrollView>
-          </View>
+        <View style={sharedUI.searchContainer}>
+          <TextInput
+            style={sharedUI.searchInput}
+            placeholder="Search flower essences..."
+            placeholderTextColor="#8a8a8a"
+            value={searchQuery}
+            onChangeText={handleSearchInput}
+            returnKeyType="search"
+            onSubmitEditing={handleSearch}
+          />
+          <TouchableOpacity
+            style={sharedUI.searchButton}
+            onPress={handleSearch}
+          >
+            <Text style={sharedUI.searchButtonText}>🔍</Text>
+          </TouchableOpacity>
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              style={sharedUI.clearButton}
+              onPress={handleClearSearch}
+            >
+              <Text style={sharedUI.clearButtonText}>✕</Text>
+            </TouchableOpacity>
+          )}
         </View>
-      </Modal>
-    </ScrollView>
+
+        {flowerEssences.map((flower) => (
+          <TouchableOpacity
+            key={flower._id}
+            style={sharedUI.listItem}
+            onPress={() => handleFlowerPress(flower)}
+          >
+            <Text style={sharedUI.listItemEmoji}>
+              {getFlowerEmoji(flower.imageName)}
+            </Text>
+            <View style={sharedUI.listItemContent}>
+              <Text style={sharedUI.listItemTitle}>{flower.commonName}</Text>
+              <Text style={sharedUI.listItemSubtitle}>{flower.latinName}</Text>
+            </View>
+            <Text style={sharedUI.arrow}>›</Text>
+          </TouchableOpacity>
+        ))}
+
+        {flowerEssences.length > 0 && (
+          <View style={sharedUI.listFooter}>
+            <Text style={sharedUI.footerText}>
+              Showing {flowerEssences.length} flowers
+            </Text>
+          </View>
+        )}
+
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={overlayStyles.modalOverlay}>
+            <View style={overlayStyles.modalContent}>
+              <ScrollView style={overlayStyles.modalScroll}>
+                {selectedFlower && (
+                  <>
+                    <View style={overlayStyles.modalHeader}>
+                      <Text style={overlayStyles.modalTitle}>
+                        {selectedFlower.commonName}
+                      </Text>
+                      <Text style={overlayStyles.modalSubtitle}>
+                        {selectedFlower.latinName}
+                      </Text>
+                      <TouchableOpacity
+                        style={overlayStyles.closeButton}
+                        onPress={() => setModalVisible(false)}
+                      >
+                        <Text style={overlayStyles.closeButtonText}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Flower Image */}
+                    <View style={overlayStyles.imageContainer}>
+                      <TouchableOpacity
+                        onPress={handleImageFlip}
+                        activeOpacity={0.8}
+                      >
+                        <Animated.View
+                          style={{
+                            transform: [
+                              {
+                                rotateZ: flipAnimation.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: ["0deg", "180deg"],
+                                }),
+                              },
+                            ],
+                          }}
+                        >
+                          <Image
+                            source={
+                              selectedFlower.imageName &&
+                              flowerImages[selectedFlower.imageName]
+                                ? flowerImages[selectedFlower.imageName]
+                                : flowerImages["default.jpg"]
+                            }
+                            style={overlayStyles.flowerImage}
+                            resizeMode="contain"
+                          />
+                        </Animated.View>
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={overlayStyles.section}>
+                      <Text style={overlayStyles.sectionTitle}>
+                        Description
+                      </Text>
+                      <Text style={overlayStyles.sectionText}>
+                        {selectedFlower.description}
+                      </Text>
+                    </View>
+
+                    <View style={overlayStyles.section}>
+                      <Text style={overlayStyles.sectionTitle}>
+                        Positive Qualities
+                      </Text>
+                      {selectedFlower.positiveQualities.map(
+                        (quality, index) => (
+                          <Text key={index} style={overlayStyles.listItem}>
+                            • {quality}
+                          </Text>
+                        )
+                      )}
+                    </View>
+
+                    <View style={overlayStyles.section}>
+                      <Text style={overlayStyles.sectionTitle}>
+                        Patterns of Imbalance
+                      </Text>
+                      {selectedFlower.patternsOfImbalance.map(
+                        (pattern, index) => (
+                          <Text key={index} style={overlayStyles.listItem}>
+                            • {pattern}
+                          </Text>
+                        )
+                      )}
+                    </View>
+
+                    <View style={overlayStyles.section}>
+                      <Text style={overlayStyles.sectionTitle}>
+                        Cross References
+                      </Text>
+                      {selectedFlower.crossReferences.map(
+                        (reference, index) => (
+                          <Text key={index} style={overlayStyles.listItem}>
+                            • {reference}
+                          </Text>
+                        )
+                      )}
+                    </View>
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -356,6 +361,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0e2515",
+  },
+  drawNavBar: {
+    height: 40,
+    backgroundColor: "#000000",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    zIndex: 9999,
+  },
+  drawNavText: {
+    color: "#e6e6fa",
+    fontSize: 14,
+    fontWeight: "bold",
+    letterSpacing: 4,
+  },
+  drawNavArrow: {
+    color: "#e6e6fa",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  scrollContainer: {
+    flex: 1,
     padding: 20,
   },
 });

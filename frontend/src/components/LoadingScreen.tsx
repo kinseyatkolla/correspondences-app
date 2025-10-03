@@ -29,10 +29,10 @@ export default function LoadingScreen({
     // Simulate loading process
     const loadingSteps = [
       "Initializing...",
-      "Connecting to server...",
-      "Loading your data...",
-      "Almost ready...",
-      "Preparing mystical energies...", // 😄
+      // "Connecting to server...",
+      // "Loading your data...",
+      // "Almost ready...",
+      // "Preparing mystical energies...", // 😄
       "Aligning cosmic forces...",
       "Final preparations...",
     ];
