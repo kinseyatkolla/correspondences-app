@@ -218,31 +218,6 @@ export default function AstrologyScreen() {
   // ===== MAIN TEMPLATE =====
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>⭐ Astrology</Text>
-        <Text style={styles.subtitle}>
-          {currentChart && currentChart.currentTime
-            ? (() => {
-                const { dateString, timeString } = formatChartTimestamp(
-                  currentChart.currentTime.timestamp
-                );
-                return `${dateString} at ${timeString}`;
-              })()
-            : new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              }) +
-              " at " +
-              new Date().toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              })}
-        </Text>
-      </View>
-
       {/* Current Chart Display */}
       {currentChart && !ephemerisLoading && (
         <View style={styles.chartContainer}>
@@ -266,6 +241,27 @@ export default function AstrologyScreen() {
               }
             </Text>
           )}
+          <Text style={styles.movedDateTimeText}>
+            {currentChart && currentChart.currentTime
+              ? (() => {
+                  const { dateString, timeString } = formatChartTimestamp(
+                    currentChart.currentTime.timestamp
+                  );
+                  return `${dateString} at ${timeString}`;
+                })()
+              : new Date().toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                }) +
+                " at " +
+                new Date().toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })}
+          </Text>
         </View>
       )}
 
@@ -545,6 +541,7 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     alignItems: "center",
+    marginTop: 20,
     marginBottom: 20,
   },
   lastUpdatedText: {
@@ -553,6 +550,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 8,
     fontStyle: "italic",
+  },
+  movedDateTimeText: {
+    fontSize: 16,
+    color: "#e6e6fa",
+    textAlign: "center",
+    marginTop: 16,
+    fontWeight: "600",
   },
   inputSubsection: {
     marginBottom: 20,

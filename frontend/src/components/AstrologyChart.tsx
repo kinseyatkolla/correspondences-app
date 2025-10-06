@@ -69,7 +69,7 @@ interface ChartPlanetPosition {
 // CONSTANTS
 // ============================================================================
 const { width: screenWidth } = Dimensions.get("window");
-const CHART_SIZE = Math.min(screenWidth - 40, 300);
+const CHART_SIZE = Math.min(screenWidth - 20, 400);
 const CENTER_X = CHART_SIZE / 2;
 const CENTER_Y = CHART_SIZE / 2;
 const ZODIAC_RADIUS = CHART_SIZE * 0.35;

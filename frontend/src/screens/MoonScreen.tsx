@@ -418,8 +418,8 @@ export default function MoonScreen() {
     >
       <MoonSvgImporter
         svgName={currentMoonPhase.toString()}
-        width={140}
-        height={140}
+        width={240}
+        height={240}
         style={styles.emoji}
       />
 
@@ -799,6 +799,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   emoji: {
+    marginTop: 90,
     marginBottom: 20,
   },
   title: {
