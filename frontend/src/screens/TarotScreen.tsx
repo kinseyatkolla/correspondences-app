@@ -281,16 +281,6 @@ export default function TarotScreen({ navigation }: any) {
   // ===== MAIN TEMPLATE =====
   return (
     <View style={styles.container}>
-      {/* Draw Navigation Bar */}
-      <TouchableOpacity
-        style={styles.drawNavBar}
-        onPress={() => navigation.navigate("TarotDraw")}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.drawNavArrow}>‹</Text>
-        <Text style={styles.drawNavText}>DRAW A RANDOM CARD</Text>
-      </TouchableOpacity>
-
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -459,6 +449,16 @@ export default function TarotScreen({ navigation }: any) {
           </View>
         </Modal>
       </ScrollView>
+
+      {/* Draw Navigation Bar - Moved to bottom */}
+      <TouchableOpacity
+        style={styles.drawNavBar}
+        onPress={() => navigation.navigate("TarotDraw")}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.drawNavArrow}>‹</Text>
+        <Text style={styles.drawNavText}>DRAW A RANDOM CARD</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -472,14 +472,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f1a3f",
   },
   drawNavBar: {
+    position: "absolute",
+    bottom: 0, // Position directly above the tab bar
+    left: 0,
+    right: 0,
     height: 40,
     backgroundColor: "#000000",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333333",
+    zIndex: 9999,
   },
   drawNavArrow: {
     color: "#e6e6fa",
@@ -495,5 +498,6 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     padding: 20,
+    paddingBottom: 40, // Account for draw nav bar only (40)
   },
 });

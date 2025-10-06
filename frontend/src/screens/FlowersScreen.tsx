@@ -172,16 +172,6 @@ export default function FlowersScreen({ navigation }: any) {
   // ===== MAIN TEMPLATE =====
   return (
     <View style={styles.container}>
-      {/* Draw Navigation Bar */}
-      <TouchableOpacity
-        style={styles.drawNavBar}
-        onPress={() => navigation.navigate("FlowerDraw")}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.drawNavArrow}>‹</Text>
-        <Text style={styles.drawNavText}>DRAW A RANDOM FLOWER</Text>
-      </TouchableOpacity>
-
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -354,6 +344,16 @@ export default function FlowersScreen({ navigation }: any) {
           </View>
         </Modal>
       </ScrollView>
+
+      {/* Draw Navigation Bar - Moved to bottom */}
+      <TouchableOpacity
+        style={styles.drawNavBar}
+        onPress={() => navigation.navigate("FlowerDraw")}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.drawNavArrow}>‹</Text>
+        <Text style={styles.drawNavText}>DRAW A RANDOM FLOWER</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -367,6 +367,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#0e2515",
   },
   drawNavBar: {
+    position: "absolute",
+    bottom: 0, // Position directly above the tab bar
+    left: 0,
+    right: 0,
     height: 40,
     backgroundColor: "#000000",
     flexDirection: "row",
@@ -389,5 +393,6 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     padding: 20,
+    paddingBottom: 40, // Account for draw nav bar only (40)
   },
 });
