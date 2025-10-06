@@ -15,10 +15,11 @@ import {
   Image,
   Animated,
 } from "react-native";
-import { apiService, FlowerEssence } from "../services/api";
+import { FlowerEssence } from "../services/api";
 import { getFlowerEmoji } from "../utils/imageHelper";
 import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
+import { useFlowers } from "../contexts/FlowersContext";
 
 // ============================================================================
 // DATA & CONSTANTS
@@ -84,8 +85,8 @@ const flowerImages: { [key: string]: any } = {
 // COMPONENT
 // ============================================================================
 export default function FlowersScreen({ navigation }: any) {
+  const { flowers: allFlowers, loading: flowersLoading } = useFlowers();
   const [flowerEssences, setFlowerEssences] = useState<FlowerEssence[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFlower, setSelectedFlower] = useState<FlowerEssence | null>(
     null
@@ -96,22 +97,29 @@ export default function FlowersScreen({ navigation }: any) {
 
   // ===== LIFECYCLE =====
   useEffect(() => {
-    loadFlowerEssences();
-  }, []);
-
-  // ===== API FUNCTIONS =====
-  const loadFlowerEssences = useCallback(async (search = "") => {
-    try {
-      setLoading(true);
-      const response = await apiService.getFlowerEssences(search);
-      setFlowerEssences(response.data);
-    } catch (error) {
-      console.error("Error loading flower essences:", error);
-      Alert.alert("Error", "Failed to load flower essences");
-    } finally {
-      setLoading(false);
+    if (allFlowers.length > 0) {
+      setFlowerEssences(allFlowers);
     }
-  }, []);
+  }, [allFlowers]);
+
+  // ===== SEARCH FUNCTIONS =====
+  const filterFlowers = useCallback(
+    (search = "") => {
+      if (!search.trim()) {
+        setFlowerEssences(allFlowers);
+        return;
+      }
+
+      const filtered = allFlowers.filter(
+        (flower) =>
+          flower.commonName.toLowerCase().includes(search.toLowerCase()) ||
+          flower.latinName.toLowerCase().includes(search.toLowerCase()) ||
+          flower.description.toLowerCase().includes(search.toLowerCase())
+      );
+      setFlowerEssences(filtered);
+    },
+    [allFlowers]
+  );
 
   // ===== EVENT HANDLERS =====
   const handleSearchInput = (query: string) => {
@@ -119,16 +127,12 @@ export default function FlowersScreen({ navigation }: any) {
   };
 
   const handleSearch = () => {
-    if (searchQuery.trim()) {
-      loadFlowerEssences(searchQuery.trim());
-    } else {
-      loadFlowerEssences("");
-    }
+    filterFlowers(searchQuery.trim());
   };
 
   const handleClearSearch = () => {
     setSearchQuery("");
-    loadFlowerEssences("");
+    filterFlowers("");
   };
 
   const handleFlowerPress = (flower: FlowerEssence) => {
@@ -156,7 +160,7 @@ export default function FlowersScreen({ navigation }: any) {
   };
 
   // ===== LOADING STATES =====
-  if (loading) {
+  if (flowersLoading) {
     return (
       <View style={[sharedUI.loadingContainer, { backgroundColor: "#0e2515" }]}>
         <ActivityIndicator size="large" color="#b19cd9" />

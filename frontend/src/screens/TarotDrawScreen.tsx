@@ -15,8 +15,8 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Accelerometer } from "expo-sensors";
-import { FlowerEssence } from "../services/api";
-import { useFlowers } from "../contexts/FlowersContext";
+import { TarotCard } from "../services/api";
+import { useTarot } from "../contexts/TarotContext";
 import { sharedUI } from "../styles/sharedUI";
 
 // ============================================================================
@@ -25,7 +25,7 @@ import { sharedUI } from "../styles/sharedUI";
 
 interface CardData {
   id: string;
-  flower: FlowerEssence | null; // null means not assigned yet
+  tarotCard: TarotCard | null; // null means not assigned yet
   x: number;
   y: number;
   rotation: number;
@@ -43,61 +43,176 @@ const CARD_HEIGHT = 360; // 3x bigger
 const INITIAL_CARD_COUNT = 25; // Only render what's visible initially
 const MAX_CARD_COUNT = 50; // Total cards we can have
 
-// Import all flower images
-const flowerImages: { [key: string]: any } = {
-  "agrimony.png": require("../../assets/images/flowers/agrimony.png"),
-  "aloevera.png": require("../../assets/images/flowers/aloevera.png"),
-  "aspen.png": require("../../assets/images/flowers/aspen.png"),
-  "basil.png": require("../../assets/images/flowers/basil.png"),
-  "beech.png": require("../../assets/images/flowers/beech.png"),
-  "centaury.png": require("../../assets/images/flowers/centaury.png"),
-  "cerato.png": require("../../assets/images/flowers/cerato.png"),
-  "chamomile.png": require("../../assets/images/flowers/chamomile.png"),
-  "cherryplumb.png": require("../../assets/images/flowers/cherryplumb.png"),
-  "chestnutbud.png": require("../../assets/images/flowers/chestnutbud.png"),
-  "chicory.png": require("../../assets/images/flowers/chicory.png"),
-  "clematis.png": require("../../assets/images/flowers/clematis.png"),
-  "crabapple.png": require("../../assets/images/flowers/crabapple.png"),
-  "dandelion.png": require("../../assets/images/flowers/dandelion.png"),
-  "default.jpg": require("../../assets/images/flowers/default.jpg"),
-  "dill.png": require("../../assets/images/flowers/dill.png"),
-  "dogwood.png": require("../../assets/images/flowers/dogwood.png"),
-  "elm.png": require("../../assets/images/flowers/elm.png"),
-  "gorse.png": require("../../assets/images/flowers/gorse.png"),
-  "heather.png": require("../../assets/images/flowers/heather.png"),
-  "hibiscus.png": require("../../assets/images/flowers/hibiscus.png"),
-  "holly.png": require("../../assets/images/flowers/holly.png"),
-  "honeysuckle.png": require("../../assets/images/flowers/honeysuckle.png"),
-  "hornbeam.png": require("../../assets/images/flowers/hornbeam.png"),
-  "larch.png": require("../../assets/images/flowers/larch.png"),
-  "lavender.png": require("../../assets/images/flowers/lavender.png"),
-  "mimulus.png": require("../../assets/images/flowers/mimulus.png"),
-  "morningglory.png": require("../../assets/images/flowers/morningglory.png"),
-  "mullein.png": require("../../assets/images/flowers/mullein.png"),
-  "mustard.png": require("../../assets/images/flowers/mustard.png"),
-  "oak.png": require("../../assets/images/flowers/oak.png"),
-  "olive.png": require("../../assets/images/flowers/olive.png"),
-  "peppermint.png": require("../../assets/images/flowers/peppermint.png"),
-  "pine.png": require("../../assets/images/flowers/pine.png"),
-  "redchestnut.png": require("../../assets/images/flowers/redchestnut.png"),
-  "redclover.png": require("../../assets/images/flowers/redclover.png"),
-  "rockrose.png": require("../../assets/images/flowers/rockrose.png"),
-  "rockwater.png": require("../../assets/images/flowers/rockwater.png"),
-  "rosemary.png": require("../../assets/images/flowers/rosemary.png"),
-  "sage.png": require("../../assets/images/flowers/sage.png"),
-  "scleranthus.png": require("../../assets/images/flowers/scleranthus.png"),
-  "starofbethlehem.png": require("../../assets/images/flowers/starofbethlehem.png"),
-  "sunflower.png": require("../../assets/images/flowers/sunflower.png"),
-  "sweetchestnut.png": require("../../assets/images/flowers/sweetchestnut.png"),
-  "vervain.png": require("../../assets/images/flowers/vervain.png"),
-  "vine.png": require("../../assets/images/flowers/vine.png"),
-  "walnut.png": require("../../assets/images/flowers/walnut.png"),
-  "waterviolet.png": require("../../assets/images/flowers/waterviolet.png"),
-  "whitechestnut.png": require("../../assets/images/flowers/whitechestnut.png"),
-  "wildoat.png": require("../../assets/images/flowers/wildoat.png"),
-  "wildrose.png": require("../../assets/images/flowers/wildrose.png"),
-  "willow.png": require("../../assets/images/flowers/willow.png"),
-  "yarrow.png": require("../../assets/images/flowers/yarrow.png"),
+// Import all tarot card images
+const tarotImages: { [key: string]: any } = {
+  "RWSa-C-02.png": require("../../assets/images/tarot/RWSa-C-02.png"),
+  "RWSa-C-03.png": require("../../assets/images/tarot/RWSa-C-03.png"),
+  "RWSa-C-04.png": require("../../assets/images/tarot/RWSa-C-04.png"),
+  "RWSa-C-05.png": require("../../assets/images/tarot/RWSa-C-05.png"),
+  "RWSa-C-06.png": require("../../assets/images/tarot/RWSa-C-06.png"),
+  "RWSa-C-07.png": require("../../assets/images/tarot/RWSa-C-07.png"),
+  "RWSa-C-08.png": require("../../assets/images/tarot/RWSa-C-08.png"),
+  "RWSa-C-09.png": require("../../assets/images/tarot/RWSa-C-09.png"),
+  "RWSa-C-0A.png": require("../../assets/images/tarot/RWSa-C-0A.png"),
+  "RWSa-C-10.png": require("../../assets/images/tarot/RWSa-C-10.png"),
+  "RWSa-C-J1.png": require("../../assets/images/tarot/RWSa-C-J1.png"),
+  "RWSa-C-J2.png": require("../../assets/images/tarot/RWSa-C-J2.png"),
+  "RWSa-C-KI.png": require("../../assets/images/tarot/RWSa-C-KI.png"),
+  "RWSa-C-QU.png": require("../../assets/images/tarot/RWSa-C-QU.png"),
+  "RWSa-P-02.png": require("../../assets/images/tarot/RWSa-P-02.png"),
+  "RWSa-P-03.png": require("../../assets/images/tarot/RWSa-P-03.png"),
+  "RWSa-P-04.png": require("../../assets/images/tarot/RWSa-P-04.png"),
+  "RWSa-P-05.png": require("../../assets/images/tarot/RWSa-P-05.png"),
+  "RWSa-P-06.png": require("../../assets/images/tarot/RWSa-P-06.png"),
+  "RWSa-P-07.png": require("../../assets/images/tarot/RWSa-P-07.png"),
+  "RWSa-P-08.png": require("../../assets/images/tarot/RWSa-P-08.png"),
+  "RWSa-P-09.png": require("../../assets/images/tarot/RWSa-P-09.png"),
+  "RWSa-P-0A.png": require("../../assets/images/tarot/RWSa-P-0A.png"),
+  "RWSa-P-10.png": require("../../assets/images/tarot/RWSa-P-10.png"),
+  "RWSa-P-J1.png": require("../../assets/images/tarot/RWSa-P-J1.png"),
+  "RWSa-P-J2.png": require("../../assets/images/tarot/RWSa-P-J2.png"),
+  "RWSa-P-KI.png": require("../../assets/images/tarot/RWSa-P-KI.png"),
+  "RWSa-P-QU.png": require("../../assets/images/tarot/RWSa-P-QU.png"),
+  "RWSa-S-02.png": require("../../assets/images/tarot/RWSa-S-02.png"),
+  "RWSa-S-03.png": require("../../assets/images/tarot/RWSa-S-03.png"),
+  "RWSa-S-04.png": require("../../assets/images/tarot/RWSa-S-04.png"),
+  "RWSa-S-05.png": require("../../assets/images/tarot/RWSa-S-05.png"),
+  "RWSa-S-06.png": require("../../assets/images/tarot/RWSa-S-06.png"),
+  "RWSa-S-07.png": require("../../assets/images/tarot/RWSa-S-07.png"),
+  "RWSa-S-08.png": require("../../assets/images/tarot/RWSa-S-08.png"),
+  "RWSa-S-09.png": require("../../assets/images/tarot/RWSa-S-09.png"),
+  "RWSa-S-0A.png": require("../../assets/images/tarot/RWSa-S-0A.png"),
+  "RWSa-S-10.png": require("../../assets/images/tarot/RWSa-S-10.png"),
+  "RWSa-S-J1.png": require("../../assets/images/tarot/RWSa-S-J1.png"),
+  "RWSa-S-J2.png": require("../../assets/images/tarot/RWSa-S-J2.png"),
+  "RWSa-S-KI.png": require("../../assets/images/tarot/RWSa-S-KI.png"),
+  "RWSa-S-QU.png": require("../../assets/images/tarot/RWSa-S-QU.png"),
+  "RWSa-T-00.png": require("../../assets/images/tarot/RWSa-T-00.png"),
+  "RWSa-T-01.png": require("../../assets/images/tarot/RWSa-T-01.png"),
+  "RWSa-T-02.png": require("../../assets/images/tarot/RWSa-T-02.png"),
+  "RWSa-T-03.png": require("../../assets/images/tarot/RWSa-T-03.png"),
+  "RWSa-T-04.png": require("../../assets/images/tarot/RWSa-T-04.png"),
+  "RWSa-T-05.png": require("../../assets/images/tarot/RWSa-T-05.png"),
+  "RWSa-T-06.png": require("../../assets/images/tarot/RWSa-T-06.png"),
+  "RWSa-T-07.png": require("../../assets/images/tarot/RWSa-T-07.png"),
+  "RWSa-T-08.png": require("../../assets/images/tarot/RWSa-T-08.png"),
+  "RWSa-T-09.png": require("../../assets/images/tarot/RWSa-T-09.png"),
+  "RWSa-T-10.png": require("../../assets/images/tarot/RWSa-T-10.png"),
+  "RWSa-T-11.png": require("../../assets/images/tarot/RWSa-T-11.png"),
+  "RWSa-T-12.png": require("../../assets/images/tarot/RWSa-T-12.png"),
+  "RWSa-T-13.png": require("../../assets/images/tarot/RWSa-T-13.png"),
+  "RWSa-T-14.png": require("../../assets/images/tarot/RWSa-T-14.png"),
+  "RWSa-T-15.png": require("../../assets/images/tarot/RWSa-T-15.png"),
+  "RWSa-T-16.png": require("../../assets/images/tarot/RWSa-T-16.png"),
+  "RWSa-T-17.png": require("../../assets/images/tarot/RWSa-T-17.png"),
+  "RWSa-T-18.png": require("../../assets/images/tarot/RWSa-T-18.png"),
+  "RWSa-T-19.png": require("../../assets/images/tarot/RWSa-T-19.png"),
+  "RWSa-T-20.png": require("../../assets/images/tarot/RWSa-T-20.png"),
+  "RWSa-T-21.png": require("../../assets/images/tarot/RWSa-T-21.png"),
+  "RWSa-W-02.png": require("../../assets/images/tarot/RWSa-W-02.png"),
+  "RWSa-W-03.png": require("../../assets/images/tarot/RWSa-W-03.png"),
+  "RWSa-W-04.png": require("../../assets/images/tarot/RWSa-W-04.png"),
+  "RWSa-W-05.png": require("../../assets/images/tarot/RWSa-W-05.png"),
+  "RWSa-W-06.png": require("../../assets/images/tarot/RWSa-W-06.png"),
+  "RWSa-W-07.png": require("../../assets/images/tarot/RWSa-W-07.png"),
+  "RWSa-W-08.png": require("../../assets/images/tarot/RWSa-W-08.png"),
+  "RWSa-W-09.png": require("../../assets/images/tarot/RWSa-W-09.png"),
+  "RWSa-W-0A.png": require("../../assets/images/tarot/RWSa-W-0A.png"),
+  "RWSa-W-10.png": require("../../assets/images/tarot/RWSa-W-10.png"),
+  "RWSa-W-J1.png": require("../../assets/images/tarot/RWSa-W-J1.png"),
+  "RWSa-W-J2.png": require("../../assets/images/tarot/RWSa-W-J2.png"),
+  "RWSa-W-KI.png": require("../../assets/images/tarot/RWSa-W-KI.png"),
+  "RWSa-W-QU.png": require("../../assets/images/tarot/RWSa-W-QU.png"),
+};
+// Map database imageName to actual file names
+const imageNameToFile: { [key: string]: string } = {
+  // Major Arcana
+  "fool.jpg": "RWSa-T-00.png",
+  "magician.jpg": "RWSa-T-01.png",
+  "high-priestess.jpg": "RWSa-T-02.png",
+  "empress.jpg": "RWSa-T-03.png",
+  "emperor.jpg": "RWSa-T-04.png",
+  "hierophant.jpg": "RWSa-T-05.png",
+  "lovers.jpg": "RWSa-T-06.png",
+  "chariot.jpg": "RWSa-T-07.png",
+  "strength.jpg": "RWSa-T-08.png",
+  "hermit.jpg": "RWSa-T-09.png",
+  "wheel-of-fortune.jpg": "RWSa-T-10.png",
+  "justice.jpg": "RWSa-T-11.png",
+  "hanged-man.jpg": "RWSa-T-12.png",
+  "death.jpg": "RWSa-T-13.png",
+  "temperance.jpg": "RWSa-T-14.png",
+  "devil.jpg": "RWSa-T-15.png",
+  "tower.jpg": "RWSa-T-16.png",
+  "star.jpg": "RWSa-T-17.png",
+  "moon.jpg": "RWSa-T-18.png",
+  "sun.jpg": "RWSa-T-19.png",
+  "judgement.jpg": "RWSa-T-20.png",
+  "world.jpg": "RWSa-T-21.png",
+
+  // Cups (C)
+  "ace-cups.jpg": "RWSa-C-02.png",
+  "two-cups.jpg": "RWSa-C-03.png",
+  "three-cups.jpg": "RWSa-C-04.png",
+  "four-cups.jpg": "RWSa-C-05.png",
+  "five-cups.jpg": "RWSa-C-06.png",
+  "six-cups.jpg": "RWSa-C-07.png",
+  "seven-cups.jpg": "RWSa-C-08.png",
+  "eight-cups.jpg": "RWSa-C-09.png",
+  "nine-cups.jpg": "RWSa-C-10.png",
+  "ten-cups.jpg": "RWSa-C-0A.png",
+  "page-cups.jpg": "RWSa-C-J1.png",
+  "knight-cups.jpg": "RWSa-C-J2.png",
+  "queen-cups.jpg": "RWSa-C-QU.png",
+  "king-cups.jpg": "RWSa-C-KI.png",
+
+  // Wands (W)
+  "ace-of-wands.jpg": "RWSa-W-02.png",
+  "two-of-wands.jpg": "RWSa-W-03.png",
+  "three-of-wands.jpg": "RWSa-W-04.png",
+  "four-of-wands.jpg": "RWSa-W-05.png",
+  "five-of-wands.jpg": "RWSa-W-06.png",
+  "six-of-wands.jpg": "RWSa-W-07.png",
+  "seven-of-wands.jpg": "RWSa-W-08.png",
+  "eight-of-wands.jpg": "RWSa-W-09.png",
+  "nine-of-wands.jpg": "RWSa-W-10.png",
+  "ten-of-wands.jpg": "RWSa-W-0A.png",
+  "page-of-wands.jpg": "RWSa-W-J1.png",
+  "knight-of-wands.jpg": "RWSa-W-J2.png",
+  "queen-of-wands.jpg": "RWSa-W-QU.png",
+  "king-of-wands.jpg": "RWSa-W-KI.png",
+
+  // Swords (S)
+  "ace-of-swords.jpg": "RWSa-S-02.png",
+  "two-of-swords.jpg": "RWSa-S-03.png",
+  "three-of-swords.jpg": "RWSa-S-04.png",
+  "four-of-swords.jpg": "RWSa-S-05.png",
+  "five-of-swords.jpg": "RWSa-S-06.png",
+  "six-of-swords.jpg": "RWSa-S-07.png",
+  "seven-of-swords.jpg": "RWSa-S-08.png",
+  "eight-of-swords.jpg": "RWSa-S-09.png",
+  "nine-of-swords.jpg": "RWSa-S-10.png",
+  "ten-of-swords.jpg": "RWSa-S-0A.png",
+  "page-of-swords.jpg": "RWSa-S-J1.png",
+  "knight-of-swords.jpg": "RWSa-S-J2.png",
+  "queen-of-swords.jpg": "RWSa-S-QU.png",
+  "king-of-swords.jpg": "RWSa-S-KI.png",
+
+  // Pentacles (P)
+  "ace-of-pentacles.jpg": "RWSa-P-02.png",
+  "two-of-pentacles.jpg": "RWSa-P-03.png",
+  "three-of-pentacles.jpg": "RWSa-P-04.png",
+  "four-of-pentacles.jpg": "RWSa-P-05.png",
+  "five-of-pentacles.jpg": "RWSa-P-06.png",
+  "six-of-pentacles.jpg": "RWSa-P-07.png",
+  "seven-of-pentacles.jpg": "RWSa-P-08.png",
+  "eight-of-pentacles.jpg": "RWSa-P-09.png",
+  "nine-of-pentacles.jpg": "RWSa-P-10.png",
+  "ten-of-pentacles.jpg": "RWSa-P-0A.png",
+  "page-of-pentacles.jpg": "RWSa-P-J1.png",
+  "knight-of-pentacles.jpg": "RWSa-P-J2.png",
+  "queen-of-pentacles.jpg": "RWSa-P-QU.png",
+  "king-of-pentacles.jpg": "RWSa-P-KI.png",
 };
 
 // Card back image
@@ -106,8 +221,13 @@ const cardBackImage = require("../../assets/images/tarot/RWSa-X-RL.png");
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function FlowerDrawScreen({ navigation, route }: any) {
-  const { flowers: allFlowers, loading: flowersLoading } = useFlowers();
+export default function TarotDrawScreen({ navigation, route }: any) {
+  const { tarotCards: allTarotCards, loading: tarotLoading } = useTarot();
+
+  // Debug logging
+  console.log("TarotDrawScreen - allTarotCards length:", allTarotCards.length);
+  console.log("TarotDrawScreen - tarotLoading:", tarotLoading);
+  console.log("TarotDrawScreen - allTarotCards:", allTarotCards);
   const [cards, setCards] = useState<CardData[]>([]);
   const [maxZIndex, setMaxZIndex] = useState(0);
   const lastTapRef = useRef<number>(0);
@@ -119,10 +239,8 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
   // ===== LIFECYCLE =====
   useFocusEffect(
     useCallback(() => {
-      if (allFlowers.length > 0) {
-        initializeCards();
-      }
-    }, [allFlowers])
+      initializeCards();
+    }, [])
   );
 
   // ===== CARD MANAGEMENT =====
@@ -135,7 +253,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
     for (let i = 0; i < INITIAL_CARD_COUNT; i++) {
       newCards.push({
         id: `card-${i}`,
-        flower: null,
+        tarotCard: null,
         x: margin + Math.random() * availableWidth,
         y: margin + Math.random() * availableHeight,
         rotation: (Math.random() - 0.5) * 60,
@@ -185,25 +303,40 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
       return;
     }
 
+    // Don't flip if no tarot cards are available
+    if (allTarotCards.length === 0) {
+      console.log("Cannot flip card - no tarot cards available");
+      return;
+    }
+
     lastFlipTime.current = now;
     console.log("Flipping card:", cardId);
+    console.log("Available tarot cards:", allTarotCards.length);
     setCards((prevCards) =>
       prevCards.map((card) => {
         if (card.id === cardId) {
           const newIsFlipped = !card.isFlipped;
           console.log("Card flip state changed to:", newIsFlipped);
+          console.log("Current card tarotCard:", card.tarotCard);
 
-          // Assign a random flower when flipping to show the front
-          let assignedFlower = card.flower;
-          if (newIsFlipped && !card.flower && allFlowers.length > 0) {
-            // Pick a random flower from the full collection
-            const randomIndex = Math.floor(Math.random() * allFlowers.length);
-            assignedFlower = allFlowers[randomIndex];
+          // Assign a random tarot card when flipping to show the front
+          let assignedTarotCard = card.tarotCard;
+          if (newIsFlipped && !card.tarotCard && allTarotCards.length > 0) {
+            // Pick a random tarot card from the full collection
+            const randomIndex = Math.floor(
+              Math.random() * allTarotCards.length
+            );
+            assignedTarotCard = allTarotCards[randomIndex];
+            console.log(
+              "Assigned tarot card:",
+              assignedTarotCard?.name,
+              assignedTarotCard?.imageName
+            );
           }
 
           return {
             ...card,
-            flower: assignedFlower,
+            tarotCard: assignedTarotCard,
             isFlipped: newIsFlipped,
             rotation: newIsFlipped ? 0 : (Math.random() - 0.5) * 60,
           };
@@ -218,6 +351,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
   };
 
   const handleCardLongPress = (cardId: string) => {
+    console.log("Long press detected on card:", cardId);
     flipCard(cardId);
   };
 
@@ -366,6 +500,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
                 const distanceDiff =
                   currentDistance - lastPinchDistance.current;
                 if (distanceDiff > 10) {
+                  console.log("Pinch expansion detected on card:", card.id);
                   handleCardLongPress(card.id);
                   lastPinchDistance.current = 0;
                 }
@@ -384,16 +519,28 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
         >
           <TouchableOpacity
             style={styles.cardTouchable}
-            onPress={() => handleCardPress(card.id)}
-            onLongPress={() => handleCardLongPress(card.id)}
-            activeOpacity={card.isDragging ? 1 : 0.8}
+            onPress={() => !card.isDragging && handleCardPress(card.id)}
+            onLongPress={() => !card.isDragging && handleCardLongPress(card.id)}
+            activeOpacity={1}
           >
             <Image
               source={
-                card.isFlipped && card.flower
-                  ? (card.flower.imageName &&
-                      flowerImages[card.flower.imageName]) ||
-                    flowerImages["default.jpg"]
+                card.isFlipped && card.tarotCard
+                  ? (() => {
+                      console.log(
+                        "Rendering tarot card image:",
+                        card.tarotCard?.name,
+                        card.tarotCard?.imageName
+                      );
+                      const mappedFileName = card.tarotCard.imageName
+                        ? imageNameToFile[card.tarotCard.imageName]
+                        : null;
+                      console.log("Mapped file name:", mappedFileName);
+                      return (
+                        (mappedFileName && tarotImages[mappedFileName]) ||
+                        tarotImages["RWSa-T-00.png"]
+                      );
+                    })()
                   : cardBackImage
               }
               style={styles.cardImage}
@@ -406,12 +553,16 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
   };
 
   // ===== LOADING STATE =====
-  if (flowersLoading) {
+  if (tarotLoading || allTarotCards.length === 0) {
     return (
       <View style={styles.container}>
         <StatusBar hidden={true} />
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading flowers...</Text>
+          <Text style={styles.loadingText}>
+            {tarotLoading
+              ? "Loading tarot cards..."
+              : "No tarot cards available"}
+          </Text>
         </View>
       </View>
     );
@@ -430,10 +581,10 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
       {/* Search Navigation Bar */}
       <TouchableOpacity
         style={styles.searchNavBar}
-        onPress={() => navigation.navigate("FlowersList")}
+        onPress={() => navigation.navigate("TarotList")}
         activeOpacity={0.8}
       >
-        <Text style={styles.searchNavText}>SEARCH FLOWER ESSENCES</Text>
+        <Text style={styles.searchNavText}>SEARCH TAROT CARDS</Text>
         <Text style={styles.searchNavArrow}>›</Text>
       </TouchableOpacity>
       {/* Cards Container - Full Screen */}
@@ -503,7 +654,7 @@ const styles = StyleSheet.create({
     position: "relative",
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
-    marginTop: 90, // Account for search nav bar (40) + back gesture area (50)
+    marginTop: 30, // Account for search nav bar (40) + back gesture area (50)
   },
   card: {
     position: "absolute",

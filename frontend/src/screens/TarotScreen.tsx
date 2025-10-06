@@ -15,17 +15,18 @@ import {
   Alert,
   Image,
 } from "react-native";
-import { apiService, TarotCard } from "../services/api";
+import { TarotCard } from "../services/api";
+import { useTarot } from "../contexts/TarotContext";
 import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function TarotScreen() {
+export default function TarotScreen({ navigation }: any) {
+  const { tarotCards: allTarotCards, loading: tarotLoading } = useTarot();
   const [tarotCards, setTarotCards] = useState<TarotCard[]>([]);
   const [filteredCards, setFilteredCards] = useState<TarotCard[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCard, setSelectedCard] = useState<TarotCard | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -33,28 +34,40 @@ export default function TarotScreen() {
 
   // ===== LIFECYCLE =====
   useEffect(() => {
-    loadTarotCards();
-  }, []);
+    filterTarotCards(searchQuery, selectedCategory);
+  }, [allTarotCards, searchQuery, selectedCategory]);
 
-  // ===== API FUNCTIONS =====
-  const loadTarotCards = useCallback(async (search = "", suit = "") => {
-    try {
-      setLoading(true);
-      const response = await apiService.getTarotCards(search, suit);
-      console.log(`Loaded ${response.data.length} tarot cards`);
+  // ===== FILTERING FUNCTIONS =====
+  const filterTarotCards = useCallback(
+    (search = "", suit = "") => {
+      if (!search.trim() && !suit) {
+        setTarotCards(allTarotCards);
+        setFilteredCards([]);
+        return;
+      }
+
+      const filtered = allTarotCards.filter((card) => {
+        const matchesSearch =
+          !search.trim() ||
+          card.name.toLowerCase().includes(search.toLowerCase()) ||
+          card.uprightMeaning.toLowerCase().includes(search.toLowerCase()) ||
+          card.reversedMeaning.toLowerCase().includes(search.toLowerCase()) ||
+          card.description.toLowerCase().includes(search.toLowerCase());
+
+        const matchesSuit = !suit || card.suit === suit;
+
+        return matchesSearch && matchesSuit;
+      });
+
       if (search || suit) {
-        setFilteredCards(response.data);
+        setFilteredCards(filtered);
       } else {
-        setTarotCards(response.data);
+        setTarotCards(filtered);
         setFilteredCards([]);
       }
-    } catch (error) {
-      console.error("Error loading tarot cards:", error);
-      Alert.alert("Error", "Failed to load tarot cards");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [allTarotCards]
+  );
 
   // ===== EVENT HANDLERS =====
   const handleSearchInput = (query: string) => {
@@ -62,24 +75,20 @@ export default function TarotScreen() {
   };
 
   const handleSearch = () => {
-    if (searchQuery.trim()) {
-      setSelectedCategory(null);
-      loadTarotCards(searchQuery.trim());
-    } else {
-      setFilteredCards([]);
-    }
+    filterTarotCards(searchQuery, selectedCategory);
   };
 
   const handleClearSearch = () => {
     setSearchQuery("");
     setFilteredCards([]);
     setSelectedCategory(null);
+    filterTarotCards();
   };
 
   const handleCategoryPress = (category: string) => {
     setSelectedCategory(category);
     setSearchQuery("");
-    loadTarotCards("", category);
+    filterTarotCards("", category);
   };
 
   const handleBackToCategories = () => {
@@ -90,20 +99,6 @@ export default function TarotScreen() {
   const handleCardPress = (card: TarotCard) => {
     setSelectedCard(card);
     setModalVisible(true);
-  };
-
-  const handleRandomDraw = async () => {
-    try {
-      setLoading(true);
-      const response = await apiService.getRandomTarotCard();
-      setSelectedCard(response.data);
-      setModalVisible(true);
-    } catch (error) {
-      console.error("Error drawing random card:", error);
-      Alert.alert("Error", "Failed to draw random card");
-    } finally {
-      setLoading(false);
-    }
   };
 
   const getElementEmoji = (element?: string) => {
@@ -274,7 +269,7 @@ export default function TarotScreen() {
   );
 
   // ===== LOADING STATES =====
-  if (loading) {
+  if (tarotLoading) {
     return (
       <View style={[sharedUI.loadingContainer, { backgroundColor: "#0f1a3f" }]}>
         <ActivityIndicator size="large" color="#b19cd9" />
@@ -285,173 +280,186 @@ export default function TarotScreen() {
 
   // ===== MAIN TEMPLATE =====
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={sharedUI.pageTitle}>🔮 Tarot</Text>
-      <Text style={sharedUI.pageSubtitle}>
-        Discover the wisdom of the tarot
-      </Text>
-
+    <View style={styles.container}>
+      {/* Draw Navigation Bar */}
       <TouchableOpacity
-        style={sharedUI.primaryButton}
-        onPress={handleRandomDraw}
+        style={styles.drawNavBar}
+        onPress={() => navigation.navigate("TarotDraw")}
+        activeOpacity={0.8}
       >
-        <Text style={sharedUI.primaryButtonText}>🎲 Draw a Random Card</Text>
+        <Text style={styles.drawNavArrow}>‹</Text>
+        <Text style={styles.drawNavText}>DRAW A RANDOM CARD</Text>
       </TouchableOpacity>
 
-      <View style={sharedUI.searchContainer}>
-        <TextInput
-          style={sharedUI.searchInput}
-          placeholder="Search tarot cards..."
-          placeholderTextColor="#8a8a8a"
-          value={searchQuery}
-          onChangeText={handleSearchInput}
-          returnKeyType="search"
-          onSubmitEditing={handleSearch}
-        />
-        <TouchableOpacity style={sharedUI.searchButton} onPress={handleSearch}>
-          <Text style={sharedUI.searchButtonText}>🔍</Text>
-        </TouchableOpacity>
-        {searchQuery.length > 0 && (
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={sharedUI.pageTitle}>🔮 Tarot</Text>
+        <Text style={sharedUI.pageSubtitle}>
+          Discover the wisdom of the tarot
+        </Text>
+
+        <View style={sharedUI.searchContainer}>
+          <TextInput
+            style={sharedUI.searchInput}
+            placeholder="Search tarot cards..."
+            placeholderTextColor="#8a8a8a"
+            value={searchQuery}
+            onChangeText={handleSearchInput}
+            returnKeyType="search"
+            onSubmitEditing={handleSearch}
+          />
           <TouchableOpacity
-            style={sharedUI.clearButton}
-            onPress={handleClearSearch}
+            style={sharedUI.searchButton}
+            onPress={handleSearch}
           >
-            <Text style={sharedUI.clearButtonText}>✕</Text>
+            <Text style={sharedUI.searchButtonText}>🔍</Text>
+          </TouchableOpacity>
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              style={sharedUI.clearButton}
+              onPress={handleClearSearch}
+            >
+              <Text style={sharedUI.clearButtonText}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {selectedCategory && (
+          <TouchableOpacity
+            style={sharedUI.backButton}
+            onPress={handleBackToCategories}
+          >
+            <Text style={sharedUI.backButtonText}>← Back to Categories</Text>
           </TouchableOpacity>
         )}
-      </View>
 
-      {selectedCategory && (
-        <TouchableOpacity
-          style={sharedUI.backButton}
-          onPress={handleBackToCategories}
-        >
-          <Text style={sharedUI.backButtonText}>← Back to Categories</Text>
-        </TouchableOpacity>
-      )}
-
-      {filteredCards.length > 0 && (
-        <View style={sharedUI.resultsContainer}>
-          {filteredCards.map((card) => (
-            <TouchableOpacity
-              key={card._id}
-              style={sharedUI.listItem}
-              onPress={() => handleCardPress(card)}
-            >
-              <View style={sharedUI.listItemContent}>
-                <Text style={sharedUI.listItemTitle}>{card.name}</Text>
-                <Text style={sharedUI.listItemSubtitle}>{card.suit}</Text>
-                {card.keywords && card.keywords.length > 0 && (
-                  <Text style={sharedUI.listItemKeywords}>
-                    {card.keywords.slice(0, 3).join(" • ")}
-                  </Text>
-                )}
-              </View>
-              <Text style={sharedUI.arrow}>›</Text>
-            </TouchableOpacity>
-          ))}
-          <View style={sharedUI.listFooter}>
-            <Text style={sharedUI.footerText}>
-              Showing {filteredCards.length} cards
-            </Text>
+        {filteredCards.length > 0 && (
+          <View style={sharedUI.resultsContainer}>
+            {filteredCards.map((card) => (
+              <TouchableOpacity
+                key={card._id}
+                style={sharedUI.listItem}
+                onPress={() => handleCardPress(card)}
+              >
+                <View style={sharedUI.listItemContent}>
+                  <Text style={sharedUI.listItemTitle}>{card.name}</Text>
+                  <Text style={sharedUI.listItemSubtitle}>{card.suit}</Text>
+                  {card.keywords && card.keywords.length > 0 && (
+                    <Text style={sharedUI.listItemKeywords}>
+                      {card.keywords.slice(0, 3).join(" • ")}
+                    </Text>
+                  )}
+                </View>
+                <Text style={sharedUI.arrow}>›</Text>
+              </TouchableOpacity>
+            ))}
+            <View style={sharedUI.listFooter}>
+              <Text style={sharedUI.footerText}>
+                Showing {filteredCards.length} cards
+              </Text>
+            </View>
           </View>
-        </View>
-      )}
+        )}
 
-      {renderCategories()}
+        {renderCategories()}
 
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={overlayStyles.modalOverlay}>
-          <View style={overlayStyles.modalContent}>
-            <ScrollView style={overlayStyles.modalScroll}>
-              {selectedCard && (
-                <>
-                  <View style={overlayStyles.modalHeader}>
-                    <Text style={overlayStyles.modalTitle}>
-                      {selectedCard.name}
-                    </Text>
-                    <Text style={overlayStyles.modalSubtitle}>
-                      {selectedCard.suit}{" "}
-                      {selectedCard.number > 0 && `#${selectedCard.number}`}
-                    </Text>
-                    {selectedCard.element && (
-                      <Text style={overlayStyles.modalElement}>
-                        {getElementEmoji(selectedCard.element)}{" "}
-                        {selectedCard.element}
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={overlayStyles.modalOverlay}>
+            <View style={overlayStyles.modalContent}>
+              <ScrollView style={overlayStyles.modalScroll}>
+                {selectedCard && (
+                  <>
+                    <View style={overlayStyles.modalHeader}>
+                      <Text style={overlayStyles.modalTitle}>
+                        {selectedCard.name}
                       </Text>
-                    )}
-                    <TouchableOpacity
-                      style={overlayStyles.closeButton}
-                      onPress={() => setModalVisible(false)}
-                    >
-                      <Text style={overlayStyles.closeButtonText}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={overlayStyles.cardImageContainer}>
-                    <Image
-                      source={getCardImagePath(selectedCard)}
-                      style={overlayStyles.cardImage}
-                      resizeMode="contain"
-                    />
-                  </View>
-
-                  <View style={overlayStyles.section}>
-                    <Text style={overlayStyles.sectionTitle}>Description</Text>
-                    <Text style={overlayStyles.sectionText}>
-                      {selectedCard.description}
-                    </Text>
-                  </View>
-
-                  <View style={overlayStyles.section}>
-                    <Text style={overlayStyles.sectionTitle}>Keywords</Text>
-                    {selectedCard.keywords.map((keyword, index) => (
-                      <Text key={index} style={overlayStyles.listItem}>
-                        • {keyword}
+                      <Text style={overlayStyles.modalSubtitle}>
+                        {selectedCard.suit}{" "}
+                        {selectedCard.number > 0 && `#${selectedCard.number}`}
                       </Text>
-                    ))}
-                  </View>
+                      {selectedCard.element && (
+                        <Text style={overlayStyles.modalElement}>
+                          {getElementEmoji(selectedCard.element)}{" "}
+                          {selectedCard.element}
+                        </Text>
+                      )}
+                      <TouchableOpacity
+                        style={overlayStyles.closeButton}
+                        onPress={() => setModalVisible(false)}
+                      >
+                        <Text style={overlayStyles.closeButtonText}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
 
-                  <View style={overlayStyles.section}>
-                    <Text style={overlayStyles.sectionTitle}>
-                      Upright Meaning
-                    </Text>
-                    <Text style={overlayStyles.sectionText}>
-                      {selectedCard.uprightMeaning}
-                    </Text>
-                  </View>
+                    <View style={overlayStyles.cardImageContainer}>
+                      <Image
+                        source={getCardImagePath(selectedCard)}
+                        style={overlayStyles.cardImage}
+                        resizeMode="contain"
+                      />
+                    </View>
 
-                  <View style={overlayStyles.section}>
-                    <Text style={overlayStyles.sectionTitle}>
-                      Reversed Meaning
-                    </Text>
-                    <Text style={overlayStyles.sectionText}>
-                      {selectedCard.reversedMeaning}
-                    </Text>
-                  </View>
-
-                  {selectedCard.astrologicalCorrespondence && (
                     <View style={overlayStyles.section}>
                       <Text style={overlayStyles.sectionTitle}>
-                        Astrological Correspondence
+                        Description
                       </Text>
                       <Text style={overlayStyles.sectionText}>
-                        {selectedCard.astrologicalCorrespondence}
+                        {selectedCard.description}
                       </Text>
                     </View>
-                  )}
-                </>
-              )}
-            </ScrollView>
+
+                    <View style={overlayStyles.section}>
+                      <Text style={overlayStyles.sectionTitle}>Keywords</Text>
+                      {selectedCard.keywords.map((keyword, index) => (
+                        <Text key={index} style={overlayStyles.listItem}>
+                          • {keyword}
+                        </Text>
+                      ))}
+                    </View>
+
+                    <View style={overlayStyles.section}>
+                      <Text style={overlayStyles.sectionTitle}>
+                        Upright Meaning
+                      </Text>
+                      <Text style={overlayStyles.sectionText}>
+                        {selectedCard.uprightMeaning}
+                      </Text>
+                    </View>
+
+                    <View style={overlayStyles.section}>
+                      <Text style={overlayStyles.sectionTitle}>
+                        Reversed Meaning
+                      </Text>
+                      <Text style={overlayStyles.sectionText}>
+                        {selectedCard.reversedMeaning}
+                      </Text>
+                    </View>
+
+                    {selectedCard.astrologicalCorrespondence && (
+                      <View style={overlayStyles.section}>
+                        <Text style={overlayStyles.sectionTitle}>
+                          Astrological Correspondence
+                        </Text>
+                        <Text style={overlayStyles.sectionText}>
+                          {selectedCard.astrologicalCorrespondence}
+                        </Text>
+                      </View>
+                    )}
+                  </>
+                )}
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
-    </ScrollView>
+        </Modal>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -462,6 +470,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0f1a3f",
+  },
+  drawNavBar: {
+    height: 40,
+    backgroundColor: "#000000",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#333333",
+  },
+  drawNavArrow: {
+    color: "#e6e6fa",
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  drawNavText: {
+    color: "#e6e6fa",
+    fontSize: 14,
+    fontWeight: "bold",
+    letterSpacing: 1,
+  },
+  scrollContainer: {
+    flex: 1,
     padding: 20,
   },
 });
