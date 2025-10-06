@@ -32,6 +32,7 @@ interface CardData {
   zIndex: number;
   isFlipped: boolean;
   isDragging: boolean;
+  cardBackIndex: number; // Index for random card back selection
 }
 
 // ============================================================================
@@ -100,8 +101,12 @@ const flowerImages: { [key: string]: any } = {
   "yarrow.png": require("../../assets/images/flowers/yarrow.png"),
 };
 
-// Card back image
-const cardBackImage = require("../../assets/images/tarot/RWSa-X-RL.png");
+// Card back images
+const cardBackImages = [
+  require("../../assets/images/flowers/flowersCardBack1.png"),
+  require("../../assets/images/flowers/flowersCardBack2.png"),
+  require("../../assets/images/flowers/flowersCardBack3.png"),
+];
 
 // ============================================================================
 // COMPONENT
@@ -142,6 +147,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
         zIndex: i,
         isFlipped: false,
         isDragging: false,
+        cardBackIndex: Math.floor(Math.random() * cardBackImages.length),
       });
     }
 
@@ -162,6 +168,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
         y: margin + Math.random() * availableHeight,
         rotation: (Math.random() - 0.5) * 60,
         isFlipped: false,
+        cardBackIndex: Math.floor(Math.random() * cardBackImages.length),
       }))
     );
   };
@@ -386,7 +393,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
             style={styles.cardTouchable}
             onPress={() => handleCardPress(card.id)}
             onLongPress={() => handleCardLongPress(card.id)}
-            activeOpacity={card.isDragging ? 1 : 0.8}
+            activeOpacity={1}
           >
             <Image
               source={
@@ -394,7 +401,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
                   ? (card.flower.imageName &&
                       flowerImages[card.flower.imageName]) ||
                     flowerImages["default.jpg"]
-                  : cardBackImage
+                  : cardBackImages[card.cardBackIndex]
               }
               style={styles.cardImage}
               resizeMode="contain"
@@ -518,11 +525,11 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
   },
   cardImage: {
     width: "100%",
