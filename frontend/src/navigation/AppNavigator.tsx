@@ -14,6 +14,7 @@ import FlowersScreen from "../screens/FlowersScreen";
 import FlowerDrawScreen from "../screens/FlowerDrawScreen";
 import BookScreen from "../screens/BookScreen";
 import AstrologyScreen from "../screens/AstrologyScreen";
+import BirthChartCalculatorScreen from "../screens/BirthChartCalculatorScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -84,6 +85,39 @@ function TarotStack() {
       <Stack.Screen
         name="TarotList"
         component={TarotScreen}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// Astrology Stack Navigator
+function AstrologyStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#000000",
+          borderBottomWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        headerTintColor: "white",
+        headerTitleStyle: {
+          fontWeight: "bold",
+          letterSpacing: 8,
+        },
+        headerTitle: "CORRESPONDENCES",
+      }}
+    >
+      <Stack.Screen
+        name="AstrologyMain"
+        component={AstrologyScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="BirthChartCalculator"
+        component={BirthChartCalculatorScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
@@ -171,7 +205,7 @@ export default function AppNavigator() {
             />
             <Tab.Screen
               name="Astrology"
-              component={AstrologyScreen}
+              component={AstrologyStack}
               options={{
                 tabBarLabel: "",
                 tabBarIcon: ({ focused, size }) => (
