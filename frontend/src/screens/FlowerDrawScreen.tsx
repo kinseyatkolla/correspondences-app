@@ -33,6 +33,7 @@ interface CardData {
   isFlipped: boolean;
   isDragging: boolean;
   cardBackIndex: number; // Index for random card back selection
+  reversed: boolean; // Whether the card is drawn upside down
 }
 
 // ============================================================================
@@ -148,6 +149,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
         isFlipped: false,
         isDragging: false,
         cardBackIndex: Math.floor(Math.random() * cardBackImages.length),
+        reversed: false, // Will be set when card is flipped
       });
     }
 
@@ -169,6 +171,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
         rotation: (Math.random() - 0.5) * 60,
         isFlipped: false,
         cardBackIndex: Math.floor(Math.random() * cardBackImages.length),
+        reversed: false, // Reset reversal when shuffling
       }))
     );
   };
@@ -202,16 +205,26 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
 
           // Assign a random flower when flipping to show the front
           let assignedFlower = card.flower;
+          let isReversed = card.reversed;
           if (newIsFlipped && !card.flower && allFlowers.length > 0) {
             // Pick a random flower from the full collection
             const randomIndex = Math.floor(Math.random() * allFlowers.length);
             assignedFlower = allFlowers[randomIndex];
+            // Generate random reversal (50% chance)
+            isReversed = Math.random() < 0.5;
+            console.log(
+              "Assigned flower:",
+              assignedFlower?.commonName,
+              "Reversed:",
+              isReversed
+            );
           }
 
           return {
             ...card,
             flower: assignedFlower,
             isFlipped: newIsFlipped,
+            reversed: isReversed,
             rotation: newIsFlipped ? 0 : (Math.random() - 0.5) * 60,
           };
         }
@@ -343,7 +356,13 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
           {
             left: card.x,
             top: card.y,
-            transform: [{ rotate: `${card.rotation}deg` }],
+            transform: [
+              { rotate: `${card.rotation}deg` },
+              // Add 180-degree rotation if card is reversed and flipped
+              ...(card.isFlipped && card.reversed
+                ? [{ rotate: "180deg" }]
+                : []),
+            ],
             zIndex: card.zIndex,
             elevation: card.zIndex,
           },

@@ -1,6 +1,7 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
+// TypeScript service refresh
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
