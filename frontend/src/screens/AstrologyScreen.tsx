@@ -587,8 +587,8 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
-    padding: 20,
-    paddingBottom: 40, // Account for calculator nav bar
+    padding: 35,
+    paddingBottom: 50, // Account for calculator nav bar
   },
   header: {
     alignItems: "center",
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
   chartContainer: {
     alignItems: "center",
     marginTop: 20,
-    marginBottom: 20,
+    marginBottom: 40,
   },
   lastUpdatedText: {
     fontSize: 12,

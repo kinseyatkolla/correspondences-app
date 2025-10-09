@@ -116,7 +116,7 @@ const longitudeToPosition = (longitude: number, radius: number) => {
   const radians = degreesToRadians(adjustedLongitude);
   return {
     x: CENTER_X + radius * Math.cos(radians),
-    y: CENTER_Y + radius * Math.sin(radians),
+    y: CENTER_Y - radius * Math.sin(radians), // Flip Y coordinate to mirror over horizontal axis
   };
 };
 
@@ -338,7 +338,7 @@ export default function AstrologyChart({
             <G key={sign.name}>
               {/* Sign segment background */}
               <Path
-                d={`M ${CENTER_X} ${CENTER_Y} L ${startPos.x} ${startPos.y} A ${ZODIAC_RADIUS} ${ZODIAC_RADIUS} 0 0 1 ${endPos.x} ${endPos.y} Z`}
+                d={`M ${CENTER_X} ${CENTER_Y} L ${startPos.x} ${startPos.y} A ${ZODIAC_RADIUS} ${ZODIAC_RADIUS} 0 0 0 ${endPos.x} ${endPos.y} Z`}
                 fill={sign.color}
                 fillOpacity={0.3}
               />
@@ -361,8 +361,8 @@ export default function AstrologyChart({
         {houses &&
           Array.from({ length: 12 }, (_, i) => {
             // Calculate the cusp position for each house starting from the Ascendant
-            // House 1 is at the Ascendant, then increment counter-clockwise
-            const houseCuspLongitude = houses.ascendant - i * 30;
+            // House 1 is at the Ascendant, then increment clockwise (after mirroring)
+            const houseCuspLongitude = houses.ascendant + i * 30;
 
             // Use the same positioning logic as planets and zodiac signs
             const position = longitudeToPosition(
