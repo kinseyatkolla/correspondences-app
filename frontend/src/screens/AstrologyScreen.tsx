@@ -30,7 +30,12 @@ import {
   getZodiacKeysFromNames,
 } from "../utils/physisSymbolMap";
 import AstrologyChart from "../components/AstrologyChart";
+import PlanetaryHoursDisplay from "../components/PlanetaryHoursDisplay";
 import { getCurrentTimeOfDay } from "../utils/timeOfDayUtils";
+import {
+  calculatePlanetaryHours,
+  PlanetaryHoursData,
+} from "../utils/planetaryHoursUtils";
 
 // ============================================================================
 // COMPONENT
@@ -54,6 +59,36 @@ export default function AstrologyScreen({ navigation }: any) {
 
   // State for loading selected date chart
   const [selectedDateLoading, setSelectedDateLoading] = useState(false);
+
+  // State for planetary hours data
+  const [planetaryHoursData, setPlanetaryHoursData] =
+    useState<PlanetaryHoursData | null>(null);
+  const [planetaryHoursLoading, setPlanetaryHoursLoading] = useState(false);
+
+  // Function to calculate planetary hours for current date and location
+  const calculatePlanetaryHoursForDate = async (date: Date) => {
+    setPlanetaryHoursLoading(true);
+    try {
+      // Use current chart location or default location
+      const location = activeChart?.location || {
+        latitude: 40.7128,
+        longitude: -74.006,
+      };
+
+      const planetaryData = await calculatePlanetaryHours(
+        date,
+        location.latitude,
+        location.longitude
+      );
+
+      setPlanetaryHoursData(planetaryData);
+    } catch (error) {
+      console.error("Error calculating planetary hours:", error);
+      setPlanetaryHoursData(null);
+    } finally {
+      setPlanetaryHoursLoading(false);
+    }
+  };
 
   // Function to determine time of day based on a specific date/time
   const getTimeOfDayForDate = (date: Date) => {
@@ -344,6 +379,14 @@ export default function AstrologyScreen({ navigation }: any) {
     }
   }, [displayDate, currentTimeOfDay]);
 
+  // Calculate planetary hours when display date changes
+  useEffect(() => {
+    const fetchPlanetaryHours = async () => {
+      await calculatePlanetaryHoursForDate(displayDate);
+    };
+    fetchPlanetaryHours();
+  }, [displayDate, activeChart]);
+
   // ===== UTILITY FUNCTIONS =====
   const formatChartTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -435,6 +478,12 @@ export default function AstrologyScreen({ navigation }: any) {
               style={styles.scrollContainer}
               showsVerticalScrollIndicator={false}
             >
+              {/* Planetary Hours Display */}
+              <PlanetaryHoursDisplay
+                planetaryHoursData={planetaryHoursData}
+                location={activeChart?.location}
+              />
+
               {/* Current Chart Display */}
               {activeChart && !ephemerisLoading && (
                 <View style={styles.chartContainer}>
