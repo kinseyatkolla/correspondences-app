@@ -141,25 +141,6 @@ export default function AstrologyScreen({ navigation }: any) {
         longitude: -74.006,
       };
 
-      console.log("📍 Location data:", {
-        currentChartLocation: currentChart?.location,
-        usingLocation: location,
-        fallbackUsed: !currentChart?.location,
-        hasCurrentChart: !!currentChart,
-      });
-
-      console.log("Fetching chart for date:", date, "with location:", location);
-      console.log("📅 Date breakdown:", {
-        localDate: date.toLocaleDateString(),
-        localTime: date.toLocaleTimeString(),
-        utcDate: date.toUTCString(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        localHours: date.getHours(),
-        localMinutes: date.getMinutes(),
-        utcHours: date.getUTCHours(),
-        utcMinutes: date.getUTCMinutes(),
-      });
-
       // Convert local time to UTC for the backend
       // This ensures consistency with how the backend handles current time
       const customDate = {
@@ -170,8 +151,6 @@ export default function AstrologyScreen({ navigation }: any) {
         minute: date.getUTCMinutes(),
       };
 
-      console.log("📊 Sending custom date to API:", customDate);
-
       // Use the current-chart endpoint with custom date
       const response = await apiService.getCurrentChart(
         location.latitude,
@@ -180,13 +159,6 @@ export default function AstrologyScreen({ navigation }: any) {
       );
 
       if (response.success) {
-        console.log("✅ Fetched chart data:", response.data);
-        console.log("✅ Fetched chart houses:", response.data.houses);
-        console.log("✅ Ascendant data:", {
-          ascendant: response.data.houses.ascendant,
-          ascendantSign: response.data.houses.ascendantSign,
-          ascendantDegree: response.data.houses.ascendantDegree,
-        });
         // Convert current-chart response to BirthChart format
         const chartData: BirthChart = {
           julianDay: response.data.julianDay,
