@@ -79,20 +79,21 @@ const PLANETS_RADIUS = CHART_SIZE * 0.35; // For aspect line connections (on zod
 const PLANET_LABELS_RADIUS = CHART_SIZE * 0.45; // For symbol/label display (outside)
 
 // Zodiac signs in order (starting from Aries at 0°)
-// Colors based on elemental associations: Fire (red), Earth (green), Water (blue), Air (purple)
+// Colors based on elemental associations: Fire (red), Earth (green), Water (blue), Air (yellow)
+// Using rgba for transparency to blend with the dynamic background
 const ZODIAC_SIGNS = [
-  { name: "Aries", symbol: "a", color: "#DC143C" }, // Fire - Aries
-  { name: "Taurus", symbol: "s", color: "#228B22" }, // Earth - Taurus
-  { name: "Gemini", symbol: "d", color: "#8A2BE2" }, // Air - Gemini
-  { name: "Cancer", symbol: "f", color: "#4169E1" }, // Water - Cancer
-  { name: "Leo", symbol: "g", color: "#DC143C" }, // Fire - Leo
-  { name: "Virgo", symbol: "h", color: "#228B22" }, // Earth - Virgo
-  { name: "Libra", symbol: "j", color: "#8A2BE2" }, // Air - Libra
-  { name: "Scorpio", symbol: "k", color: "#4169E1" }, // Water - Scorpio
-  { name: "Sagittarius", symbol: "l", color: "#DC143C" }, // Fire - Sagittarius
-  { name: "Capricorn", symbol: ";", color: "#228B22" }, // Earth - Capricorn
-  { name: "Aquarius", symbol: "'", color: "#8A2BE2" }, // Air - Aquarius
-  { name: "Pisces", symbol: "z", color: "#4169E1" }, // Water - Pisces
+  { name: "Aries", symbol: "a", color: "rgba(231, 41, 41, 1)" }, // Fire - Aries
+  { name: "Taurus", symbol: "s", color: "rgba(22, 163, 82, 1)" }, // Earth - Taurus
+  { name: "Gemini", symbol: "d", color: "rgba(245, 238, 43, 1)" }, // Air - Gemini
+  { name: "Cancer", symbol: "f", color: "rgba(66, 85, 227, 1)" }, // Water - Cancer
+  { name: "Leo", symbol: "g", color: "rgba(231, 41, 41, 1)" }, // Fire - Leo
+  { name: "Virgo", symbol: "h", color: "rgba(22, 163, 82, 1)" }, // Earth - Virgo
+  { name: "Libra", symbol: "j", color: "rgba(245, 238, 43, 1)" }, // Air - Libra
+  { name: "Scorpio", symbol: "k", color: "rgba(66, 85, 227, 1)" }, // Water - Scorpio
+  { name: "Sagittarius", symbol: "l", color: "rgba(231, 41, 41, 1)" }, // Fire - Sagittarius
+  { name: "Capricorn", symbol: ";", color: "rgba(22, 163, 82, 1)" }, // Earth - Capricorn
+  { name: "Aquarius", symbol: "'", color: "rgba(245, 238, 43, 1)" }, // Air - Aquarius
+  { name: "Pisces", symbol: "z", color: "rgba(66, 85, 227, 1)" }, // Water - Pisces
 ];
 
 // ============================================================================
@@ -126,12 +127,12 @@ const getZodiacSignColor = (signName: string): string => {
   const sign = ZODIAC_SIGNS.find((s) => s.name === signName);
   if (!sign) return "#e6e6fa"; // Default to light color if not found
 
-  // Return lighter versions of the zodiac sign colors
+  // Return lighter, more opaque versions of the zodiac sign colors for planet labels
   const lighterColors: { [key: string]: string } = {
-    "#DC143C": "#FF6B6B", // Lighter red for Fire signs
-    "#228B22": "#4CAF50", // Lighter green for Earth signs
-    "#4169E1": "#64B5F6", // Lighter blue for Water signs
-    "#8A2BE2": "#BA68C8", // Lighter purple for Air signs
+    "rgba(231, 41, 41, 1)": "#e72929", // Lighter red for Fire signs
+    "rgba(22, 163, 82, 1)": "#16a352", // Lighter green for Earth signs
+    "rgba(66, 85, 227, 1)": "#4255e3", // Lighter blue for Water signs
+    "rgba(245, 238, 43, 1)": "#f5ee2b", // Lighter yellow for Air signs
   };
 
   return lighterColors[sign.color] || sign.color;
@@ -314,27 +315,6 @@ export default function AstrologyChart({
   return (
     <View style={containerStyle}>
       <Svg width={size} height={size}>
-        <Defs>
-          <LinearGradient
-            id="zodiacGradient"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="100%"
-          >
-            <Stop offset="0%" stopColor="#1a1a2e" />
-            <Stop offset="100%" stopColor="#2a2a3e" />
-          </LinearGradient>
-        </Defs>
-
-        {/* Background circle */}
-        <Circle
-          cx={CENTER_X}
-          cy={CENTER_Y}
-          r={ZODIAC_RADIUS}
-          fill="url(#zodiacGradient)"
-        />
-
         {/* Zodiac signs ring */}
         {ZODIAC_SIGNS.map((sign, index) => {
           // Calculate the center longitude of each sign (15° mark within each 30° sign)
@@ -546,8 +526,6 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#0f0f23",
-    borderRadius: 12,
     marginVertical: 10,
     position: "relative",
   },

@@ -1,7 +1,7 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ImageBackground,
 } from "react-native";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { sharedUI } from "../styles/sharedUI";
@@ -19,6 +20,7 @@ import {
   getZodiacKeysFromNames,
 } from "../utils/physisSymbolMap";
 import AstrologyChart from "../components/AstrologyChart";
+import { getCurrentTimeOfDay } from "../utils/timeOfDayUtils";
 
 // ============================================================================
 // COMPONENT
@@ -32,6 +34,21 @@ export default function AstrologyScreen({ navigation }: any) {
     refreshChart,
   } = useAstrology();
   const { fontLoaded } = usePhysisFont();
+
+  // ===== DYNAMIC BACKGROUND CALCULATION =====
+  const backgroundImage = useMemo(() => {
+    const timeOfDay = getCurrentTimeOfDay();
+
+    // Import all background images
+    const backgroundImages = {
+      dawn: require("../../assets/images/dawn-gradient.png"),
+      day: require("../../assets/images/day-gradient.png"),
+      dusk: require("../../assets/images/dusk-gradient.png"),
+      night: require("../../assets/images/night-gradient.png"),
+    };
+
+    return backgroundImages[timeOfDay];
+  }, []);
 
   // ===== UTILITY FUNCTIONS =====
   const formatChartTimestamp = (timestamp: string) => {
@@ -53,7 +70,11 @@ export default function AstrologyScreen({ navigation }: any) {
 
   // ===== MAIN TEMPLATE =====
   return (
-    <View style={styles.container}>
+    <ImageBackground
+      source={backgroundImage}
+      style={styles.container}
+      resizeMode="cover"
+    >
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -204,7 +225,7 @@ export default function AstrologyScreen({ navigation }: any) {
         <Text style={styles.calculatorNavText}>BIRTH CHART CALCULATOR</Text>
         <Text style={styles.calculatorNavArrow}>›</Text>
       </TouchableOpacity>
-    </View>
+    </ImageBackground>
   );
 }
 
@@ -214,7 +235,6 @@ export default function AstrologyScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f0f23",
   },
   scrollContainer: {
     flex: 1,
@@ -259,12 +279,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   section: {
-    backgroundColor: "#1a1a2e",
     padding: 20,
-    borderRadius: 12,
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#2a2a3e",
   },
   chartContainer: {
     alignItems: "center",
@@ -296,8 +312,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2a2a3e",
   },
   planetName: {
     fontSize: 16,
@@ -335,13 +349,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   currentPositionsSection: {
-    backgroundColor: "#1a1a2e",
     padding: 15,
-    borderRadius: 12,
     marginTop: 30,
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#2a2a3e",
   },
   sectionHeader: {
     flexDirection: "row",
@@ -363,11 +373,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   infoSection: {
-    backgroundColor: "#1a1a2e",
     padding: 15,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#2a2a3e",
     marginTop: 10,
   },
   // Calculator Navigation Bar Styles
