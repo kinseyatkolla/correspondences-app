@@ -480,6 +480,14 @@ router.post("/current-chart", (req, res) => {
       finalHour = hour !== undefined ? Number(hour) : 12;
       finalMinute = minute !== undefined ? Number(minute) : 0;
       finalSecond = second !== undefined ? Number(second) : 0;
+      const calculatedJulianDay = calculateJulianDay(
+        finalYear,
+        finalMonth,
+        finalDay,
+        finalHour,
+        finalMinute,
+        finalSecond
+      );
       console.log("📅 Using CUSTOM date/time:", {
         finalYear,
         finalMonth,
@@ -487,6 +495,10 @@ router.post("/current-chart", (req, res) => {
         finalHour,
         finalMinute,
         finalSecond,
+        decimalHour: finalHour + finalMinute / 60 + finalSecond / 3600,
+        julianDay: calculatedJulianDay,
+        note: "Frontend now sends UTC time for consistency",
+        timezone: "UTC (converted from local time)",
       });
     } else {
       // Use current date and time in UTC
@@ -573,6 +585,17 @@ router.post("/current-chart", (req, res) => {
     try {
       // Use houses function with whole sign houses ('W')
       const houses = sweph.houses(julianDay, latitude, longitude, "W");
+      console.log("🏠 Whole Sign Houses calculation:", {
+        julianDay,
+        latitude,
+        longitude,
+        houseSystem: "W (Whole Sign)",
+        housesResult: houses,
+        ascendantRaw: houses.data?.points?.[0],
+        mcRaw: houses.data?.points?.[1],
+        ascendantDegrees: houses.data?.points?.[0],
+        ascendantSign: getZodiacSign(houses.data?.points?.[0] || 0),
+      });
 
       // Extract ascendant and MC from points array
       // points[0] = Ascendant, points[1] = MC

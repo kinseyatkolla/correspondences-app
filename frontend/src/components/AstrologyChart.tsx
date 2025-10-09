@@ -110,9 +110,44 @@ const degreesToRadians = (degrees: number): number => {
 /**
  * Convert longitude to chart position (adjusting for chart orientation)
  */
-const longitudeToPosition = (longitude: number, radius: number) => {
-  // Adjust longitude so 0° (Aries) is at the top, and rotate counter-clockwise
-  const adjustedLongitude = longitude - 120;
+const longitudeToPosition = (
+  longitude: number,
+  radius: number,
+  ascendantSign?: string
+) => {
+  // Calculate rotation offset based on ascendant sign
+  // We want the ascendant's zodiac sign to be positioned at the left side, just below horizontal
+  let rotationOffset = -120; // Default rotation (Aquarius position)
+
+  if (ascendantSign) {
+    // Find the zodiac sign index (0-11)
+    const zodiacSigns = [
+      "Aries",
+      "Taurus",
+      "Gemini",
+      "Cancer",
+      "Leo",
+      "Virgo",
+      "Libra",
+      "Scorpio",
+      "Sagittarius",
+      "Capricorn",
+      "Aquarius",
+      "Pisces",
+    ];
+    const ascendantSignIndex = zodiacSigns.indexOf(ascendantSign);
+
+    if (ascendantSignIndex !== -1) {
+      // Calculate rotation to position this sign at the left side (Aquarius position)
+      // Aquarius is at index 10, so we need to rotate by the difference
+      const degreesPerSign = 30;
+      const targetPosition = 10 * degreesPerSign; // Aquarius position (300°)
+      const currentPosition = ascendantSignIndex * degreesPerSign; // Current sign position
+      rotationOffset = targetPosition - currentPosition - 120; // -120 for chart orientation
+    }
+  }
+
+  const adjustedLongitude = longitude + rotationOffset;
   const radians = degreesToRadians(adjustedLongitude);
   return {
     x: CENTER_X + radius * Math.cos(radians),
@@ -143,7 +178,8 @@ const getZodiacSignColor = (signName: string): string => {
  */
 const getPlanetPositions = (
   planets: Record<string, ApiPlanetPosition>,
-  fontLoaded: boolean
+  fontLoaded: boolean,
+  ascendantSign?: string
 ): ChartPlanetPosition[] => {
   const planetKeys = getPlanetKeysFromNames();
   const zodiacKeys = getZodiacKeysFromNames();
@@ -151,11 +187,13 @@ const getPlanetPositions = (
   return Object.entries(planets).map(([planetName, planet]) => {
     const aspectPosition = longitudeToPosition(
       planet.longitude,
-      PLANETS_RADIUS
+      PLANETS_RADIUS,
+      ascendantSign
     );
     const labelPosition = longitudeToPosition(
       planet.longitude,
-      PLANET_LABELS_RADIUS
+      PLANET_LABELS_RADIUS,
+      ascendantSign
     );
     const capitalizedName =
       planetName.charAt(0).toUpperCase() + planetName.slice(1);
@@ -318,7 +356,12 @@ export default function AstrologyChart({
     );
   }
 
-  const planetPositions = getPlanetPositions(planets, fontLoaded);
+  const ascendantSign = houses?.ascendantSign;
+  const planetPositions = getPlanetPositions(
+    planets,
+    fontLoaded,
+    ascendantSign
+  );
   const aspectLines = getAspectLines(planetPositions);
 
   // Temporary test: force Pluto to be retrograde for testing
@@ -340,7 +383,8 @@ export default function AstrologyChart({
           // Use the same positioning logic as planets
           const position = longitudeToPosition(
             signCenterLongitude,
-            ZODIAC_SYMBOLS_RADIUS
+            ZODIAC_SYMBOLS_RADIUS,
+            ascendantSign
           );
 
           // Calculate the start and end angles for the pie slice
@@ -348,8 +392,16 @@ export default function AstrologyChart({
           const endAngle = (index + 1) * 30;
 
           // Convert to chart coordinates for the pie slice edges
-          const startPos = longitudeToPosition(startAngle, ZODIAC_RADIUS);
-          const endPos = longitudeToPosition(endAngle, ZODIAC_RADIUS);
+          const startPos = longitudeToPosition(
+            startAngle,
+            ZODIAC_RADIUS,
+            ascendantSign
+          );
+          const endPos = longitudeToPosition(
+            endAngle,
+            ZODIAC_RADIUS,
+            ascendantSign
+          );
 
           return (
             <G key={sign.name}>
@@ -384,7 +436,8 @@ export default function AstrologyChart({
             // Use the same positioning logic as planets and zodiac signs
             const position = longitudeToPosition(
               houseCuspLongitude,
-              HOUSES_RADIUS
+              HOUSES_RADIUS,
+              ascendantSign
             );
 
             return (
@@ -477,11 +530,13 @@ export default function AstrologyChart({
             {(() => {
               const ascendantPosition = longitudeToPosition(
                 houses.ascendant,
-                PLANETS_RADIUS
+                PLANETS_RADIUS,
+                ascendantSign
               );
               const ascendantLabelPosition = longitudeToPosition(
                 houses.ascendant,
-                PLANET_LABELS_RADIUS
+                PLANET_LABELS_RADIUS,
+                ascendantSign
               );
               const ascendantSignColor = getZodiacSignColor(
                 houses.ascendantSign
@@ -489,6 +544,22 @@ export default function AstrologyChart({
 
               return (
                 <>
+                  {/* Line marker from zodiac circle to ascendant (50% length) */}
+                  <Line
+                    x1={ascendantPosition.x}
+                    y1={ascendantPosition.y}
+                    x2={
+                      ascendantPosition.x +
+                      (ascendantLabelPosition.x - ascendantPosition.x) * 0.5
+                    }
+                    y2={
+                      ascendantPosition.y +
+                      (ascendantLabelPosition.y - ascendantPosition.y) * 0.5
+                    }
+                    stroke={ascendantSignColor}
+                    strokeWidth="1"
+                    opacity={0.6}
+                  />
                   {/* Ascendant symbol with Physis font */}
                   <SvgText
                     x={ascendantLabelPosition.x - 8}

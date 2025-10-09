@@ -149,13 +149,25 @@ export default function AstrologyScreen({ navigation }: any) {
       });
 
       console.log("Fetching chart for date:", date, "with location:", location);
+      console.log("📅 Date breakdown:", {
+        localDate: date.toLocaleDateString(),
+        localTime: date.toLocaleTimeString(),
+        utcDate: date.toUTCString(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        localHours: date.getHours(),
+        localMinutes: date.getMinutes(),
+        utcHours: date.getUTCHours(),
+        utcMinutes: date.getUTCMinutes(),
+      });
 
+      // Convert local time to UTC for the backend
+      // This ensures consistency with how the backend handles current time
       const customDate = {
         year: date.getFullYear(),
         month: date.getMonth() + 1, // JavaScript months are 0-based
         day: date.getDate(),
-        hour: date.getHours(), // Use actual time from the selected date
-        minute: date.getMinutes(),
+        hour: date.getUTCHours(), // Use UTC time to match backend's current time handling
+        minute: date.getUTCMinutes(),
       };
 
       console.log("📊 Sending custom date to API:", customDate);
