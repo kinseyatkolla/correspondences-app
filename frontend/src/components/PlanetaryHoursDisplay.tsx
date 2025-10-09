@@ -12,12 +12,19 @@ interface PlanetaryHoursDisplayProps {
   planetaryHoursData: PlanetaryHoursData | null;
   location?: { latitude: number; longitude: number };
   loading?: boolean; // Loading state for API calls
+  backgroundTimingInfo?: {
+    sunrise: string;
+    sunset: string;
+    dawnWindow: string;
+    duskWindow: string;
+  } | null;
 }
 
 export default function PlanetaryHoursDisplay({
   planetaryHoursData,
   location,
   loading = false,
+  backgroundTimingInfo,
 }: PlanetaryHoursDisplayProps) {
   const { fontLoaded } = usePhysisFont();
   const planetKeys = getPlanetKeysFromNames();
@@ -67,6 +74,16 @@ export default function PlanetaryHoursDisplay({
             Location: {location.latitude.toFixed(4)}°,{" "}
             {location.longitude.toFixed(4)}°
           </Text>
+        )}
+        {backgroundTimingInfo && (
+          <>
+            <Text style={styles.debugText}>
+              🌅 Dawn Window: {backgroundTimingInfo.dawnWindow}
+            </Text>
+            <Text style={styles.debugText}>
+              🌇 Dusk Window: {backgroundTimingInfo.duskWindow}
+            </Text>
+          </>
         )}
       </View>
 

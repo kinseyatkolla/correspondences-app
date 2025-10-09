@@ -30,7 +30,7 @@ import {
   getZodiacKeysFromNames,
 } from "../utils/physisSymbolMap";
 import AstrologyChart from "../components/AstrologyChart";
-import PlanetaryHoursDisplay from "../components/PlanetaryHoursDisplay";
+import CurrentPlanetaryHour from "../components/CurrentPlanetaryHour";
 import { getCurrentTimeOfDay } from "../utils/timeOfDayUtils";
 import {
   calculatePlanetaryHours,
@@ -90,10 +90,34 @@ export default function AstrologyScreen({ navigation }: any) {
     }
   };
 
-  // Function to determine time of day based on a specific date/time
-  const getTimeOfDayForDate = (date: Date) => {
-    const hour = date.getHours();
+  // Function to determine time of day based on actual sunrise/sunset times
+  const getTimeOfDayForDate = (date: Date, sunrise?: Date, sunset?: Date) => {
+    // If we have planetary hours data with real sunrise/sunset times, use them
+    if (sunrise && sunset) {
+      const currentTime = date.getTime();
+      const sunriseTime = sunrise.getTime();
+      const sunsetTime = sunset.getTime();
 
+      // Dawn: 30 minutes before sunrise to 30 minutes after sunrise
+      const dawnStart = sunriseTime - 30 * 60 * 1000; // 30 minutes before
+      const dawnEnd = sunriseTime + 30 * 60 * 1000; // 30 minutes after
+
+      // Dusk: 30 minutes before sunset to 30 minutes after sunset
+      const duskStart = sunsetTime - 30 * 60 * 1000; // 30 minutes before
+      const duskEnd = sunsetTime + 30 * 60 * 1000; // 30 minutes after
+
+      // Day: from end of dawn to start of dusk
+      const dayStart = dawnEnd;
+      const dayEnd = duskStart;
+
+      if (currentTime >= dawnStart && currentTime <= dawnEnd) return "dawn";
+      if (currentTime >= dayStart && currentTime <= dayEnd) return "day";
+      if (currentTime >= duskStart && currentTime <= duskEnd) return "dusk";
+      return "night"; // Everything else is night
+    }
+
+    // Fallback to original logic if no sunrise/sunset data
+    const hour = date.getHours();
     if (hour >= 5 && hour < 8) return "dawn";
     if (hour >= 8 && hour < 17) return "day";
     if (hour >= 17 && hour < 20) return "dusk";
@@ -371,13 +395,25 @@ export default function AstrologyScreen({ navigation }: any) {
 
   // Handle background transitions when displayDate changes
   useEffect(() => {
-    const newTimeOfDay = getTimeOfDayForDate(displayDate);
+    const newTimeOfDay = getTimeOfDayForDate(
+      displayDate,
+      planetaryHoursData?.sunrise,
+      planetaryHoursData?.sunset
+    );
 
     if (newTimeOfDay !== currentTimeOfDay) {
+      console.log(
+        `🌅 Background transition: ${currentTimeOfDay} → ${newTimeOfDay}`,
+        {
+          displayTime: displayDate.toLocaleTimeString(),
+          sunrise: planetaryHoursData?.sunrise?.toLocaleTimeString(),
+          sunset: planetaryHoursData?.sunset?.toLocaleTimeString(),
+        }
+      );
       setCurrentTimeOfDay(newTimeOfDay);
       updateGradientOpacities(newTimeOfDay);
     }
-  }, [displayDate, currentTimeOfDay]);
+  }, [displayDate, currentTimeOfDay, planetaryHoursData]);
 
   // Calculate planetary hours when display date changes
   useEffect(() => {
@@ -478,10 +514,11 @@ export default function AstrologyScreen({ navigation }: any) {
               style={styles.scrollContainer}
               showsVerticalScrollIndicator={false}
             >
-              {/* Planetary Hours Display */}
-              <PlanetaryHoursDisplay
+              {/* Current Planetary Hour */}
+              <CurrentPlanetaryHour
                 planetaryHoursData={planetaryHoursData}
-                location={activeChart?.location}
+                loading={planetaryHoursLoading}
+                onPress={() => navigation.navigate("PlanetaryHours")}
               />
 
               {/* Current Chart Display */}

@@ -15,6 +15,7 @@ import FlowerDrawScreen from "../screens/FlowerDrawScreen";
 import BookScreen from "../screens/BookScreen";
 import AstrologyScreen from "../screens/AstrologyScreen";
 import BirthChartCalculatorScreen from "../screens/BirthChartCalculatorScreen";
+import PlanetaryHoursScreen from "../screens/PlanetaryHoursScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -118,6 +119,11 @@ function AstrologyStack() {
       <Stack.Screen
         name="BirthChartCalculator"
         component={BirthChartCalculatorScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PlanetaryHours"
+        component={PlanetaryHoursScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
