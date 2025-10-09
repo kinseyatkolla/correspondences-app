@@ -246,7 +246,9 @@ export default function AstrologyScreen({ navigation }: any) {
     const now = new Date();
     setDisplayDate(now);
     setTempDate(now);
-    fetchChartForDate(now);
+    // Clear selectedDateChart so we fall back to currentChart from context
+    // This ensures we get the same current time handling as the initial load
+    setSelectedDateChart(null);
     closeDrawer();
   };
 
