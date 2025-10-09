@@ -106,12 +106,12 @@ router.post("/planets", (req, res) => {
 
     // Calculate Julian Day
     const julianDay = calculateJulianDay(
-      year,
-      month,
-      day,
-      hour,
-      minute,
-      second
+      finalYear,
+      finalMonth,
+      finalDay,
+      finalHour,
+      finalMinute,
+      finalSecond
     );
 
     // Note: For /planets endpoint, we don't have location data, so we'll use geocentric
@@ -215,12 +215,12 @@ router.post("/houses", (req, res) => {
     }
 
     const julianDay = calculateJulianDay(
-      year,
-      month,
-      day,
-      hour,
-      minute,
-      second
+      finalYear,
+      finalMonth,
+      finalDay,
+      finalHour,
+      finalMinute,
+      finalSecond
     );
 
     // Calculate houses
@@ -298,12 +298,12 @@ router.post("/chart", (req, res) => {
     }
 
     const julianDay = calculateJulianDay(
-      year,
-      month,
-      day,
-      hour,
-      minute,
-      second
+      finalYear,
+      finalMonth,
+      finalDay,
+      finalHour,
+      finalMinute,
+      finalSecond
     );
 
     // Set topocentric location for more accurate calculations
@@ -355,22 +355,66 @@ router.post("/chart", (req, res) => {
       }
     });
 
-    // Calculate houses
-    const houses = sweph.houses(julianDay, latitude, longitude, houseSystem);
+    // Calculate houses with error handling
+    let houses;
+    let ascendantDegree, mcDegree, ascendantSign, mcSign;
+
+    try {
+      houses = sweph.houses(julianDay, latitude, longitude, houseSystem);
+
+      // Check if we got valid data
+      if (
+        houses &&
+        typeof houses.ascendant === "number" &&
+        !isNaN(houses.ascendant)
+      ) {
+        ascendantDegree = houses.ascendant;
+        mcDegree = houses.mc;
+      } else {
+        console.log("Invalid houses data, trying alternative calculation");
+        // Try alternative calculation using points array
+        if (houses && houses.data && houses.data.points) {
+          ascendantDegree = houses.data.points[0];
+          mcDegree = houses.data.points[1];
+        } else {
+          // Fallback to default values
+          ascendantDegree = 0;
+          mcDegree = 0;
+        }
+      }
+    } catch (housesError) {
+      console.error("Houses calculation failed:", housesError.message);
+      // Set default values if calculation fails
+      ascendantDegree = 0;
+      mcDegree = 0;
+      houses = {
+        houses: [],
+        ascendant: 0,
+        mc: 0,
+        armc: 0,
+        vertex: 0,
+        equatorialAscendant: 0,
+        coAscendant: 0,
+        polarAscendant: 0,
+      };
+    }
+
+    ascendantSign = getZodiacSign(ascendantDegree);
+    mcSign = getZodiacSign(mcDegree);
 
     const houseData = {
-      cusps: houses.houses,
-      ascendant: houses.ascendant,
-      ascendantSign: getZodiacSign(houses.ascendant),
-      ascendantDegree: formatDegree(houses.ascendant),
-      mc: houses.mc,
-      mcSign: getZodiacSign(houses.mc),
-      mcDegree: formatDegree(houses.mc),
-      armc: houses.armc,
-      vertex: houses.vertex,
-      equatorialAscendant: houses.equatorialAscendant,
-      coAscendant: houses.coAscendant,
-      polarAscendant: houses.polarAscendant,
+      cusps: houses.houses || [],
+      ascendant: ascendantDegree,
+      ascendantSign: ascendantSign,
+      ascendantDegree: formatDegree(ascendantDegree),
+      mc: mcDegree,
+      mcSign: mcSign,
+      mcDegree: formatDegree(mcDegree),
+      armc: houses.armc || 0,
+      vertex: houses.vertex || 0,
+      equatorialAscendant: houses.equatorialAscendant || 0,
+      coAscendant: houses.coAscendant || 0,
+      polarAscendant: houses.polarAscendant || 0,
       houseSystem,
     };
 
@@ -399,11 +443,12 @@ router.post("/chart", (req, res) => {
   }
 });
 
-// Get current chart for current time and location
+// Get current chart for current time and location, or custom date/time
 router.post("/current-chart", (req, res) => {
   console.log("🚀 CURRENT CHART ENDPOINT HIT 🚀");
   try {
-    const { latitude, longitude } = req.body;
+    const { latitude, longitude, year, month, day, hour, minute, second } =
+      req.body;
 
     // Validate input
     if (latitude === undefined || longitude === undefined) {
@@ -413,22 +458,62 @@ router.post("/current-chart", (req, res) => {
       });
     }
 
-    // Get current date and time in UTC
-    const now = new Date();
-    const year = now.getUTCFullYear();
-    const month = now.getUTCMonth() + 1; // JavaScript months are 0-based
-    const day = now.getUTCDate();
-    const hour = now.getUTCHours();
-    const minute = now.getUTCMinutes();
-    const second = now.getUTCSeconds();
+    // Use custom date/time if provided, otherwise get current date and time in UTC
+    let finalYear, finalMonth, finalDay, finalHour, finalMinute, finalSecond;
+
+    console.log("📊 Received request body:", {
+      latitude,
+      longitude,
+      finalYear,
+      finalMonth,
+      finalDay,
+      finalHour,
+      finalMinute,
+      finalSecond,
+    });
+
+    if (year !== undefined && month !== undefined && day !== undefined) {
+      // Use custom date/time
+      finalYear = Number(year);
+      finalMonth = Number(month);
+      finalDay = Number(day);
+      finalHour = hour !== undefined ? Number(hour) : 12;
+      finalMinute = minute !== undefined ? Number(minute) : 0;
+      finalSecond = second !== undefined ? Number(second) : 0;
+      console.log("📅 Using CUSTOM date/time:", {
+        finalYear,
+        finalMonth,
+        finalDay,
+        finalHour,
+        finalMinute,
+        finalSecond,
+      });
+    } else {
+      // Use current date and time in UTC
+      const now = new Date();
+      finalYear = now.getUTCFullYear();
+      finalMonth = now.getUTCMonth() + 1; // JavaScript months are 0-based
+      finalDay = now.getUTCDate();
+      finalHour = now.getUTCHours();
+      finalMinute = now.getUTCMinutes();
+      finalSecond = now.getUTCSeconds();
+      console.log("📅 Using CURRENT date/time:", {
+        finalYear,
+        finalMonth,
+        finalDay,
+        finalHour,
+        finalMinute,
+        finalSecond,
+      });
+    }
 
     const julianDay = calculateJulianDay(
-      year,
-      month,
-      day,
-      hour,
-      minute,
-      second
+      finalYear,
+      finalMonth,
+      finalDay,
+      finalHour,
+      finalMinute,
+      finalSecond
     );
 
     // Set topocentric location for more accurate calculations
@@ -527,11 +612,18 @@ router.post("/current-chart", (req, res) => {
       data: {
         julianDay,
         currentTime: {
-          year,
-          month,
-          day,
-          hour: hour + minute / 60 + second / 3600,
-          timestamp: now.toISOString(),
+          year: finalYear,
+          month: finalMonth,
+          day: finalDay,
+          hour: finalHour + finalMinute / 60 + finalSecond / 3600,
+          timestamp: new Date(
+            finalYear,
+            finalMonth - 1,
+            finalDay,
+            finalHour,
+            finalMinute,
+            finalSecond
+          ).toISOString(),
         },
         location: { latitude, longitude },
         planets,

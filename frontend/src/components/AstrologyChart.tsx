@@ -1,7 +1,7 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -284,6 +284,23 @@ export default function AstrologyChart({
   error = null,
 }: AstrologyChartProps) {
   const { fontLoaded } = usePhysisFont();
+
+  // Debug logging for prop changes
+  useEffect(() => {
+    console.log("🎯 AstrologyChart props updated:", {
+      hasPlanets: !!planets,
+      hasHouses: !!houses,
+      planetsCount: planets ? Object.keys(planets).length : 0,
+      housesData: houses
+        ? {
+            ascendant: houses.ascendant,
+            ascendantSign: houses.ascendantSign,
+            ascendantDegree: houses.ascendantDegree,
+          }
+        : null,
+      timestamp: new Date().toISOString(),
+    });
+  }, [planets, houses]);
 
   // Always maintain the container height to prevent layout shifts
   const containerStyle = [

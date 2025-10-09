@@ -468,7 +468,15 @@ class ApiService {
 
   async getCurrentChart(
     latitude: number,
-    longitude: number
+    longitude: number,
+    customDate?: {
+      year: number;
+      month: number;
+      day: number;
+      hour?: number;
+      minute?: number;
+      second?: number;
+    }
   ): Promise<{
     success: boolean;
     data: {
@@ -502,9 +510,21 @@ class ApiService {
       };
     };
   }> {
+    const requestBody = { latitude, longitude };
+    if (customDate) {
+      requestBody.year = customDate.year;
+      requestBody.month = customDate.month;
+      requestBody.day = customDate.day;
+      if (customDate.hour !== undefined) requestBody.hour = customDate.hour;
+      if (customDate.minute !== undefined)
+        requestBody.minute = customDate.minute;
+      if (customDate.second !== undefined)
+        requestBody.second = customDate.second;
+    }
+
     return this.fetchData("/astrology/current-chart", {
       method: "POST",
-      body: JSON.stringify({ latitude, longitude }),
+      body: JSON.stringify(requestBody),
     });
   }
 
