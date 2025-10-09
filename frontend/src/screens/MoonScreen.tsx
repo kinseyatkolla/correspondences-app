@@ -802,6 +802,29 @@ export default function MoonScreen() {
           <Text style={styles.description}>Moon in myth</Text>
         </ImageBackground>
       </ScrollView>
+
+      {/* Secondary Navigation Bar - Ephemeris Date */}
+      <View style={styles.secondaryNavBar}>
+        <Text style={styles.secondaryNavText}>
+          {currentChart?.currentTime?.timestamp
+            ? (() => {
+                const date = new Date(currentChart.currentTime.timestamp);
+                const dateString = date.toLocaleDateString("en-US", {
+                  weekday: "short",
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                });
+                const timeString = date.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                });
+                return `${dateString} ${timeString}`;
+              })()
+            : "Loading..."}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -1225,5 +1248,27 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: "#b8b8b8",
     textAlign: "center",
+  },
+  // Secondary Navigation Bar
+  secondaryNavBar: {
+    position: "absolute",
+    bottom: 0, // Position directly above the tab bar
+    left: 0,
+    right: 0,
+    height: 40,
+    backgroundColor: "#000000",
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    zIndex: 9999,
+  },
+  secondaryNavText: {
+    color: "#e6e6fa",
+    fontSize: 14,
+    fontWeight: "bold",
+    letterSpacing: 4,
+    textAlign: "left",
+    textTransform: "uppercase",
   },
 });
