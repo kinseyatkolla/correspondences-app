@@ -1,7 +1,7 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,8 +11,18 @@ import {
   Alert,
   ActivityIndicator,
   ImageBackground,
+  Modal,
+  Animated,
+  Platform,
 } from "react-native";
+import {
+  GestureHandlerRootView,
+  PanGestureHandler,
+  State,
+} from "react-native-gesture-handler";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useAstrology } from "../contexts/AstrologyContext";
+import { apiService, BirthData, BirthChart } from "../services/api";
 import { sharedUI } from "../styles/sharedUI";
 import { usePhysisFont, getPhysisSymbolStyle } from "../utils/physisFont";
 import {
@@ -35,20 +45,222 @@ export default function AstrologyScreen({ navigation }: any) {
   } = useAstrology();
   const { fontLoaded } = usePhysisFont();
 
-  // ===== DYNAMIC BACKGROUND CALCULATION =====
-  const backgroundImage = useMemo(() => {
-    const timeOfDay = getCurrentTimeOfDay();
+  // State for the currently displayed date
+  const [displayDate, setDisplayDate] = useState(new Date());
 
-    // Import all background images
-    const backgroundImages = {
+  // State for the selected date's chart data
+  const [selectedDateChart, setSelectedDateChart] = useState<BirthChart | null>(
+    null
+  );
+
+  // State for loading selected date chart
+  const [selectedDateLoading, setSelectedDateLoading] = useState(false);
+
+  // Function to determine time of day based on a specific date/time
+  const getTimeOfDayForDate = (date: Date) => {
+    const hour = date.getHours();
+
+    if (hour >= 5 && hour < 8) return "dawn";
+    if (hour >= 8 && hour < 17) return "day";
+    if (hour >= 17 && hour < 20) return "dusk";
+    return "night"; // 20:00 - 4:59
+  };
+
+  // State for background transitions
+  const [currentBackground, setCurrentBackground] = useState(() =>
+    getTimeOfDayForDate(new Date())
+  );
+  const [nextBackground, setNextBackground] = useState(() =>
+    getTimeOfDayForDate(new Date())
+  );
+  const backgroundOpacity = useState(new Animated.Value(1))[0];
+
+  // State for the date/time picker drawer
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
+  const drawerAnimation = useState(new Animated.Value(0))[0];
+
+  // Function to fetch chart data for a specific date
+  const fetchChartForDate = async (date: Date) => {
+    setSelectedDateLoading(true);
+    try {
+      // Use the same location as the current chart
+      const location = currentChart?.location || {
+        latitude: 40.7128,
+        longitude: -74.006,
+      };
+
+      const birthData: BirthData = {
+        year: date.getFullYear(),
+        month: date.getMonth() + 1, // JavaScript months are 0-based
+        day: date.getDate(),
+        hour: 12, // Use noon for the calculation
+        latitude: location.latitude,
+        longitude: location.longitude,
+      };
+
+      console.log("Fetching chart for date:", date, "with data:", birthData);
+      const response = await apiService.getBirthChart(birthData);
+
+      if (response.success) {
+        console.log("✅ Fetched chart data:", response.data);
+        console.log("✅ Fetched chart houses:", response.data.houses);
+        setSelectedDateChart(response.data);
+      } else {
+        console.error("❌ Failed to fetch chart for selected date");
+      }
+    } catch (error) {
+      console.error("❌ Error fetching chart for selected date:", error);
+    } finally {
+      setSelectedDateLoading(false);
+    }
+  };
+
+  // Function to update the display date
+  const updateDisplayDate = (days: number) => {
+    const newDate = new Date(displayDate);
+    newDate.setDate(newDate.getDate() + days);
+    setDisplayDate(newDate);
+    fetchChartForDate(newDate);
+  };
+
+  // Drawer functions
+  const openDrawer = () => {
+    setTempDate(new Date(displayDate));
+    setDrawerVisible(true);
+    Animated.timing(drawerAnimation, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeDrawer = () => {
+    Animated.timing(drawerAnimation, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setDrawerVisible(false);
+    });
+  };
+
+  const applyDateChange = () => {
+    setDisplayDate(tempDate);
+    fetchChartForDate(tempDate);
+    closeDrawer();
+  };
+
+  const followCurrentTime = () => {
+    const now = new Date();
+    setDisplayDate(now);
+    setTempDate(now);
+    fetchChartForDate(now);
+    closeDrawer();
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setTempDate(selectedDate);
+    }
+  };
+
+  const onTimeChange = (event: any, selectedTime?: Date) => {
+    if (Platform.OS === "android") {
+      setShowTimePicker(false);
+    }
+    if (selectedTime) {
+      const newDate = new Date(tempDate);
+      newDate.setHours(selectedTime.getHours());
+      newDate.setMinutes(selectedTime.getMinutes());
+      setTempDate(newDate);
+    }
+  };
+
+  // Handle swipe gestures
+  const onSwipe = (event: any) => {
+    if (event.nativeEvent.state === State.END) {
+      const { translationX } = event.nativeEvent;
+      const threshold = 50; // Minimum swipe distance
+
+      if (translationX > threshold) {
+        // Swipe right to left - go to previous day
+        const newDate = new Date(displayDate);
+        newDate.setDate(newDate.getDate() - 1);
+        setDisplayDate(newDate);
+        fetchChartForDate(newDate);
+      } else if (translationX < -threshold) {
+        // Swipe left to right - go to next day
+        const newDate = new Date(displayDate);
+        newDate.setDate(newDate.getDate() + 1);
+        setDisplayDate(newDate);
+        fetchChartForDate(newDate);
+      }
+    }
+  };
+
+  // Use selected date chart if available, otherwise fall back to current chart
+  const activeChart = selectedDateChart || currentChart;
+
+  // Fetch chart data for the selected date when it changes
+  useEffect(() => {
+    if (currentChart && displayDate) {
+      // Only fetch if we don't already have data for this date
+      const today = new Date();
+      const isToday = displayDate.toDateString() === today.toDateString();
+
+      if (!isToday && !selectedDateChart) {
+        fetchChartForDate(displayDate);
+      }
+    }
+  }, [displayDate, currentChart]);
+
+  // ===== DYNAMIC BACKGROUND CALCULATION =====
+  const backgroundImages = useMemo(
+    () => ({
       dawn: require("../../assets/images/dawn-gradient.png"),
       day: require("../../assets/images/day-gradient.png"),
       dusk: require("../../assets/images/dusk-gradient.png"),
       night: require("../../assets/images/night-gradient.png"),
-    };
+    }),
+    []
+  );
 
-    return backgroundImages[timeOfDay];
-  }, []);
+  const backgroundImage =
+    backgroundImages[currentBackground as keyof typeof backgroundImages];
+
+  // Handle background transitions when displayDate changes
+  useEffect(() => {
+    const newTimeOfDay = getTimeOfDayForDate(displayDate);
+
+    if (newTimeOfDay !== currentBackground) {
+      setNextBackground(newTimeOfDay);
+
+      // Start transition
+      Animated.sequence([
+        // Fade out current background
+        Animated.timing(backgroundOpacity, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        // Update background and fade in
+        Animated.timing(backgroundOpacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setCurrentBackground(newTimeOfDay);
+        setNextBackground(newTimeOfDay);
+      });
+    }
+  }, [displayDate, currentBackground, backgroundOpacity]);
 
   // ===== UTILITY FUNCTIONS =====
   const formatChartTimestamp = (timestamp: string) => {
@@ -70,162 +282,299 @@ export default function AstrologyScreen({ navigation }: any) {
 
   // ===== MAIN TEMPLATE =====
   return (
-    <ImageBackground
-      source={backgroundImage}
-      style={styles.container}
-      resizeMode="cover"
-    >
-      <ScrollView
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Current Chart Display */}
-        {currentChart && !ephemerisLoading && (
-          <View style={styles.chartContainer}>
-            <AstrologyChart
-              planets={currentChart.planets}
-              houses={currentChart.houses}
-              loading={refreshLoading}
-              error={refreshError}
-            />
-            {currentChart.currentTime && (
-              <Text style={styles.lastUpdatedText}>
-                Last updated:{" "}
-                {
-                  formatChartTimestamp(currentChart.currentTime.timestamp)
-                    .dateString
-                }{" "}
-                at{" "}
-                {
-                  formatChartTimestamp(currentChart.currentTime.timestamp)
-                    .timeString
-                }
-              </Text>
-            )}
-            <Text style={styles.movedDateTimeText}>
-              {currentChart && currentChart.currentTime
-                ? (() => {
-                    const { dateString, timeString } = formatChartTimestamp(
-                      currentChart.currentTime.timestamp
-                    );
-                    return `${dateString} at ${timeString}`;
-                  })()
-                : new Date().toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  }) +
-                  " at " +
-                  new Date().toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: true,
-                  })}
-            </Text>
-          </View>
-        )}
-
-        {/* Current Planetary Positions */}
-        {currentChart && !ephemerisLoading && (
-          <View style={styles.currentPositionsSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                🌙 Current Planetary Positions
-              </Text>
-              <TouchableOpacity
-                style={styles.refreshButton}
-                onPress={refreshChart}
+    <GestureHandlerRootView style={styles.container}>
+      <PanGestureHandler onHandlerStateChange={onSwipe}>
+        <View style={styles.container}>
+          <Animated.View
+            style={[styles.container, { opacity: backgroundOpacity }]}
+          >
+            <ImageBackground
+              source={backgroundImage}
+              style={styles.container}
+              resizeMode="cover"
+            >
+              <ScrollView
+                style={styles.scrollContainer}
+                showsVerticalScrollIndicator={false}
               >
-                <Text style={styles.refreshButtonText}>🔄</Text>
-              </TouchableOpacity>
-            </View>
-            {/* Ascendant */}
-            {currentChart.houses && (
-              <View style={styles.planetRow}>
-                <Text style={styles.zodiacSymbol}>
-                  {/* ascendant symbol */}
-                  <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
-                    !
-                  </Text>{" "}
-                  {/* zodiac symbol */}
-                  <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
-                    {
-                      getZodiacKeysFromNames()[
-                        currentChart.houses.ascendantSign
-                      ]
-                    }
-                  </Text>{" "}
-                </Text>
-                <Text style={styles.planetPosition}>
-                  {currentChart.houses.ascendantSign} Ascendant
-                </Text>
-                <Text style={styles.planetPosition}>
-                  {currentChart.houses.ascendantDegree}
-                </Text>
-              </View>
-            )}
-            {Object.entries(currentChart.planets).map(
-              ([planetName, planet]) => {
-                // Temporary test: force Pluto to be retrograde for testing
-                const testPlanet =
-                  planetName === "pluto"
-                    ? { ...planet, isRetrograde: true }
-                    : planet;
-                const planetKeys = getPlanetKeysFromNames();
-                const zodiacKeys = getZodiacKeysFromNames();
-                const capitalizedName =
-                  planetName.charAt(0).toUpperCase() + planetName.slice(1);
-                // Special handling for north node
-                const displayName =
-                  planetName === "northNode" ? "N. Node" : capitalizedName;
-                const physisKey =
-                  planetKeys[
-                    planetName === "northNode" ? "NorthNode" : capitalizedName
-                  ];
-                const physisSymbol = physisKey;
-                const zodiacKey = zodiacKeys[testPlanet.zodiacSignName];
-                const physisZodiacSymbol = zodiacKey;
+                {/* Current Chart Display */}
+                {activeChart && !ephemerisLoading && (
+                  <View style={styles.chartContainer}>
+                    <AstrologyChart
+                      planets={activeChart.planets}
+                      houses={activeChart.houses}
+                      loading={refreshLoading}
+                      error={refreshError}
+                    />
+                  </View>
+                )}
 
-                return (
-                  <View key={planetName} style={styles.planetRow}>
-                    <Text style={styles.zodiacSymbol}>
-                      {/* planet symbol  */}
-                      <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
-                        {physisSymbol}
-                      </Text>{" "}
-                      {/* zodiac symbol */}
-                      <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
-                        {physisZodiacSymbol}
-                      </Text>{" "}
-                    </Text>
-                    <Text style={styles.planetPosition}>
-                      {testPlanet.zodiacSignName} {displayName}
-                      {testPlanet.isRetrograde && (
-                        <Text style={styles.retrogradeIndicator}> R</Text>
-                      )}
-                    </Text>
-                    <Text style={styles.planetPosition}>
-                      {testPlanet.degreeFormatted}
+                {/* Loading indicator for selected date */}
+                {selectedDateLoading && (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#e6e6fa" />
+                    <Text style={styles.loadingText}>
+                      Loading chart for selected date...
                     </Text>
                   </View>
-                );
-              }
-            )}
-          </View>
-        )}
-      </ScrollView>
+                )}
 
-      {/* Birth Chart Calculator Navigation Bar - Moved to bottom */}
-      <TouchableOpacity
-        style={styles.calculatorNavBar}
-        onPress={() => navigation.navigate("BirthChartCalculator")}
-        activeOpacity={0.8}
+                {/* Current Planetary Positions */}
+                {activeChart && !ephemerisLoading && !selectedDateLoading && (
+                  <View style={styles.currentPositionsSection}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.sectionTitle}>
+                        🌙 Current Planetary Positions
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.refreshButton}
+                        onPress={refreshChart}
+                      >
+                        <Text style={styles.refreshButtonText}>🔄</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {/* Ascendant */}
+                    {activeChart.houses && (
+                      <View style={styles.planetRow}>
+                        <Text style={styles.zodiacSymbol}>
+                          {/* ascendant symbol */}
+                          <Text
+                            style={getPhysisSymbolStyle(fontLoaded, "medium")}
+                          >
+                            !
+                          </Text>{" "}
+                          {/* zodiac symbol */}
+                          <Text
+                            style={getPhysisSymbolStyle(fontLoaded, "medium")}
+                          >
+                            {
+                              getZodiacKeysFromNames()[
+                                activeChart.houses.ascendantSign
+                              ]
+                            }
+                          </Text>{" "}
+                        </Text>
+                        <Text style={styles.planetPosition}>
+                          {activeChart.houses.ascendantSign} Ascendant
+                        </Text>
+                        <Text style={styles.planetPosition}>
+                          {activeChart.houses.ascendantDegree}
+                        </Text>
+                      </View>
+                    )}
+                    {Object.entries(activeChart.planets).map(
+                      ([planetName, planet]) => {
+                        // Temporary test: force Pluto to be retrograde for testing
+                        const testPlanet =
+                          planetName === "pluto"
+                            ? { ...planet, isRetrograde: true }
+                            : planet;
+                        const planetKeys = getPlanetKeysFromNames();
+                        const zodiacKeys = getZodiacKeysFromNames();
+                        const capitalizedName =
+                          planetName.charAt(0).toUpperCase() +
+                          planetName.slice(1);
+                        // Special handling for north node
+                        const displayName =
+                          planetName === "northNode"
+                            ? "N. Node"
+                            : capitalizedName;
+                        const physisKey =
+                          planetKeys[
+                            planetName === "northNode"
+                              ? "NorthNode"
+                              : capitalizedName
+                          ];
+                        const physisSymbol = physisKey;
+                        const zodiacKey = zodiacKeys[testPlanet.zodiacSignName];
+                        const physisZodiacSymbol = zodiacKey;
+
+                        return (
+                          <View key={planetName} style={styles.planetRow}>
+                            <Text style={styles.zodiacSymbol}>
+                              {/* planet symbol  */}
+                              <Text
+                                style={getPhysisSymbolStyle(
+                                  fontLoaded,
+                                  "medium"
+                                )}
+                              >
+                                {physisSymbol}
+                              </Text>{" "}
+                              {/* zodiac symbol */}
+                              <Text
+                                style={getPhysisSymbolStyle(
+                                  fontLoaded,
+                                  "medium"
+                                )}
+                              >
+                                {physisZodiacSymbol}
+                              </Text>{" "}
+                            </Text>
+                            <Text style={styles.planetPosition}>
+                              {testPlanet.zodiacSignName} {displayName}
+                              {testPlanet.isRetrograde && (
+                                <Text style={styles.retrogradeIndicator}>
+                                  {" "}
+                                  R
+                                </Text>
+                              )}
+                            </Text>
+                            <Text style={styles.planetPosition}>
+                              {testPlanet.degreeFormatted}
+                            </Text>
+                          </View>
+                        );
+                      }
+                    )}
+                  </View>
+                )}
+              </ScrollView>
+            </ImageBackground>
+          </Animated.View>
+
+          {/* Secondary Navigation Bar - Display Date */}
+          <TouchableOpacity style={styles.secondaryNavBar} onPress={openDrawer}>
+            <Text style={styles.secondaryNavText}>
+              {(() => {
+                const dateString = displayDate.toLocaleDateString("en-US", {
+                  weekday: "short",
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                });
+                const timeString = displayDate.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                });
+                return `${dateString} ${timeString}`;
+              })()}
+            </Text>
+            <Text style={styles.arrowIcon}>▼</Text>
+          </TouchableOpacity>
+        </View>
+      </PanGestureHandler>
+
+      {/* Date/Time Picker Drawer */}
+      <Modal
+        visible={drawerVisible}
+        transparent={true}
+        animationType="none"
+        onRequestClose={closeDrawer}
       >
-        <Text style={styles.calculatorNavText}>BIRTH CHART CALCULATOR</Text>
-        <Text style={styles.calculatorNavArrow}>›</Text>
-      </TouchableOpacity>
-    </ImageBackground>
+        <TouchableOpacity
+          style={styles.drawerOverlay}
+          activeOpacity={1}
+          onPress={closeDrawer}
+        >
+          <Animated.View
+            style={[
+              styles.drawerContainer,
+              {
+                transform: [
+                  {
+                    translateY: drawerAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [400, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <TouchableOpacity activeOpacity={1}>
+              <View style={styles.drawerHeader}>
+                <Text style={styles.drawerTitle}>Select Date & Time</Text>
+                <TouchableOpacity onPress={closeDrawer}>
+                  <Text style={styles.closeButton}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.drawerContent}>
+                {/* Date Picker */}
+                <View style={styles.pickerSection}>
+                  <Text style={styles.pickerLabel}>Date</Text>
+                  <TouchableOpacity
+                    style={styles.pickerButton}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Text style={styles.pickerButtonText}>
+                      {tempDate.toLocaleDateString("en-US", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </Text>
+                    <Text style={styles.pickerArrow}>▼</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Time Picker */}
+                <View style={styles.pickerSection}>
+                  <Text style={styles.pickerLabel}>Time</Text>
+                  <TouchableOpacity
+                    style={styles.pickerButton}
+                    onPress={() => setShowTimePicker(true)}
+                  >
+                    <Text style={styles.pickerButtonText}>
+                      {tempDate.toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
+                    </Text>
+                    <Text style={styles.pickerArrow}>▼</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Action Buttons */}
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    style={styles.currentTimeButton}
+                    onPress={followCurrentTime}
+                  >
+                    <Text style={styles.currentTimeButtonText}>
+                      Follow Current Time
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.applyButton}
+                    onPress={applyDateChange}
+                  >
+                    <Text style={styles.applyButtonText}>Apply</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        </TouchableOpacity>
+
+        {/* Date Picker Modal */}
+        {showDatePicker && (
+          <DateTimePicker
+            value={tempDate}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={onDateChange}
+            maximumDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)} // 1 year from now
+            minimumDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)} // 1 year ago
+          />
+        )}
+
+        {/* Time Picker Modal */}
+        {showTimePicker && (
+          <DateTimePicker
+            value={tempDate}
+            mode="time"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={onTimeChange}
+          />
+        )}
+      </Modal>
+    </GestureHandlerRootView>
   );
 }
 
@@ -376,29 +725,138 @@ const styles = StyleSheet.create({
     padding: 15,
     marginTop: 10,
   },
-  // Calculator Navigation Bar Styles
-  calculatorNavBar: {
+  // Secondary Navigation Bar Styles
+  secondaryNavBar: {
     position: "absolute",
-    bottom: 0,
+    bottom: 0, // Position directly above the tab bar
     left: 0,
     right: 0,
     height: 40,
     backgroundColor: "#000000",
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     alignItems: "center",
     paddingHorizontal: 20,
     zIndex: 9999,
   },
-  calculatorNavText: {
+  secondaryNavText: {
     color: "#e6e6fa",
     fontSize: 14,
     fontWeight: "bold",
     letterSpacing: 4,
+    textAlign: "left",
+    textTransform: "uppercase",
+    flex: 1,
   },
-  calculatorNavArrow: {
+  arrowIcon: {
+    color: "#e6e6fa",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 10,
+  },
+  // Drawer styles
+  drawerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  drawerContainer: {
+    backgroundColor: "#2a2a2a",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 40,
+    maxHeight: 400,
+  },
+  drawerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#444",
+  },
+  drawerTitle: {
     color: "#e6e6fa",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  closeButton: {
+    color: "#e6e6fa",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  drawerContent: {
+    padding: 20,
+  },
+  pickerSection: {
+    marginBottom: 20,
+  },
+  pickerLabel: {
+    color: "#e6e6fa",
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  pickerButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#3a3a3a",
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#555",
+  },
+  pickerButtonText: {
+    color: "#e6e6fa",
+    fontSize: 16,
+  },
+  pickerArrow: {
+    color: "#e6e6fa",
+    fontSize: 14,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+    gap: 10,
+  },
+  currentTimeButton: {
+    flex: 1,
+    backgroundColor: "#4a4a4a",
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#666",
+  },
+  currentTimeButtonText: {
+    color: "#e6e6fa",
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  applyButton: {
+    flex: 1,
+    backgroundColor: "#6f7782",
+    padding: 15,
+    borderRadius: 10,
+  },
+  applyButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  // Loading styles
+  loadingContainer: {
+    alignItems: "center",
+    padding: 20,
+    marginTop: 20,
+  },
+  loadingText: {
+    color: "#e6e6fa",
+    fontSize: 16,
+    marginTop: 10,
+    textAlign: "center",
   },
 });
