@@ -17,23 +17,12 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { Accelerometer } from "expo-sensors";
 import { TarotCard } from "../services/api";
-import { useTarot } from "../contexts/TarotContext";
+import { useTarot, CardData } from "../contexts/TarotContext";
 import { sharedUI } from "../styles/sharedUI";
 
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
-
-interface CardData {
-  id: string;
-  tarotCard: TarotCard | null; // null means not assigned yet
-  x: number;
-  y: number;
-  rotation: number;
-  zIndex: number;
-  isFlipped: boolean;
-  isDragging: boolean;
-}
 
 // ============================================================================
 // CONSTANTS
@@ -223,21 +212,50 @@ const cardBackImage = require("../../assets/images/tarot/RWSa-X-RL.png");
 // COMPONENT
 // ============================================================================
 export default function TarotDrawScreen({ navigation, route }: any) {
-  const { tarotCards: allTarotCards, loading: tarotLoading } = useTarot();
-  const [cards, setCards] = useState<CardData[]>([]);
+  const {
+    tarotCards: allTarotCards,
+    loading: tarotLoading,
+    drawState: cards,
+    setDrawState: setCards,
+    saveDrawState,
+    loadDrawState,
+  } = useTarot();
   const [maxZIndex, setMaxZIndex] = useState(0);
   const lastTapRef = useRef<number>(0);
   const lastPinchDistance = useRef<number>(0);
   const lastFlipTime = useRef<number>(0);
   const [draggedCard, setDraggedCard] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [hasLoadedInitialState, setHasLoadedInitialState] = useState(false);
 
   // ===== LIFECYCLE =====
   useFocusEffect(
     useCallback(() => {
-      initializeCards();
-    }, [])
+      // Only load saved state once when the screen first comes into focus
+      if (!hasLoadedInitialState) {
+        loadDrawState().then((savedState) => {
+          if (savedState && savedState.length > 0) {
+            // Restore saved state
+            setCards(savedState);
+            // Find the highest z-index from saved state
+            const maxZ = Math.max(...savedState.map((card) => card.zIndex));
+            setMaxZIndex(maxZ);
+          } else {
+            // Initialize new cards if no saved state
+            initializeCards();
+          }
+          setHasLoadedInitialState(true);
+        });
+      }
+    }, [hasLoadedInitialState])
   );
+
+  // Auto-save draw state whenever cards change
+  useEffect(() => {
+    if (cards.length > 0) {
+      saveDrawState();
+    }
+  }, [cards, saveDrawState]);
 
   // ===== CARD MANAGEMENT =====
   const initializeCards = () => {
@@ -248,7 +266,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
 
     for (let i = 0; i < INITIAL_CARD_COUNT; i++) {
       newCards.push({
-        id: `card-${i}`,
+        id: `tarot-card-${i}`,
         tarotCard: null,
         x: margin + Math.random() * availableWidth,
         y: margin + Math.random() * availableHeight,
@@ -265,29 +283,54 @@ export default function TarotDrawScreen({ navigation, route }: any) {
 
   const shuffleCards = () => {
     Vibration.vibrate(100);
+
     const margin = 50;
     const availableWidth = SCREEN_WIDTH - CARD_WIDTH - margin * 2;
     const availableHeight = SCREEN_HEIGHT - CARD_HEIGHT - margin * 2;
 
-    setCards((prevCards) =>
-      prevCards.map((card) => ({
-        ...card,
-        x: margin + Math.random() * availableWidth,
-        y: margin + Math.random() * availableHeight,
-        rotation: (Math.random() - 0.5) * 60,
-        isFlipped: false,
-      }))
-    );
+    // If no cards exist, initialize them with random positions
+    if (cards.length === 0) {
+      const newCards: CardData[] = [];
+      for (let i = 0; i < INITIAL_CARD_COUNT; i++) {
+        newCards.push({
+          id: `tarot-card-${i}`,
+          tarotCard: null,
+          x: margin + Math.random() * availableWidth,
+          y: margin + Math.random() * availableHeight,
+          rotation: (Math.random() - 0.5) * 60,
+          zIndex: i,
+          isFlipped: false,
+          isDragging: false,
+        });
+      }
+      setCards(newCards);
+      setMaxZIndex(INITIAL_CARD_COUNT - 1);
+      return;
+    }
+
+    // If cards exist, shuffle their positions
+    const shuffledCards = cards.map((card: CardData) => ({
+      ...card,
+      x: margin + Math.random() * availableWidth,
+      y: margin + Math.random() * availableHeight,
+      rotation: (Math.random() - 0.5) * 60,
+      isFlipped: false,
+      tarotCard: null, // Clear assigned tarot cards on shuffle
+    }));
+    setCards(shuffledCards);
   };
 
   const bringToFront = (cardId: string) => {
-    setCards((prevCards) =>
-      prevCards.map((card) => ({
-        ...card,
-        zIndex: card.id === cardId ? maxZIndex + 1 : card.zIndex,
-      }))
-    );
-    setMaxZIndex((prev) => prev + 1);
+    // Find the current maximum z-index from all cards
+    const currentMaxZ = Math.max(...cards.map((card) => card.zIndex), 0);
+    const newMaxZ = currentMaxZ + 1;
+
+    const updatedCards = cards.map((card: CardData) => ({
+      ...card,
+      zIndex: card.id === cardId ? newMaxZ : card.zIndex,
+    }));
+    setCards(updatedCards);
+    setMaxZIndex(newMaxZ);
   };
 
   const flipCard = (cardId: string) => {
@@ -304,34 +347,32 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     }
 
     lastFlipTime.current = now;
-    setCards((prevCards) =>
-      prevCards.map((card) => {
-        if (card.id === cardId) {
-          const newIsFlipped = !card.isFlipped;
+    const updatedCards = cards.map((card: CardData) => {
+      if (card.id === cardId) {
+        const newIsFlipped = !card.isFlipped;
 
-          // Assign a random tarot card when flipping to show the front
-          let assignedTarotCard = card.tarotCard;
-          if (newIsFlipped && !card.tarotCard && allTarotCards.length > 0) {
-            // Pick a random tarot card from the full collection
-            const randomIndex = Math.floor(
-              Math.random() * allTarotCards.length
-            );
-            assignedTarotCard = allTarotCards[randomIndex];
-          }
-
-          return {
-            ...card,
-            tarotCard: assignedTarotCard,
-            isFlipped: newIsFlipped,
-            rotation: newIsFlipped ? 0 : (Math.random() - 0.5) * 60,
-          };
+        // Assign a random tarot card when flipping to show the front
+        let assignedTarotCard = card.tarotCard;
+        if (newIsFlipped && !card.tarotCard && allTarotCards.length > 0) {
+          // Pick a random tarot card from the full collection
+          const randomIndex = Math.floor(Math.random() * allTarotCards.length);
+          assignedTarotCard = allTarotCards[randomIndex];
         }
-        return card;
-      })
-    );
+
+        return {
+          ...card,
+          tarotCard: assignedTarotCard,
+          isFlipped: newIsFlipped,
+          rotation: newIsFlipped ? 0 : (Math.random() - 0.5) * 60,
+        };
+      }
+      return card;
+    });
+    setCards(updatedCards);
   };
 
   const handleCardPress = (cardId: string) => {
+    console.log("handleCardPress called for:", cardId);
     bringToFront(cardId);
   };
 
@@ -349,9 +390,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
         y: touch.pageY - card.y,
       });
       bringToFront(cardId);
-      setCards((prevCards) =>
-        prevCards.map((c) => (c.id === cardId ? { ...c, isDragging: true } : c))
-      );
+      // Don't set isDragging immediately - wait for actual movement
     }
   };
 
@@ -361,20 +400,20 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       const newX = touch.pageX - dragOffset.x;
       const newY = touch.pageY - dragOffset.y;
 
-      setCards((prevCards) =>
-        prevCards.map((c) => (c.id === cardId ? { ...c, x: newX, y: newY } : c))
+      const updatedCards = cards.map((c: CardData) =>
+        c.id === cardId ? { ...c, x: newX, y: newY, isDragging: true } : c
       );
+      setCards(updatedCards);
     }
   };
 
   const handleDragEnd = (cardId: string) => {
     if (draggedCard === cardId) {
       setDraggedCard(null);
-      setCards((prevCards) =>
-        prevCards.map((c) =>
-          c.id === cardId ? { ...c, isDragging: false } : c
-        )
+      const updatedCards = cards.map((c: CardData) =>
+        c.id === cardId ? { ...c, isDragging: false } : c
       );
+      setCards(updatedCards);
     }
   };
 
@@ -429,6 +468,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       >
         <View
           onTouchStart={(event: any) => {
+            console.log("Card View onTouchStart for:", card.id);
             const touches = event.nativeEvent.touches;
             if (touches.length === 1) {
               // Single finger - start drag
@@ -470,8 +510,29 @@ export default function TarotDrawScreen({ navigation, route }: any) {
         >
           <TouchableOpacity
             style={styles.cardTouchable}
-            onPress={() => !card.isDragging && handleCardPress(card.id)}
-            onLongPress={() => !card.isDragging && handleCardFlip(card.id)}
+            onPress={() => {
+              console.log(
+                "TouchableOpacity onPress triggered for:",
+                card.id,
+                "isDragging:",
+                card.isDragging
+              );
+              if (!card.isDragging) {
+                console.log("Calling handleCardPress for:", card.id);
+                handleCardPress(card.id);
+              } else {
+                console.log("Card is dragging, not calling handleCardPress");
+              }
+            }}
+            onLongPress={() => {
+              console.log(
+                "TouchableOpacity onLongPress triggered for:",
+                card.id
+              );
+              if (!card.isDragging) {
+                handleCardFlip(card.id);
+              }
+            }}
             activeOpacity={1}
           >
             <Image

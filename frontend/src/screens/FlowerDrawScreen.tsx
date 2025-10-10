@@ -140,7 +140,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
 
     for (let i = 0; i < INITIAL_CARD_COUNT; i++) {
       newCards.push({
-        id: `card-${i}`,
+        id: `flower-card-${i}`,
         flower: null,
         x: margin + Math.random() * availableWidth,
         y: margin + Math.random() * availableHeight,

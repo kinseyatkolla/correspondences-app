@@ -15,11 +15,23 @@ import { apiService, TarotCard } from "../services/api";
 // CONSTANTS
 // ============================================================================
 const TAROT_CACHE_KEY = "tarot_cache";
+const TAROT_DRAW_STATE_KEY = "tarot_draw_state";
 const CACHE_EXPIRY_HOURS = 24; // Cache for 24 hours
 
 // ============================================================================
 // TYPES
 // ============================================================================
+export interface CardData {
+  id: string;
+  tarotCard: TarotCard | null; // null means not assigned yet
+  x: number;
+  y: number;
+  rotation: number;
+  zIndex: number;
+  isFlipped: boolean;
+  isDragging: boolean;
+}
+
 interface TarotContextType {
   tarotCards: TarotCard[];
   loading: boolean;
@@ -27,6 +39,12 @@ interface TarotContextType {
   refreshTarotCards: () => Promise<void>;
   lastUpdated: Date | null;
   isFromCache: boolean;
+  // Tarot draw state management
+  drawState: CardData[];
+  setDrawState: (cards: CardData[]) => void;
+  saveDrawState: () => Promise<void>;
+  loadDrawState: () => Promise<CardData[] | null>;
+  clearDrawState: () => Promise<void>;
 }
 
 interface CachedTarotCards {
@@ -52,6 +70,7 @@ export function TarotProvider({ children }: TarotProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
+  const [drawState, setDrawState] = useState<CardData[]>([]);
 
   const isCacheValid = (timestamp: number): boolean => {
     const now = Date.now();
@@ -100,6 +119,40 @@ export function TarotProvider({ children }: TarotProviderProps) {
       console.log("Tarot cards saved to cache");
     } catch (err) {
       console.error("Error saving to cache:", err);
+    }
+  };
+
+  // ===== DRAW STATE MANAGEMENT =====
+  const saveDrawState = async () => {
+    try {
+      await AsyncStorage.setItem(TAROT_DRAW_STATE_KEY, JSON.stringify(drawState));
+      console.log("Tarot draw state saved");
+    } catch (err) {
+      console.error("Error saving draw state:", err);
+    }
+  };
+
+  const loadDrawState = async (): Promise<CardData[] | null> => {
+    try {
+      const saved = await AsyncStorage.getItem(TAROT_DRAW_STATE_KEY);
+      if (saved) {
+        const parsedState: CardData[] = JSON.parse(saved);
+        console.log("Loaded tarot draw state:", parsedState.length, "cards");
+        return parsedState;
+      }
+    } catch (err) {
+      console.error("Error loading draw state:", err);
+    }
+    return null;
+  };
+
+  const clearDrawState = async () => {
+    try {
+      await AsyncStorage.removeItem(TAROT_DRAW_STATE_KEY);
+      setDrawState([]);
+      console.log("Tarot draw state cleared");
+    } catch (err) {
+      console.error("Error clearing draw state:", err);
     }
   };
 
@@ -199,6 +252,11 @@ export function TarotProvider({ children }: TarotProviderProps) {
     refreshTarotCards,
     lastUpdated,
     isFromCache,
+    drawState,
+    setDrawState,
+    saveDrawState,
+    loadDrawState,
+    clearDrawState,
   };
 
   return (
