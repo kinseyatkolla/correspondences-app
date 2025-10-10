@@ -11,16 +11,14 @@ import {
   Alert,
   ActivityIndicator,
   ImageBackground,
-  Modal,
   Animated,
-  Platform,
 } from "react-native";
 import {
   GestureHandlerRootView,
   PanGestureHandler,
   State,
 } from "react-native-gesture-handler";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePickerDrawer from "../components/DateTimePickerDrawer";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { apiService, BirthData, BirthChart } from "../services/api";
 import { sharedUI } from "../styles/sharedUI";
@@ -174,10 +172,6 @@ export default function AstrologyScreen({ navigation }: any) {
 
   // State for the date/time picker drawer
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [tempDate, setTempDate] = useState(new Date());
-  const drawerAnimation = useState(new Animated.Value(0))[0];
 
   // Function to fetch chart data for a specific date
   const fetchChartForDate = async (date: Date) => {
@@ -256,66 +250,25 @@ export default function AstrologyScreen({ navigation }: any) {
 
   // Drawer functions
   const openDrawer = () => {
-    setTempDate(new Date(displayDate));
     setDrawerVisible(true);
-    Animated.timing(drawerAnimation, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
   };
 
   const closeDrawer = () => {
-    Animated.timing(drawerAnimation, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setDrawerVisible(false);
-    });
+    setDrawerVisible(false);
   };
 
-  const applyDateChange = () => {
-    console.log(
-      "📅 applyDateChange called with tempDate:",
-      tempDate.toISOString()
-    );
-    setDisplayDate(tempDate);
-    fetchChartForDate(tempDate);
-    closeDrawer();
+  const applyDateChange = (date: Date) => {
+    console.log("📅 applyDateChange called with date:", date.toISOString());
+    setDisplayDate(date);
+    fetchChartForDate(date);
   };
 
   const followCurrentTime = () => {
     const now = new Date();
     setDisplayDate(now);
-    setTempDate(now);
     // Clear selectedDateChart so we fall back to currentChart from context
     // This ensures we get the same current time handling as the initial load
     setSelectedDateChart(null);
-    closeDrawer();
-  };
-
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === "android") {
-      setShowDatePicker(false);
-    }
-    if (selectedDate) {
-      console.log("📅 Date picker changed to:", selectedDate.toISOString());
-      setTempDate(selectedDate);
-    }
-  };
-
-  const onTimeChange = (event: any, selectedTime?: Date) => {
-    if (Platform.OS === "android") {
-      setShowTimePicker(false);
-    }
-    if (selectedTime) {
-      const newDate = new Date(tempDate);
-      newDate.setHours(selectedTime.getHours());
-      newDate.setMinutes(selectedTime.getMinutes());
-      console.log("⏰ Time picker changed to:", newDate.toISOString());
-      setTempDate(newDate);
-    }
   };
 
   // Handle swipe gestures
@@ -689,123 +642,13 @@ export default function AstrologyScreen({ navigation }: any) {
       </PanGestureHandler>
 
       {/* Date/Time Picker Drawer */}
-      <Modal
+      <DateTimePickerDrawer
         visible={drawerVisible}
-        transparent={true}
-        animationType="none"
-        onRequestClose={closeDrawer}
-      >
-        <TouchableOpacity
-          style={styles.drawerOverlay}
-          activeOpacity={1}
-          onPress={closeDrawer}
-        >
-          <Animated.View
-            style={[
-              styles.drawerContainer,
-              {
-                transform: [
-                  {
-                    translateY: drawerAnimation.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [400, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <TouchableOpacity activeOpacity={1}>
-              <View style={styles.drawerHeader}>
-                <Text style={styles.drawerTitle}>Select Date & Time</Text>
-                <TouchableOpacity onPress={closeDrawer}>
-                  <Text style={styles.closeButton}>✕</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.drawerContent}>
-                {/* Date Picker */}
-                <View style={styles.pickerSection}>
-                  <Text style={styles.pickerLabel}>Date</Text>
-                  <TouchableOpacity
-                    style={styles.pickerButton}
-                    onPress={() => setShowDatePicker(true)}
-                  >
-                    <Text style={styles.pickerButtonText}>
-                      {tempDate.toLocaleDateString("en-US", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </Text>
-                    <Text style={styles.pickerArrow}>▼</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Time Picker */}
-                <View style={styles.pickerSection}>
-                  <Text style={styles.pickerLabel}>Time</Text>
-                  <TouchableOpacity
-                    style={styles.pickerButton}
-                    onPress={() => setShowTimePicker(true)}
-                  >
-                    <Text style={styles.pickerButtonText}>
-                      {tempDate.toLocaleTimeString("en-US", {
-                        hour: "numeric",
-                        minute: "2-digit",
-                        hour12: true,
-                      })}
-                    </Text>
-                    <Text style={styles.pickerArrow}>▼</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Action Buttons */}
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    style={styles.currentTimeButton}
-                    onPress={followCurrentTime}
-                  >
-                    <Text style={styles.currentTimeButtonText}>
-                      Follow Current Time
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.applyButton}
-                    onPress={applyDateChange}
-                  >
-                    <Text style={styles.applyButtonText}>Apply</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-        </TouchableOpacity>
-
-        {/* Date Picker Modal */}
-        {showDatePicker && (
-          <DateTimePicker
-            value={tempDate}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={onDateChange}
-            // maximumDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)} // 1 year from now
-            // minimumDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)} // 1 year ago
-          />
-        )}
-
-        {/* Time Picker Modal */}
-        {showTimePicker && (
-          <DateTimePicker
-            value={tempDate}
-            mode="time"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={onTimeChange}
-          />
-        )}
-      </Modal>
+        onClose={closeDrawer}
+        onApply={applyDateChange}
+        onFollowCurrentTime={followCurrentTime}
+        initialDate={displayDate}
+      />
     </GestureHandlerRootView>
   );
 }
@@ -995,99 +838,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginLeft: 10,
-  },
-  // Drawer styles
-  drawerOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  drawerContainer: {
-    backgroundColor: "#2a2a2a",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 40,
-    maxHeight: 400,
-  },
-  drawerHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#444",
-  },
-  drawerTitle: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  closeButton: {
-    color: "#e6e6fa",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  drawerContent: {
-    padding: 20,
-  },
-  pickerSection: {
-    marginBottom: 20,
-  },
-  pickerLabel: {
-    color: "#e6e6fa",
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  pickerButton: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#3a3a3a",
-    padding: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  pickerButtonText: {
-    color: "#e6e6fa",
-    fontSize: 16,
-  },
-  pickerArrow: {
-    color: "#e6e6fa",
-    fontSize: 14,
-  },
-  actionButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
-    gap: 10,
-  },
-  currentTimeButton: {
-    flex: 1,
-    backgroundColor: "#4a4a4a",
-    padding: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#666",
-  },
-  currentTimeButtonText: {
-    color: "#e6e6fa",
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  applyButton: {
-    flex: 1,
-    backgroundColor: "#6f7782",
-    padding: 15,
-    borderRadius: 10,
-  },
-  applyButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
   },
   // Loading styles
   loadingContainer: {
