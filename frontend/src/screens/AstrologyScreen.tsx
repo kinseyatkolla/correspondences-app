@@ -701,13 +701,13 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: "#8a8a8a",
+    color: "#e6e6fa",
     textAlign: "center",
     marginBottom: 10,
   },
   description: {
     fontSize: 16,
-    color: "#8a8a8a",
+    color: "#e6e6fa",
     textAlign: "center",
     lineHeight: 24,
     marginBottom: 20,
@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
   },
   lastUpdatedText: {
     fontSize: 12,
-    color: "#8a8a8a",
+    color: "#e6e6fa",
     textAlign: "center",
     marginTop: 8,
     fontStyle: "italic",
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
   },
   planetPosition: {
     fontSize: 14,
-    color: "#8a8a8a",
+    color: "#e6e6fa",
     textAlign: "left",
     flex: 1,
   },
@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
-    color: "#8a8a8a",
+    color: "#e6e6fa",
     lineHeight: 20,
     marginBottom: 8,
   },
@@ -856,6 +856,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.3)",
     borderRadius: 10,
     padding: 15,
+    marginLeft: 15,
+    marginRight: 15,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.1)",

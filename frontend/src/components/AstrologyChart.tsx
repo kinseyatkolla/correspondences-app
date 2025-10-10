@@ -405,11 +405,13 @@ export default function AstrologyChart({
 
           return (
             <G key={sign.name}>
-              {/* Sign segment background */}
+              {/* Sign arc border */}
               <Path
-                d={`M ${CENTER_X} ${CENTER_Y} L ${startPos.x} ${startPos.y} A ${ZODIAC_RADIUS} ${ZODIAC_RADIUS} 0 0 0 ${endPos.x} ${endPos.y} Z`}
-                fill={sign.color}
-                fillOpacity={0.3}
+                d={`M ${startPos.x} ${startPos.y} A ${ZODIAC_RADIUS} ${ZODIAC_RADIUS} 0 0 0 ${endPos.x} ${endPos.y}`}
+                stroke={sign.color}
+                strokeWidth="10"
+                fill="none"
+                strokeLinecap="butt"
               />
               {/* Sign symbol */}
               <SvgText
