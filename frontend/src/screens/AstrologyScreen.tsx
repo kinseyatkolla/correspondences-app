@@ -731,22 +731,8 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     alignItems: "center",
-    marginTop: -20,
+    marginTop: -30,
     marginBottom: 40,
-  },
-  lastUpdatedText: {
-    fontSize: 12,
-    color: "#e6e6fa",
-    textAlign: "center",
-    marginTop: 8,
-    fontStyle: "italic",
-  },
-  movedDateTimeText: {
-    fontSize: 16,
-    color: "#e6e6fa",
-    textAlign: "center",
-    marginTop: 16,
-    fontWeight: "600",
   },
   sectionTitle: {
     fontSize: 18,
@@ -858,7 +844,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginLeft: 15,
     marginRight: 15,
-    marginBottom: 20,
+    marginBottom: 60,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.1)",
   },

@@ -15,14 +15,14 @@ export interface ColorStyle {
 // ============================================================================
 export const COLORS = {
   // Aspect colors
-  aspectRed: "#ff6b6b", // Red for challenging aspects
-  aspectBlue: "#00bfff", // Robin cerulean blue for harmonious aspects
-  aspectGreen: "#51cf66", // Green for opportunity aspects
+  aspectRed: "#e72929", // Red for challenging aspects
+  aspectBlue: "#4255e3", // Robin cerulean blue for harmonious aspects
+  aspectGreen: "#16a352", // Green for opportunity aspects
 
   // Element colors
-  fire: "#ff6b6b", // Red for fire signs
-  water: "#00bfff", // Blue for water signs
-  earth: "#51cf66", // Green for earth signs
+  fire: "#e72929", // Red for fire signs
+  water: "#4255e3", // Blue for water signs
+  earth: "#16a352", // Green for earth signs
   air: "#f9c74f", // Soft yellow for air signs
 
   // Default

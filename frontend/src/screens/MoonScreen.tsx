@@ -364,7 +364,7 @@ const getPaksha = (tithi: number): string => {
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function MoonScreen() {
+export default function MoonScreen({ navigation }: any) {
   const { currentChart, loading, error } = useAstrology();
   const { fontLoaded } = usePhysisFont();
 
@@ -558,9 +558,23 @@ export default function MoonScreen() {
                         (tithi) => tithi.number === currentTithi
                       );
                       return moonTithi ? (
-                        <Text style={{ color: moonTithi.color.toLowerCase() }}>
-                          {moonTithi.name}{" "}
-                        </Text>
+                        <TouchableOpacity
+                          onPress={() =>
+                            navigation.navigate("TithiInfo", {
+                              selectedDate: displayDate,
+                            })
+                          }
+                          style={styles.tithiNameButton}
+                        >
+                          <Text
+                            style={[
+                              styles.tithiNameText,
+                              { color: moonTithi.color.toLowerCase() },
+                            ]}
+                          >
+                            {moonTithi.name}{" "}
+                          </Text>
+                        </TouchableOpacity>
                       ) : null;
                     })()}
                     {activeChart.planets.moon?.zodiacSignName} Moon
@@ -820,7 +834,7 @@ export default function MoonScreen() {
                                               )
                                             )
                                           : ""}
-                                        <Text style={styles.aspectDataText}>
+                                        <Text style={styles.orbLabelText}>
                                           {degreeAspectsDisplay || ""}
                                         </Text>
                                       </Text>
@@ -832,91 +846,6 @@ export default function MoonScreen() {
                         })()}
                       </View>
                     )}
-
-                  {/* Tithi Information */}
-                  {currentTithi && tithiInfo && (
-                    <View style={styles.tithiContainer}>
-                      <Text style={styles.tithiTitle}>Tithi (Lunar Day)</Text>
-                      <Text style={styles.tithiNumber}>
-                        {currentTithi} - {tithiInfo.name}
-                      </Text>
-                      {tithiPercentageRemaining !== null && (
-                        <Text style={styles.tithiPercentage}>
-                          {tithiPercentageRemaining.toFixed(2)}% remaining
-                        </Text>
-                      )}
-                      <Text style={styles.tithiNumbers}>
-                        Numbers: {tithiInfo.numbers[0]}, {tithiInfo.numbers[1]}
-                      </Text>
-                      <Text style={styles.pakshaText}>{paksha}</Text>
-
-                      {/* Debug information for tithi calculation */}
-                      {activeChart?.planets?.moon &&
-                        activeChart?.planets?.sun && (
-                          <View style={styles.debugContainer}>
-                            <Text style={styles.debugTitle}>Debug Info:</Text>
-                            <Text style={styles.debugText}>
-                              Moon Longitude:{" "}
-                              {activeChart.planets.moon.longitude.toFixed(2)}°
-                            </Text>
-                            <Text style={styles.debugText}>
-                              Sun Longitude:{" "}
-                              {activeChart.planets.sun.longitude.toFixed(2)}°
-                            </Text>
-                            <Text style={styles.debugText}>
-                              Difference:{" "}
-                              {(
-                                (activeChart.planets.moon.longitude -
-                                  activeChart.planets.sun.longitude +
-                                  360) %
-                                360
-                              ).toFixed(2)}
-                              °
-                            </Text>
-                            <Text style={styles.debugText}>
-                              Tithi Calculation:{" "}
-                              {(
-                                ((activeChart.planets.moon.longitude -
-                                  activeChart.planets.sun.longitude +
-                                  360) %
-                                  360) /
-                                12
-                              ).toFixed(2)}
-                            </Text>
-                            {tithiPercentageRemaining !== null && (
-                              <Text style={styles.debugText}>
-                                Percentage Remaining:{" "}
-                                {tithiPercentageRemaining.toFixed(2)}%
-                              </Text>
-                            )}
-                          </View>
-                        )}
-
-                      {/* Additional Tithi Information */}
-                      <View style={styles.tithiDetails}>
-                        <View style={styles.tithiDetailRow}>
-                          <Text style={styles.tithiDetailLabel}>
-                            Planet Ruler:
-                          </Text>
-                          <Text style={styles.tithiDetailValue}>
-                            {tithiInfo.planetRuler}
-                          </Text>
-                        </View>
-                        <View style={styles.tithiDetailRow}>
-                          <Text style={styles.tithiDetailLabel}>Division:</Text>
-                          <Text style={styles.tithiDetailValue}>
-                            {tithiInfo.division}
-                          </Text>
-                        </View>
-                        <View style={styles.tithiDetailRow}>
-                          <Text style={styles.tithiDetailLabel}>Deity:</Text>
-                          <Text style={styles.tithiDetailValue}>
-                            {tithiInfo.deity}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  )}
                 </>
               ) : (
                 <>
@@ -1005,10 +934,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: "#ffffff",
   },
+  tithiNameButton: {
+    // Align with the title text
+    alignSelf: "flex-start",
+    marginTop: 14, // Slight adjustment to align with title text
+  },
+  tithiNameText: {
+    fontSize: 32,
+    fontWeight: "bold",
+    // Color will be set dynamically based on tithi color
+  },
   subtitle: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 20,
+    marginBottom: 0,
     color: "#f8f9fa",
     textAlign: "center",
     fontStyle: "italic",
@@ -1084,122 +1023,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 10,
   },
-  tithiContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    padding: 20,
-    borderRadius: 12,
-    marginVertical: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    minWidth: 300,
-    alignItems: "center",
-    shadowColor: "#ffffff",
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 8,
-  },
-  tithiTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#ffffff",
-    marginBottom: 10,
-    textAlign: "center",
-    textShadowColor: "rgba(255, 255, 255, 0.8)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-  },
-  tithiNumber: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#ffd700",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  tithiPercentage: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#87ceeb",
-    marginBottom: 8,
-    textAlign: "center",
-    fontStyle: "italic",
-  },
-  tithiNumbers: {
-    fontSize: 16,
-    color: "#b8b8b8",
-    textAlign: "center",
-    marginBottom: 8,
-    fontStyle: "italic",
-  },
-  pakshaText: {
-    fontSize: 16,
-    color: "#8a8a8a",
-    textAlign: "center",
-    fontStyle: "italic",
-    marginBottom: 15,
-  },
-  tithiDetails: {
-    width: "100%",
-    minWidth: 300,
-    marginTop: 15,
-    backgroundColor: "#1a1a2e",
-    padding: 10,
-    borderRadius: 8,
-  },
-  tithiDetailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2a2a3e",
-  },
-  tithiDetailLabel: {
-    fontSize: 14,
-    color: "#b8b8b8",
-    fontWeight: "600",
-    flex: 1,
-  },
-  tithiDetailValue: {
-    fontSize: 14,
-    color: "#e6e6fa",
-    textAlign: "right",
-    flex: 1,
-  },
-  debugContainer: {
-    backgroundColor: "#2a2a3e",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 15,
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#ffd700",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  debugText: {
-    fontSize: 12,
-    color: "#b8b8b8",
-    marginBottom: 4,
-    fontFamily: "monospace",
-  },
   // Aspects styles
   aspectsContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(255, 255, 255, 0)",
     padding: 24,
     borderRadius: 12,
     marginTop: 30,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "rgba(255, 255, 255, 0)",
     minWidth: 300,
     alignItems: "center",
     shadowColor: "#ffffff",
@@ -1214,7 +1046,7 @@ const styles = StyleSheet.create({
   aspectsTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#ffffff",
+    color: "#111111",
     marginBottom: 20,
     textAlign: "center",
     letterSpacing: 0.5,
@@ -1226,127 +1058,25 @@ const styles = StyleSheet.create({
     width: "100%",
     minWidth: 300,
   },
-  aspectRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2a2a3e",
-    marginBottom: 4,
-  },
-  aspectName: {
-    fontSize: 16,
-    fontWeight: "600",
-    flex: 1,
-  },
-  aspectDetails: {
-    fontSize: 14,
-    color: "#b8b8b8",
-    textAlign: "right",
-    flex: 1,
-    fontWeight: "500",
-  },
-  noAspectsText: {
-    fontSize: 16,
-    color: "#8a8a8a",
-    textAlign: "center",
-    fontStyle: "italic",
-    paddingVertical: 20,
-  },
-  aspectDebug: {
-    backgroundColor: "#2a2a3e",
-    padding: 8,
-    borderRadius: 6,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  // Aspect colors
-  conjunctionColor: {
-    color: "#ffd700", // Gold
-  },
-  oppositionColor: {
-    color: "#ff6b6b", // Red
-  },
-  squareColor: {
-    color: "#ff8c42", // Orange
-  },
-  trineColor: {
-    color: "#4ecdc4", // Teal
-  },
-  sextileColor: {
-    color: "#45b7d1", // Blue
-  },
-  // New debugging styles
-  planetAspectsSection: {
-    backgroundColor: "#1a1a2e",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#2a2a3e",
-  },
-  planetSectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#e6e6fa",
-    marginBottom: 12,
-    textAlign: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#2a2a3e",
-    paddingBottom: 8,
-  },
-  aspectMethodsGroup: {
-    marginBottom: 12,
-    padding: 8,
-    backgroundColor: "#0f0f23",
-    borderRadius: 6,
-  },
-  aspectGroupTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#ffd700",
-    marginBottom: 8,
-  },
-  positionReference: {
-    backgroundColor: "#2a2a3e",
-    padding: 8,
-    borderRadius: 6,
-    marginTop: 8,
-  },
-  positionText: {
-    fontSize: 12,
-    color: "#b8b8b8",
-    marginBottom: 2,
-    fontFamily: "monospace",
-  },
-  activeAspectText: {
-    fontSize: 14,
-    color: "#4ecdc4",
-    marginBottom: 4,
-    fontWeight: "500",
-  },
   // Table-style layout for aspects
   aspectTableRow: {
     flexDirection: "row",
     paddingVertical: 10,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#2a2a3e",
+    borderBottomColor: "#dadada",
     alignItems: "flex-start",
   },
   aspectLabelText: {
     fontSize: 14,
-    color: "#e6e6fa",
+    color: "#111111",
     fontWeight: "600",
     flex: 1,
     flexGrow: 1,
   },
-  aspectDataText: {
+  orbLabelText: {
     fontSize: 12,
-    color: "#b8b8b8",
+    color: "#666",
     flex: 1,
     fontFamily: "monospace",
     textAlign: "left",

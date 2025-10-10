@@ -8,6 +8,7 @@ import { TarotProvider } from "../contexts/TarotContext";
 
 // Import screens
 import MoonScreen from "../screens/MoonScreen";
+import TithiInfoScreen from "../screens/TithiInfoScreen";
 import TarotScreen from "../screens/TarotScreen";
 import TarotDrawScreen from "../screens/TarotDrawScreen";
 import FlowersScreen from "../screens/FlowersScreen";
@@ -130,6 +131,39 @@ function AstrologyStack() {
   );
 }
 
+// Moon Stack Navigator
+function MoonStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#000000",
+          borderBottomWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        headerTintColor: "white",
+        headerTitleStyle: {
+          fontWeight: "bold",
+          letterSpacing: 8,
+        },
+        headerTitle: "CORRESPONDENCES",
+      }}
+    >
+      <Stack.Screen
+        name="MoonMain"
+        component={MoonScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="TithiInfo"
+        component={TithiInfoScreen}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 export default function AppNavigator() {
   return (
     <FlowersProvider>
@@ -187,7 +221,7 @@ export default function AppNavigator() {
             />
             <Tab.Screen
               name="Moon"
-              component={MoonScreen}
+              component={MoonStack}
               options={{
                 tabBarLabel: "",
                 tabBarIcon: ({ focused, size }) => (
