@@ -191,17 +191,14 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
     const FLIP_DEBOUNCE = 500; // Prevent rapid flipping
 
     if (now - lastFlipTime.current < FLIP_DEBOUNCE) {
-      console.log("Flip debounced - too soon");
       return;
     }
 
     lastFlipTime.current = now;
-    console.log("Flipping card:", cardId);
     setCards((prevCards) =>
       prevCards.map((card) => {
         if (card.id === cardId) {
           const newIsFlipped = !card.isFlipped;
-          console.log("Card flip state changed to:", newIsFlipped);
 
           // Assign a random flower when flipping to show the front
           let assignedFlower = card.flower;
@@ -212,12 +209,6 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
             assignedFlower = allFlowers[randomIndex];
             // Generate random reversal (50% chance)
             isReversed = Math.random() < 0.5;
-            console.log(
-              "Assigned flower:",
-              assignedFlower?.commonName,
-              "Reversed:",
-              isReversed
-            );
           }
 
           return {
@@ -237,7 +228,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
     bringToFront(cardId);
   };
 
-  const handleCardLongPress = (cardId: string) => {
+  const handleFlipCard = (cardId: string) => {
     flipCard(cardId);
   };
 
@@ -285,39 +276,6 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
     const dx = touch1.pageX - touch2.pageX;
     const dy = touch1.pageY - touch2.pageY;
     return Math.sqrt(dx * dx + dy * dy);
-  };
-
-  // Handle pinch gesture for flipping cards
-  const handlePinchGesture = (cardId: string, event: any) => {
-    const touches = event.nativeEvent.touches;
-
-    if (touches.length === 2) {
-      const currentDistance = getDistance(touches[0], touches[1]);
-      console.log(
-        "Pinch detected - distance:",
-        currentDistance,
-        "last:",
-        lastPinchDistance.current
-      );
-
-      if (lastPinchDistance.current > 0) {
-        const distanceDiff = currentDistance - lastPinchDistance.current;
-        console.log("Distance difference:", distanceDiff);
-
-        // If fingers are spreading apart (expanding), flip the card
-        if (distanceDiff > 10) {
-          // Lower threshold for more responsive expansion
-          console.log("Flipping card due to pinch expansion");
-          flipCard(cardId);
-          lastPinchDistance.current = 0; // Reset to prevent multiple flips
-          return;
-        }
-      }
-
-      lastPinchDistance.current = currentDistance;
-    } else {
-      lastPinchDistance.current = 0; // Reset when not 2 fingers
-    }
   };
 
   // ===== SHAKE DETECTION =====
@@ -392,7 +350,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
                 const distanceDiff =
                   currentDistance - lastPinchDistance.current;
                 if (distanceDiff > 10) {
-                  handleCardLongPress(card.id);
+                  handleFlipCard(card.id);
                   lastPinchDistance.current = 0;
                 }
               }
@@ -411,7 +369,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
           <TouchableOpacity
             style={styles.cardTouchable}
             onPress={() => handleCardPress(card.id)}
-            onLongPress={() => handleCardLongPress(card.id)}
+            onLongPress={() => handleFlipCard(card.id)}
             activeOpacity={1}
           >
             <Image

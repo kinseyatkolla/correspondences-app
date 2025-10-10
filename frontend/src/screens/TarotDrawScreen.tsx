@@ -224,11 +224,6 @@ const cardBackImage = require("../../assets/images/tarot/RWSa-X-RL.png");
 // ============================================================================
 export default function TarotDrawScreen({ navigation, route }: any) {
   const { tarotCards: allTarotCards, loading: tarotLoading } = useTarot();
-
-  // Debug logging
-  console.log("TarotDrawScreen - allTarotCards length:", allTarotCards.length);
-  console.log("TarotDrawScreen - tarotLoading:", tarotLoading);
-  console.log("TarotDrawScreen - allTarotCards:", allTarotCards);
   const [cards, setCards] = useState<CardData[]>([]);
   const [maxZIndex, setMaxZIndex] = useState(0);
   const lastTapRef = useRef<number>(0);
@@ -300,25 +295,19 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     const FLIP_DEBOUNCE = 500; // Prevent rapid flipping
 
     if (now - lastFlipTime.current < FLIP_DEBOUNCE) {
-      console.log("Flip debounced - too soon");
       return;
     }
 
     // Don't flip if no tarot cards are available
     if (allTarotCards.length === 0) {
-      console.log("Cannot flip card - no tarot cards available");
       return;
     }
 
     lastFlipTime.current = now;
-    console.log("Flipping card:", cardId);
-    console.log("Available tarot cards:", allTarotCards.length);
     setCards((prevCards) =>
       prevCards.map((card) => {
         if (card.id === cardId) {
           const newIsFlipped = !card.isFlipped;
-          console.log("Card flip state changed to:", newIsFlipped);
-          console.log("Current card tarotCard:", card.tarotCard);
 
           // Assign a random tarot card when flipping to show the front
           let assignedTarotCard = card.tarotCard;
@@ -328,11 +317,6 @@ export default function TarotDrawScreen({ navigation, route }: any) {
               Math.random() * allTarotCards.length
             );
             assignedTarotCard = allTarotCards[randomIndex];
-            console.log(
-              "Assigned tarot card:",
-              assignedTarotCard?.name,
-              assignedTarotCard?.imageName
-            );
           }
 
           return {
@@ -351,8 +335,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     bringToFront(cardId);
   };
 
-  const handleCardLongPress = (cardId: string) => {
-    console.log("Long press detected on card:", cardId);
+  const handleCardFlip = (cardId: string) => {
     flipCard(cardId);
   };
 
@@ -400,39 +383,6 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     const dx = touch1.pageX - touch2.pageX;
     const dy = touch1.pageY - touch2.pageY;
     return Math.sqrt(dx * dx + dy * dy);
-  };
-
-  // Handle pinch gesture for flipping cards
-  const handlePinchGesture = (cardId: string, event: any) => {
-    const touches = event.nativeEvent.touches;
-
-    if (touches.length === 2) {
-      const currentDistance = getDistance(touches[0], touches[1]);
-      console.log(
-        "Pinch detected - distance:",
-        currentDistance,
-        "last:",
-        lastPinchDistance.current
-      );
-
-      if (lastPinchDistance.current > 0) {
-        const distanceDiff = currentDistance - lastPinchDistance.current;
-        console.log("Distance difference:", distanceDiff);
-
-        // If fingers are spreading apart (expanding), flip the card
-        if (distanceDiff > 10) {
-          // Lower threshold for more responsive expansion
-          console.log("Flipping card due to pinch expansion");
-          flipCard(cardId);
-          lastPinchDistance.current = 0; // Reset to prevent multiple flips
-          return;
-        }
-      }
-
-      lastPinchDistance.current = currentDistance;
-    } else {
-      lastPinchDistance.current = 0; // Reset when not 2 fingers
-    }
   };
 
   // ===== SHAKE DETECTION =====
@@ -502,7 +452,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
                   currentDistance - lastPinchDistance.current;
                 if (distanceDiff > 10) {
                   console.log("Pinch expansion detected on card:", card.id);
-                  handleCardLongPress(card.id);
+                  handleCardFlip(card.id);
                   lastPinchDistance.current = 0;
                 }
               }
@@ -521,7 +471,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
           <TouchableOpacity
             style={styles.cardTouchable}
             onPress={() => !card.isDragging && handleCardPress(card.id)}
-            onLongPress={() => !card.isDragging && handleCardLongPress(card.id)}
+            onLongPress={() => !card.isDragging && handleCardFlip(card.id)}
             activeOpacity={1}
           >
             <Image
