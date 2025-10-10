@@ -298,12 +298,12 @@ router.post("/chart", (req, res) => {
     }
 
     const julianDay = calculateJulianDay(
-      finalYear,
-      finalMonth,
-      finalDay,
-      finalHour,
-      finalMinute,
-      finalSecond
+      year,
+      month,
+      day,
+      hour,
+      minute,
+      second
     );
 
     // Set topocentric location for more accurate calculations

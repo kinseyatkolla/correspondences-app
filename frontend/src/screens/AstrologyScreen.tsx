@@ -518,9 +518,12 @@ export default function AstrologyScreen({ navigation }: any) {
               <CurrentPlanetaryHour
                 planetaryHoursData={planetaryHoursData}
                 loading={planetaryHoursLoading}
-                onPress={() => navigation.navigate("PlanetaryHours")}
+                onPress={() =>
+                  navigation.navigate("PlanetaryHours", {
+                    selectedDate: displayDate,
+                  })
+                }
               />
-
               {/* Current Chart Display */}
               {activeChart && !ephemerisLoading && (
                 <View style={styles.chartContainer}>
@@ -561,12 +564,10 @@ export default function AstrologyScreen({ navigation }: any) {
 
               {/* Current Planetary Positions */}
               {activeChart && !ephemerisLoading && !selectedDateLoading && (
-                <View style={styles.currentPositionsSection}>
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>
-                      🌙 Current Planetary Positions
-                    </Text>
-                  </View>
+                <View style={styles.cardContainer}>
+                  <Text style={styles.cardTitle}>
+                    🌙 Current Planetary Positions
+                  </Text>
                   {/* Ascendant */}
                   {activeChart.houses && (
                     <View style={styles.planetRow}>
@@ -841,7 +842,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
-    padding: 35,
+    padding: 5,
     paddingBottom: 50, // Account for calculator nav bar
   },
   header: {
@@ -887,7 +888,7 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     alignItems: "center",
-    marginTop: 20,
+    marginTop: -20,
     marginBottom: 40,
   },
   lastUpdatedText: {
@@ -1098,6 +1099,22 @@ const styles = StyleSheet.create({
     color: "#e6e6fa",
     fontSize: 16,
     marginTop: 10,
+    textAlign: "center",
+  },
+  // Card styles from PlanetaryHoursScreen
+  cardContainer: {
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#e6e6fa",
+    marginBottom: 10,
     textAlign: "center",
   },
 });
