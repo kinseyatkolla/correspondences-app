@@ -375,6 +375,7 @@ export const getActiveAspects = (
   orb: number = DEFAULT_ORB
 ): string[] => {
   const aspects = checkAllAspects(planet1, planet2, orb);
+  const wholeSignAspects = checkAllWholeSignAspects(planet1, planet2);
   const activeAspects: string[] = [];
 
   Object.entries(aspects).forEach(([aspectName, result]) => {
@@ -382,6 +383,19 @@ export const getActiveAspects = (
       activeAspects.push(aspectName);
     }
   });
+
+  // If orb is 3 degrees or less, also include whole sign aspects
+  if (orb <= 3) {
+    Object.entries(wholeSignAspects).forEach(([aspectName, result]) => {
+      if (result.hasAspect) {
+        const wholeSignAspectName = `whole sign ${aspectName}`;
+        // Only add if not already in the list
+        if (!activeAspects.includes(wholeSignAspectName)) {
+          activeAspects.push(wholeSignAspectName);
+        }
+      }
+    });
+  }
 
   return activeAspects;
 };
