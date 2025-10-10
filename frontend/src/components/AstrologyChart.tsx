@@ -616,7 +616,6 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 10,
     position: "relative",
   },
   loadingText: {

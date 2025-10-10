@@ -12,11 +12,7 @@ import {
   Dimensions,
   TouchableOpacity,
 } from "react-native";
-import {
-  GestureHandlerRootView,
-  PanGestureHandler,
-  State,
-} from "react-native-gesture-handler";
+import { GestureHandlerRootView, Gesture } from "react-native-gesture-handler";
 import * as Font from "expo-font";
 import MoonSvgImporter from "../components/MoonSvgImporter";
 import DateTimePickerDrawer from "../components/DateTimePickerDrawer";
@@ -441,26 +437,24 @@ export default function MoonScreen({ navigation }: any) {
   };
 
   // Handle swipe gestures
-  const onSwipe = (event: any) => {
-    if (event.nativeEvent.state === State.END) {
-      const { translationX } = event.nativeEvent;
-      const threshold = 50; // Minimum swipe distance
+  const panGesture = Gesture.Pan().onEnd((event) => {
+    const { translationX } = event;
+    const threshold = 50; // Minimum swipe distance
 
-      if (translationX > threshold) {
-        // Swipe right to left - go to previous day
-        const newDate = new Date(displayDate);
-        newDate.setDate(newDate.getDate() - 1);
-        setDisplayDate(newDate);
-        fetchChartForDate(newDate);
-      } else if (translationX < -threshold) {
-        // Swipe left to right - go to next day
-        const newDate = new Date(displayDate);
-        newDate.setDate(newDate.getDate() + 1);
-        setDisplayDate(newDate);
-        fetchChartForDate(newDate);
-      }
+    if (translationX > threshold) {
+      // Swipe right to left - go to previous day
+      const newDate = new Date(displayDate);
+      newDate.setDate(newDate.getDate() - 1);
+      setDisplayDate(newDate);
+      fetchChartForDate(newDate);
+    } else if (translationX < -threshold) {
+      // Swipe left to right - go to next day
+      const newDate = new Date(displayDate);
+      newDate.setDate(newDate.getDate() + 1);
+      setDisplayDate(newDate);
+      fetchChartForDate(newDate);
     }
-  };
+  });
 
   // Use selected date chart if available, otherwise fall back to current chart
   const activeChart = selectedDateChart || currentChart;
@@ -530,419 +524,397 @@ export default function MoonScreen({ navigation }: any) {
   // ============================================================================
   return (
     <GestureHandlerRootView style={styles.container}>
-      <PanGestureHandler onHandlerStateChange={onSwipe}>
-        <View style={styles.container}>
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
+      <View style={styles.container} {...panGesture}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Background image that scrolls with content */}
+          <ImageBackground
+            source={require("../../assets/images/moon-gradient.png")}
+            style={styles.backgroundImage}
+            resizeMode="cover"
           >
-            {/* Background image that scrolls with content */}
-            <ImageBackground
-              source={require("../../assets/images/moon-gradient.png")}
-              style={styles.backgroundImage}
-              resizeMode="cover"
-            >
-              <MoonSvgImporter
-                svgName={currentMoonPhase.toString()}
-                width={240}
-                height={240}
-                style={styles.emoji}
-              />
+            <MoonSvgImporter
+              svgName={currentMoonPhase.toString()}
+              width={240}
+              height={240}
+              style={styles.moonPhaseSvg}
+            />
 
-              {activeChart ? (
-                <>
-                  <Text style={styles.title}>
-                    {(() => {
-                      const moonTithi = moonTithiMap.find(
-                        (tithi) => tithi.number === currentTithi
-                      );
-                      return moonTithi ? (
-                        <TouchableOpacity
-                          onPress={() =>
-                            navigation.navigate("TithiInfo", {
-                              selectedDate: displayDate,
-                            })
-                          }
-                          style={styles.tithiNameButton}
+            {activeChart ? (
+              <>
+                <Text style={styles.title}>
+                  {(() => {
+                    const moonTithi = moonTithiMap.find(
+                      (tithi) => tithi.number === currentTithi
+                    );
+                    return moonTithi ? (
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate("TithiInfo", {
+                            selectedDate: displayDate,
+                          })
+                        }
+                        style={styles.tithiNameButton}
+                      >
+                        <Text
+                          style={[
+                            styles.tithiNameText,
+                            { color: moonTithi.color.toLowerCase() },
+                          ]}
                         >
-                          <Text
-                            style={[
-                              styles.tithiNameText,
-                              { color: moonTithi.color.toLowerCase() },
-                            ]}
-                          >
-                            {moonTithi.name}{" "}
-                          </Text>
-                        </TouchableOpacity>
-                      ) : null;
-                    })()}
-                    {activeChart.planets.moon?.zodiacSignName} Moon
-                  </Text>
+                          {moonTithi.name}{" "}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null;
+                  })()}
+                  {activeChart.planets.moon?.zodiacSignName} Moon
+                </Text>
 
-                  {/* Moon degree and zodiac sign */}
-                  {currentTithi && (
+                {/* Moon degree and zodiac sign */}
+                {currentTithi && (
+                  <Text style={styles.subtitle}>
+                    {currentTithi <= 15 ? "Waxing Moon" : "Waning Moon"}
+                  </Text>
+                )}
+                {activeChart.planets.moon &&
+                  !activeChart.planets.moon.error && (
                     <Text style={styles.subtitle}>
-                      {currentTithi <= 15 ? "Waxing Moon" : "Waning Moon"}
+                      {activeChart.planets.moon.degreeFormatted}{" "}
+                      <Text style={getPhysisSymbolStyle(fontLoaded, "large")}>
+                        {
+                          getZodiacKeysFromNames()[
+                            activeChart.planets.moon.zodiacSignName
+                          ]
+                        }
+                      </Text>
                     </Text>
                   )}
-                  {activeChart.planets.moon &&
-                    !activeChart.planets.moon.error && (
-                      <Text style={styles.subtitle}>
-                        {activeChart.planets.moon.degreeFormatted}{" "}
-                        <Text style={getPhysisSymbolStyle(fontLoaded, "large")}>
-                          {
-                            getZodiacKeysFromNames()[
-                              activeChart.planets.moon.zodiacSignName
-                            ]
-                          }
-                        </Text>
-                      </Text>
-                    )}
 
-                  {/* Essential Dignities */}
-                  {activeChart.planets.moon &&
-                    !activeChart.planets.moon.error && (
-                      <View style={styles.dignityContainer}>
-                        {(() => {
-                          const moonDignities = checkEssentialDignities(
-                            activeChart.planets.moon,
-                            "moon"
-                          );
+                {/* Essential Dignities */}
+                {activeChart.planets.moon &&
+                  !activeChart.planets.moon.error && (
+                    <View style={styles.dignityContainer}>
+                      {(() => {
+                        const moonDignities = checkEssentialDignities(
+                          activeChart.planets.moon,
+                          "moon"
+                        );
 
-                          if (!moonDignities.hasDignity) {
-                            return null;
-                          }
+                        if (!moonDignities.hasDignity) {
+                          return null;
+                        }
 
-                          return moonDignities.dignities.map(
-                            (dignity, index) => (
-                              <Text
-                                key={index}
-                                style={[
-                                  styles.dignityText,
-                                  dignity.type === "domicile"
-                                    ? styles.domicileColor
-                                    : dignity.type === "exaltation"
-                                    ? styles.exaltationColor
-                                    : dignity.type === "detriment"
-                                    ? styles.detrimentColor
-                                    : dignity.type === "fall"
-                                    ? styles.fallColor
-                                    : styles.dignityText,
-                                ]}
-                              >
-                                Moon in {dignity.type} ({dignity.sign})
-                              </Text>
-                            )
-                          );
-                        })()}
-                      </View>
-                    )}
+                        return moonDignities.dignities.map((dignity, index) => (
+                          <Text
+                            key={index}
+                            style={[
+                              styles.dignityText,
+                              dignity.type === "domicile"
+                                ? styles.domicileColor
+                                : dignity.type === "exaltation"
+                                ? styles.exaltationColor
+                                : dignity.type === "detriment"
+                                ? styles.detrimentColor
+                                : dignity.type === "fall"
+                                ? styles.fallColor
+                                : styles.dignityText,
+                            ]}
+                          >
+                            Moon in {dignity.type} ({dignity.sign})
+                          </Text>
+                        ));
+                      })()}
+                    </View>
+                  )}
 
-                  {/* Aspects between Sun and Moon */}
-                  {activeChart?.planets?.sun &&
-                    activeChart?.planets?.moon &&
-                    !activeChart.planets.sun.error &&
-                    !activeChart.planets.moon.error && (
-                      <View style={styles.aspectsContainer}>
-                        <Text style={styles.aspectsTitle}>Aspects</Text>
+                {/* Aspects between Sun and Moon */}
+                {activeChart?.planets?.sun &&
+                  activeChart?.planets?.moon &&
+                  !activeChart.planets.sun.error &&
+                  !activeChart.planets.moon.error && (
+                    <View style={styles.aspectsContainer}>
+                      <Text style={styles.aspectsTitle}>Aspects</Text>
 
-                        {(() => {
-                          const moonPlanet = activeChart.planets.moon;
+                      {(() => {
+                        const moonPlanet = activeChart.planets.moon;
 
-                          // Define consistent planet order (excluding moon)
-                          const planetOrder = [
-                            "sun",
-                            "mercury",
-                            "venus",
-                            "mars",
-                            "jupiter",
-                            "saturn",
-                            "uranus",
-                            "neptune",
-                            "pluto",
-                            "northNode",
-                          ];
+                        // Define consistent planet order (excluding moon)
+                        const planetOrder = [
+                          "sun",
+                          "mercury",
+                          "venus",
+                          "mars",
+                          "jupiter",
+                          "saturn",
+                          "uranus",
+                          "neptune",
+                          "pluto",
+                          "northNode",
+                        ];
 
-                          // Get all planets except moon for comparison, sorted by planet order
-                          const otherPlanets = Object.entries(
-                            activeChart.planets
+                        // Get all planets except moon for comparison, sorted by planet order
+                        const otherPlanets = Object.entries(activeChart.planets)
+                          .filter(
+                            ([name, planet]) =>
+                              name !== "moon" && planet && !planet.error
                           )
-                            .filter(
-                              ([name, planet]) =>
-                                name !== "moon" && planet && !planet.error
-                            )
-                            .sort(([nameA], [nameB]) => {
-                              const indexA = planetOrder.indexOf(nameA);
-                              const indexB = planetOrder.indexOf(nameB);
-                              // If planet not in order list, put it at the end
-                              const sortA = indexA === -1 ? 999 : indexA;
-                              const sortB = indexB === -1 ? 999 : indexB;
-                              return sortA - sortB;
-                            });
+                          .sort(([nameA], [nameB]) => {
+                            const indexA = planetOrder.indexOf(nameA);
+                            const indexB = planetOrder.indexOf(nameB);
+                            // If planet not in order list, put it at the end
+                            const sortA = indexA === -1 ? 999 : indexA;
+                            const sortB = indexB === -1 ? 999 : indexB;
+                            return sortA - sortB;
+                          });
 
-                          return (
-                            <View style={styles.aspectsList}>
-                              {/* Data rows */}
-                              {otherPlanets
-                                .filter(([planetName, planet]) => {
-                                  const allActiveAspects = getActiveAspects(
-                                    moonPlanet,
-                                    planet
+                        return (
+                          <View style={styles.aspectsList}>
+                            {/* Data rows */}
+                            {otherPlanets
+                              .filter(([planetName, planet]) => {
+                                const allActiveAspects = getActiveAspects(
+                                  moonPlanet,
+                                  planet
+                                );
+                                return allActiveAspects.length > 0;
+                              })
+                              .map(([planetName, planet]) => {
+                                const allActiveAspects = getActiveAspects(
+                                  moonPlanet,
+                                  planet
+                                );
+
+                                const activeAspects = allActiveAspects.filter(
+                                  (aspect) => !aspect.startsWith("whole sign ")
+                                );
+                                const activeWholeSignAspects =
+                                  allActiveAspects.filter((aspect) =>
+                                    aspect.startsWith("whole sign ")
                                   );
-                                  return allActiveAspects.length > 0;
-                                })
-                                .map(([planetName, planet]) => {
-                                  const allActiveAspects = getActiveAspects(
-                                    moonPlanet,
-                                    planet
-                                  );
 
-                                  // Separate regular aspects from whole sign aspects
-                                  const activeAspects = allActiveAspects.filter(
-                                    (aspect) =>
-                                      !aspect.startsWith("whole sign ")
-                                  );
-                                  const activeWholeSignAspects =
-                                    allActiveAspects.filter((aspect) =>
-                                      aspect.startsWith("whole sign ")
-                                    );
+                                const wholeSignAspects =
+                                  activeWholeSignAspects.length > 0
+                                    ? activeWholeSignAspects.map((aspect) => {
+                                        const aspectName = aspect.replace(
+                                          "whole sign ",
+                                          ""
+                                        );
+                                        const otherPlanetSign =
+                                          planet.zodiacSignName;
+                                        const zodiacSymbol =
+                                          getZodiacKeysFromNames()[
+                                            otherPlanetSign
+                                          ];
+                                        return {
+                                          aspectName,
+                                          otherPlanetSign,
+                                          zodiacSymbol,
+                                        };
+                                      })
+                                    : [];
 
-                                  // // Get exact degrees for display
-                                  // const conjunction = checkForConjunct(
-                                  //   moonPlanet,
-                                  //   planet
-                                  // );
-                                  // const exactDegrees =
-                                  //   conjunction.exactDegrees?.toFixed(1);
+                                // Format 3-degree aspects with full UI and orb information
+                                const degreeAspects =
+                                  activeAspects.length > 0
+                                    ? activeAspects.map((aspectName) => {
+                                        const otherPlanetSign =
+                                          planet.zodiacSignName;
+                                        const zodiacSymbol =
+                                          getZodiacKeysFromNames()[
+                                            otherPlanetSign
+                                          ];
 
-                                  // Format whole sign aspects with zodiac info
-                                  const wholeSignAspects =
-                                    activeWholeSignAspects.length > 0
-                                      ? activeWholeSignAspects.map((aspect) => {
-                                          const aspectName = aspect.replace(
-                                            "whole sign ",
-                                            ""
-                                          );
-                                          const otherPlanetSign =
-                                            planet.zodiacSignName;
-                                          const zodiacSymbol =
-                                            getZodiacKeysFromNames()[
-                                              otherPlanetSign
-                                            ];
-                                          return {
-                                            aspectName,
-                                            otherPlanetSign,
-                                            zodiacSymbol,
-                                          };
-                                        })
-                                      : [];
-
-                                  // Format 3-degree aspects with full UI and orb information
-                                  const degreeAspects =
-                                    activeAspects.length > 0
-                                      ? activeAspects.map((aspectName) => {
-                                          const otherPlanetSign =
-                                            planet.zodiacSignName;
-                                          const zodiacSymbol =
-                                            getZodiacKeysFromNames()[
-                                              otherPlanetSign
-                                            ];
-
-                                          // Get orb information for this aspect
-                                          let orb = 0;
-                                          switch (aspectName) {
-                                            case "conjunct":
-                                              const conjunctResult =
-                                                checkForConjunct(
-                                                  moonPlanet,
-                                                  planet
-                                                );
-                                              orb = conjunctResult.orb || 0;
-                                              break;
-                                            case "opposition":
-                                              const oppositionResult =
-                                                checkForOpposition(
-                                                  moonPlanet,
-                                                  planet
-                                                );
-                                              orb = oppositionResult.orb || 0;
-                                              break;
-                                            case "square":
-                                              const squareResult =
-                                                checkForSquare(
-                                                  moonPlanet,
-                                                  planet
-                                                );
-                                              orb = squareResult.orb || 0;
-                                              break;
-                                            case "trine":
-                                              const trineResult = checkForTrine(
+                                        // Get orb information for this aspect
+                                        let orb = 0;
+                                        switch (aspectName) {
+                                          case "conjunct":
+                                            const conjunctResult =
+                                              checkForConjunct(
                                                 moonPlanet,
                                                 planet
                                               );
-                                              orb = trineResult.orb || 0;
-                                              break;
-                                            case "sextile":
-                                              const sextileResult =
-                                                checkForSextile(
-                                                  moonPlanet,
-                                                  planet
-                                                );
-                                              orb = sextileResult.orb || 0;
-                                              break;
-                                          }
+                                            orb = conjunctResult.orb || 0;
+                                            break;
+                                          case "opposition":
+                                            const oppositionResult =
+                                              checkForOpposition(
+                                                moonPlanet,
+                                                planet
+                                              );
+                                            orb = oppositionResult.orb || 0;
+                                            break;
+                                          case "square":
+                                            const squareResult = checkForSquare(
+                                              moonPlanet,
+                                              planet
+                                            );
+                                            orb = squareResult.orb || 0;
+                                            break;
+                                          case "trine":
+                                            const trineResult = checkForTrine(
+                                              moonPlanet,
+                                              planet
+                                            );
+                                            orb = trineResult.orb || 0;
+                                            break;
+                                          case "sextile":
+                                            const sextileResult =
+                                              checkForSextile(
+                                                moonPlanet,
+                                                planet
+                                              );
+                                            orb = sextileResult.orb || 0;
+                                            break;
+                                        }
 
-                                          return {
-                                            aspectName,
-                                            otherPlanetSign,
-                                            zodiacSymbol,
-                                            orb: orb.toFixed(1),
-                                          };
-                                        })
-                                      : [];
+                                        return {
+                                          aspectName,
+                                          otherPlanetSign,
+                                          zodiacSymbol,
+                                          orb: orb.toFixed(1),
+                                        };
+                                      })
+                                    : [];
 
-                                  // Combine and deduplicate aspects
-                                  const allAspects = [
-                                    ...wholeSignAspects,
-                                    ...degreeAspects,
-                                  ];
-                                  const uniqueAspects = allAspects.filter(
-                                    (aspect, index, array) => {
-                                      return (
-                                        array.findIndex(
-                                          (a) =>
-                                            a.aspectName === aspect.aspectName
-                                        ) === index
-                                      );
-                                    }
-                                  );
+                                // Combine and deduplicate aspects
+                                const allAspects = [
+                                  ...wholeSignAspects,
+                                  ...degreeAspects,
+                                ];
+                                const uniqueAspects = allAspects.filter(
+                                  (aspect, index, array) => {
+                                    return (
+                                      array.findIndex(
+                                        (a) =>
+                                          a.aspectName === aspect.aspectName
+                                      ) === index
+                                    );
+                                  }
+                                );
 
-                                  return (
-                                    <View
-                                      key={planetName}
-                                      style={styles.aspectTableRow}
-                                    >
-                                      <Text style={styles.aspectLabelText}>
-                                        {/* Display deduplicated aspects */}
-                                        {uniqueAspects.map(
-                                          (aspectInfo, index) => (
-                                            <Text key={index}>
-                                              <Text
-                                                style={[
-                                                  getPhysisSymbolStyle(
-                                                    fontLoaded,
-                                                    "large"
-                                                  ),
-                                                  getZodiacColorStyle(
-                                                    moonPlanet.zodiacSignName
-                                                  ),
-                                                ]}
-                                              >
-                                                {
-                                                  getZodiacKeysFromNames()[
-                                                    moonPlanet.zodiacSignName
-                                                  ]
-                                                }
-                                              </Text>{" "}
-                                              Moon{" "}
-                                              <Text
-                                                style={[
-                                                  getAspectColorStyle(
-                                                    aspectInfo.aspectName
-                                                  ),
-                                                ]}
-                                              >
-                                                {aspectInfo.aspectName}
-                                              </Text>{" "}
-                                              {planetName
-                                                .charAt(0)
-                                                .toUpperCase() +
-                                                planetName.slice(1)}{" "}
-                                              <Text
-                                                style={[
-                                                  getZodiacColorStyle(
-                                                    aspectInfo.otherPlanetSign
-                                                  ),
-                                                ]}
-                                              >
-                                                {aspectInfo.otherPlanetSign}
-                                              </Text>{" "}
-                                              <Text
-                                                style={[
-                                                  getPhysisSymbolStyle(
-                                                    fontLoaded,
-                                                    "large"
-                                                  ),
-                                                  getZodiacColorStyle(
-                                                    aspectInfo.otherPlanetSign
-                                                  ),
-                                                ]}
-                                              >
-                                                {aspectInfo.zodiacSymbol}
-                                              </Text>
-                                              {/* Show orb information for degree aspects */}
-                                              {(aspectInfo as any).orb && (
-                                                <Text
-                                                  style={styles.orbLabelText}
-                                                >
-                                                  {" "}
-                                                  ({(aspectInfo as any).orb}°
-                                                  orb)
-                                                </Text>
-                                              )}
-                                              {index <
-                                                uniqueAspects.length - 1 &&
-                                                ", "}
+                                return (
+                                  <View
+                                    key={planetName}
+                                    style={styles.aspectTableRow}
+                                  >
+                                    <Text style={styles.aspectLabelText}>
+                                      {/* Display deduplicated aspects */}
+                                      {uniqueAspects.map(
+                                        (aspectInfo, index) => (
+                                          <Text key={index}>
+                                            <Text
+                                              style={[
+                                                getPhysisSymbolStyle(
+                                                  fontLoaded,
+                                                  "large"
+                                                ),
+                                                getZodiacColorStyle(
+                                                  moonPlanet.zodiacSignName
+                                                ),
+                                              ]}
+                                            >
+                                              {
+                                                getZodiacKeysFromNames()[
+                                                  moonPlanet.zodiacSignName
+                                                ]
+                                              }
+                                            </Text>{" "}
+                                            Moon{" "}
+                                            <Text
+                                              style={[
+                                                getAspectColorStyle(
+                                                  aspectInfo.aspectName
+                                                ),
+                                              ]}
+                                            >
+                                              {aspectInfo.aspectName}
+                                            </Text>{" "}
+                                            {planetName
+                                              .charAt(0)
+                                              .toUpperCase() +
+                                              planetName.slice(1)}{" "}
+                                            <Text
+                                              style={[
+                                                getZodiacColorStyle(
+                                                  aspectInfo.otherPlanetSign
+                                                ),
+                                              ]}
+                                            >
+                                              {aspectInfo.otherPlanetSign}
+                                            </Text>{" "}
+                                            <Text
+                                              style={[
+                                                getPhysisSymbolStyle(
+                                                  fontLoaded,
+                                                  "large"
+                                                ),
+                                                getZodiacColorStyle(
+                                                  aspectInfo.otherPlanetSign
+                                                ),
+                                              ]}
+                                            >
+                                              {aspectInfo.zodiacSymbol}
                                             </Text>
-                                          )
-                                        )}
-                                      </Text>
-                                    </View>
-                                  );
-                                })}
-                            </View>
-                          );
-                        })()}
-                      </View>
-                    )}
-                </>
-              ) : (
-                <>
-                  <Text style={styles.title}>Capricorn Moon</Text>
-                  <Text style={styles.description}>Waxing Gibbous</Text>
-                </>
-              )}
+                                            {/* Show orb information for degree aspects */}
+                                            {(aspectInfo as any).orb && (
+                                              <Text style={styles.orbLabelText}>
+                                                {" "}
+                                                ({(aspectInfo as any).orb}° orb)
+                                              </Text>
+                                            )}
+                                            {index < uniqueAspects.length - 1 &&
+                                              ", "}
+                                          </Text>
+                                        )
+                                      )}
+                                    </Text>
+                                  </View>
+                                );
+                              })}
+                          </View>
+                        );
+                      })()}
+                    </View>
+                  )}
+              </>
+            ) : (
+              <>
+                <Text style={styles.title}>Capricorn Moon</Text>
+                <Text style={styles.description}>Waxing Gibbous</Text>
+              </>
+            )}
 
-              <Text style={styles.description}>Moon month calendar</Text>
-              <Text style={styles.description}>Moon in literature</Text>
-              <Text style={styles.description}>Moon in pop culture</Text>
-              <Text style={styles.description}>Moon in myth</Text>
-            </ImageBackground>
-          </ScrollView>
+            <Text style={styles.description}>Moon month calendar</Text>
+            <Text style={styles.description}>Moon in literature</Text>
+            <Text style={styles.description}>Moon in pop culture</Text>
+            <Text style={styles.description}>Moon in myth</Text>
+          </ImageBackground>
+        </ScrollView>
 
-          {/* Secondary Navigation Bar - Display Date */}
-          <TouchableOpacity style={styles.secondaryNavBar} onPress={openDrawer}>
-            <Text style={styles.secondaryNavText}>
-              {(() => {
-                const dateString = displayDate.toLocaleDateString("en-US", {
-                  weekday: "short",
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                });
-                const timeString = displayDate.toLocaleTimeString("en-US", {
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
-                });
-                return `${dateString} ${timeString}`;
-              })()}
-            </Text>
-            <Text style={styles.arrowIcon}>▼</Text>
-          </TouchableOpacity>
-        </View>
-      </PanGestureHandler>
+        {/* Secondary Navigation Bar - Display Date */}
+        <TouchableOpacity style={styles.secondaryNavBar} onPress={openDrawer}>
+          <Text style={styles.secondaryNavText}>
+            {(() => {
+              const dateString = displayDate.toLocaleDateString("en-US", {
+                weekday: "short",
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              });
+              const timeString = displayDate.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              });
+              return `${dateString} ${timeString}`;
+            })()}
+          </Text>
+          <Text style={styles.arrowIcon}>▼</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Date/Time Picker Drawer */}
       <DateTimePickerDrawer
@@ -976,16 +948,8 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
-  solidContent: {
-    backgroundColor: "#6f7782", // Same as container background
-    width: "100%",
-    alignItems: "center",
-    padding: 20,
-    paddingBottom: 40,
-    minHeight: 600, // Enough height to scroll and see the effect
-  },
-  emoji: {
-    marginTop: 90,
+  moonPhaseSvg: {
+    marginTop: 115,
     marginBottom: 20,
   },
   title: {
@@ -1025,58 +989,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 6,
   },
-  positionsContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    padding: 24,
-    borderRadius: 12,
-    marginVertical: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    minWidth: 300,
-    alignItems: "center",
-    shadowColor: "#ffffff",
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 8,
-  },
-  positionsTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#ffffff",
-    marginBottom: 20,
-    textAlign: "center",
-    letterSpacing: 0.5,
-    textShadowColor: "rgba(255, 255, 255, 0.8)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-  },
-  positionRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2a2a3e",
-    marginBottom: 4,
-  },
-  planetName: {
-    fontSize: 16,
-    color: "#e6e6fa",
-    fontWeight: "600",
-    flex: 1,
-  },
-  planetPosition: {
-    fontSize: 16,
-    color: "#b8b8b8",
-    textAlign: "right",
-    flex: 1,
-    fontWeight: "500",
-  },
   errorText: {
     fontSize: 16,
     color: "#ff6b6b",
@@ -1110,9 +1022,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
     letterSpacing: 0.5,
-    textShadowColor: "rgba(255, 255, 255, 0.8)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    // textShadowColor: "rgba(255, 255, 255, 0.8)",
+    // textShadowOffset: { width: 0, height: 0 },
+    // textShadowRadius: 8,
   },
   aspectsList: {
     width: "100%",
@@ -1165,14 +1077,6 @@ const styles = StyleSheet.create({
   },
   fallColor: {
     color: "#ff6b6b", // Red for fall (very weak)
-  },
-  // Moon position style
-  moonPosition: {
-    fontSize: 18,
-    fontWeight: "500",
-    marginBottom: 12,
-    color: "#b8b8b8",
-    textAlign: "center",
   },
   // Secondary Navigation Bar
   secondaryNavBar: {
