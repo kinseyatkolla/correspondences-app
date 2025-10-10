@@ -14,12 +14,17 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { apiService, BookOfShadowsEntry } from "../services/api";
+import {
+  apiService,
+  BookOfShadowsEntry,
+  BookOfShadowsCorrespondence,
+} from "../services/api";
 import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 import LibraryScreen from "./LibraryScreen";
 import BibliographyScreen from "./BibliographyScreen";
 import GlossaryScreen from "./GlossaryScreen";
+import WikipediaSection from "../components/WikipediaSection";
 
 // ============================================================================
 // COMPONENT
@@ -89,21 +94,21 @@ export default function BookScreen() {
   const handleCategoryPress = (category: string) => {
     // Convert display name to category slug
     const categoryMap: { [key: string]: string } = {
-      Numbers: "numbers",
-      Colors: "colors",
-      Plants: "plants",
-      Planets: "planets",
-      Metals: "metals",
-      Aspects: "aspects",
-      "Zodiac Signs": "zodiac-signs",
-      Houses: "houses",
-      Decans: "decans",
-      "Moon Phases": "moon-phases",
-      Seasons: "seasons",
-      Weekdays: "weekdays",
-      "Equinox & Solstices": "equinox-solstices",
-      Tarot: "tarot",
-      Symbols: "symbols",
+      Numbers: "number",
+      Colors: "color",
+      Plants: "flowerEssence", // Assuming plants map to flower essences
+      Planets: "planet",
+      Metals: "metal",
+      Aspects: "aspect",
+      "Zodiac Signs": "zodiacSign",
+      Houses: "house",
+      Decans: "decan",
+      "Moon Phases": "moon-phases", // Keep this as is for now
+      Seasons: "season",
+      Weekdays: "weekday",
+      "Equinox & Solstices": "equinox-solstices", // Keep this as is for now
+      Tarot: "tarotCard",
+      Symbols: "symbol",
     };
 
     const categorySlug = categoryMap[category] || category.toLowerCase();
@@ -393,6 +398,27 @@ export default function BookScreen() {
                     </Text>
                   </View>
 
+                  <WikipediaSection
+                    searchTerm={selectedEntry.name}
+                    wikiName={selectedEntry.wikiName}
+                  />
+
+                  {selectedEntry.correspondences &&
+                    selectedEntry.correspondences.length > 0 && (
+                      <View style={overlayStyles.section}>
+                        <Text style={overlayStyles.sectionTitle}>
+                          Correspondences & Associations
+                        </Text>
+                        {selectedEntry.correspondences.map(
+                          (correspondence, index) => (
+                            <Text key={index} style={overlayStyles.listItem}>
+                              • {correspondence.name} ({correspondence.type})
+                            </Text>
+                          )
+                        )}
+                      </View>
+                    )}
+
                   {selectedEntry.content && (
                     <View style={overlayStyles.section}>
                       <Text style={overlayStyles.sectionTitle}>Details</Text>
@@ -411,22 +437,6 @@ export default function BookScreen() {
                             • {keyword}
                           </Text>
                         ))}
-                      </View>
-                    )}
-
-                  {selectedEntry.correspondences &&
-                    selectedEntry.correspondences.length > 0 && (
-                      <View style={overlayStyles.section}>
-                        <Text style={overlayStyles.sectionTitle}>
-                          Correspondences
-                        </Text>
-                        {selectedEntry.correspondences.map(
-                          (correspondence, index) => (
-                            <Text key={index} style={overlayStyles.listItem}>
-                              • {correspondence}
-                            </Text>
-                          )
-                        )}
                       </View>
                     )}
 

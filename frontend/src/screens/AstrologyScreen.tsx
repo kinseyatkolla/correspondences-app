@@ -659,7 +659,7 @@ export default function AstrologyScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0a0a1a", // Navy blue background to prevent flicker before gradients load
+    backgroundColor: "#509ac9",
   },
   gradientLayer: {
     position: "absolute",

@@ -554,6 +554,7 @@ export default function PlanetaryHoursScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#509ac9",
   },
   gradientLayer: {
     position: "absolute",

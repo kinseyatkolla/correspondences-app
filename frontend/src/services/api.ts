@@ -158,32 +158,43 @@ export interface ISBNBookData {
   previewLink?: string;
 }
 
+export interface BookOfShadowsCorrespondence {
+  _id: string;
+  type: string;
+  name: string;
+  relationship: string;
+  system: string;
+  strength: string;
+}
+
 export interface BookOfShadowsEntry {
   _id: string;
   name: string;
   description: string;
   image?: string;
+  wikiName?: string;
   category:
-    | "numbers"
-    | "colors"
-    | "plants"
-    | "planets"
-    | "metals"
-    | "aspects"
-    | "zodiac-signs"
-    | "houses"
-    | "decans"
-    | "moon-phases"
-    | "seasons"
-    | "weekdays"
-    | "equinox-solstices"
-    | "tarot"
-    | "symbols"
+    | "number"
+    | "color"
+    | "element"
+    | "planet"
+    | "zodiacSign"
+    | "house"
+    | "modality"
+    | "weekday"
+    | "season"
+    | "aspect"
+    | "decan"
+    | "tarotCard"
+    | "flowerEssence"
+    | "crystal"
+    | "metal"
+    | "symbol"
     | "other";
   references: BookOfShadowsEntry[];
   content?: string;
   keywords?: string[];
-  correspondences?: string[];
+  correspondences?: BookOfShadowsCorrespondence[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -718,6 +729,21 @@ class ApiService {
       : "/library/search-book";
 
     return this.fetchData(endpoint);
+  }
+
+  // Wikipedia API
+  async getWikipediaSummary(searchTerm: string): Promise<{
+    success: boolean;
+    data: {
+      title: string;
+      extract: string;
+      url: string;
+      thumbnail?: string;
+    };
+  }> {
+    return this.fetchData(
+      `/wikipedia/summary?search=${encodeURIComponent(searchTerm)}`
+    );
   }
 }
 
