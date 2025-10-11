@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Modal,
   ActivityIndicator,
   Alert,
 } from "react-native";
@@ -21,17 +20,13 @@ import { sharedUI } from "../styles/sharedUI";
 // TYPES & INTERFACES
 // ============================================================================
 interface LibraryScreenProps {
-  visible: boolean;
-  onClose: () => void;
+  navigation: any;
 }
 
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function LibraryScreen({
-  visible,
-  onClose,
-}: LibraryScreenProps) {
+export default function LibraryScreen({ navigation }: LibraryScreenProps) {
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(false);
   const [titleInput, setTitleInput] = useState("");
@@ -126,10 +121,8 @@ export default function LibraryScreen({
   // LIFECYCLE
   // ============================================================================
   useEffect(() => {
-    if (visible) {
-      loadLibraryItems();
-    }
-  }, [visible, loadLibraryItems]);
+    loadLibraryItems();
+  }, []);
 
   // ============================================================================
   // RENDER HELPERS
@@ -218,99 +211,94 @@ export default function LibraryScreen({
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <View style={styles.fullScreenModal}>
-        <View style={styles.modalHeader}>
-          <TouchableOpacity style={sharedUI.backButton} onPress={onClose}>
-            <Text style={sharedUI.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.modalTitle}>📚 Library</Text>
-          <View style={styles.placeholder} />
-        </View>
-        <ScrollView style={styles.fullScreenModalScroll}>
-          {/* Book Search Section */}
-          <View style={overlayStyles.section}>
-            <Text style={overlayStyles.sectionTitle}>🔍 Search for Books</Text>
+    <View style={styles.container}>
+      <TouchableOpacity
+        style={sharedUI.navBar}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.8}
+      >
+        <Text style={sharedUI.navBarArrow}>‹</Text>
+        <Text style={sharedUI.navBarText}>LIBRARY</Text>
+        <View style={{ width: 18 }} />
+      </TouchableOpacity>
+      <ScrollView style={styles.scrollView}>
+        {/* Book Search Section */}
+        <View style={overlayStyles.section}>
+          <Text style={overlayStyles.sectionTitle}>🔍 Search for Books</Text>
 
-            {/* Title Input */}
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Book Title (optional)"
-                placeholderTextColor="#8a8a8a"
-                value={titleInput}
-                onChangeText={setTitleInput}
-                returnKeyType="next"
-              />
-            </View>
-
-            {/* Author Input */}
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Author Name (optional)"
-                placeholderTextColor="#8a8a8a"
-                value={authorInput}
-                onChangeText={setAuthorInput}
-                returnKeyType="next"
-              />
-            </View>
-
-            {/* ISBN Input */}
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="ISBN (10 or 13 digits, optional)"
-                placeholderTextColor="#8a8a8a"
-                value={isbnInput}
-                onChangeText={setIsbnInput}
-                keyboardType="numeric"
-                returnKeyType="search"
-                onSubmitEditing={handleBookLookup}
-              />
-            </View>
-
-            {/* Search Button */}
-            <TouchableOpacity
-              style={styles.searchButton}
-              onPress={handleBookLookup}
-              disabled={bookLookupLoading}
-            >
-              {bookLookupLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.searchButtonText}>🔍 Search Books</Text>
-              )}
-            </TouchableOpacity>
+          {/* Title Input */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Book Title (optional)"
+              placeholderTextColor="#8a8a8a"
+              value={titleInput}
+              onChangeText={setTitleInput}
+              returnKeyType="next"
+            />
           </View>
 
-          {/* Book Search Results */}
-          {showLookupResults && renderBookLookupResults()}
+          {/* Author Input */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Author Name (optional)"
+              placeholderTextColor="#8a8a8a"
+              value={authorInput}
+              onChangeText={setAuthorInput}
+              returnKeyType="next"
+            />
+          </View>
 
-          {/* Library Items */}
-          {libraryLoading ? (
-            <View style={sharedUI.loadingContainer}>
-              <ActivityIndicator size="large" color="#b19cd9" />
-              <Text style={sharedUI.loadingText}>Loading Library...</Text>
-            </View>
-          ) : (
-            <>
-              {renderLibraryItems("book", "📖 Books")}
-              {renderLibraryItems("videolink", "🎥 Video Lessons")}
-              {renderLibraryItems("audiolink", "🎧 Audio Resources")}
-              {renderLibraryItems("article", "📄 Articles")}
-              {renderLibraryItems("website", "🌐 Websites")}
-              {renderLibraryItems("other", "📚 Other Resources")}
-            </>
-          )}
-        </ScrollView>
-      </View>
-    </Modal>
+          {/* ISBN Input */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="ISBN (10 or 13 digits, optional)"
+              placeholderTextColor="#8a8a8a"
+              value={isbnInput}
+              onChangeText={setIsbnInput}
+              keyboardType="numeric"
+              returnKeyType="search"
+              onSubmitEditing={handleBookLookup}
+            />
+          </View>
+
+          {/* Search Button */}
+          <TouchableOpacity
+            style={styles.searchButton}
+            onPress={handleBookLookup}
+            disabled={bookLookupLoading}
+          >
+            {bookLookupLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.searchButtonText}>🔍 Search Books</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Book Search Results */}
+        {showLookupResults && renderBookLookupResults()}
+
+        {/* Library Items */}
+        {libraryLoading ? (
+          <View style={sharedUI.loadingContainer}>
+            <ActivityIndicator size="large" color="#b19cd9" />
+            <Text style={sharedUI.loadingText}>Loading Library...</Text>
+          </View>
+        ) : (
+          <>
+            {renderLibraryItems("book", "📖 Books")}
+            {renderLibraryItems("videolink", "🎥 Video Lessons")}
+            {renderLibraryItems("audiolink", "🎧 Audio Resources")}
+            {renderLibraryItems("article", "📄 Articles")}
+            {renderLibraryItems("website", "🌐 Websites")}
+            {renderLibraryItems("other", "📚 Other Resources")}
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -318,29 +306,11 @@ export default function LibraryScreen({
 // STYLES
 // ============================================================================
 const styles = StyleSheet.create({
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2a2a3e",
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#e6e6fa",
-    flex: 1,
-    textAlign: "center",
-  },
-  placeholder: {
-    width: 60, // Same width as back button to center the title
-  },
-  fullScreenModal: {
+  container: {
     flex: 1,
     backgroundColor: "#111",
   },
-  fullScreenModalScroll: {
+  scrollView: {
     flex: 1,
     padding: 20,
   },

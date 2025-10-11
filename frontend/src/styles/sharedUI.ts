@@ -292,4 +292,25 @@ export const sharedUI = StyleSheet.create({
     fontFamily: "Physis",
     fontSize: 16,
   },
+
+  // Navigation bar styles (black bar with white all-caps text)
+  navBar: {
+    height: 40,
+    backgroundColor: "#000000",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  navBarArrow: {
+    color: "#e6e6fa",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  navBarText: {
+    color: "#e6e6fa",
+    fontSize: 14,
+    fontWeight: "bold",
+    letterSpacing: 4,
+  },
 });

@@ -14,6 +14,10 @@ import TarotDrawScreen from "../screens/TarotDrawScreen";
 import FlowersScreen from "../screens/FlowersScreen";
 import FlowerDrawScreen from "../screens/FlowerDrawScreen";
 import BookScreen from "../screens/BookScreen";
+import BookEntriesScreen from "../screens/BookEntriesScreen";
+import GlossaryScreen from "../screens/GlossaryScreen";
+import BibliographyScreen from "../screens/BibliographyScreen";
+import LibraryScreen from "../screens/LibraryScreen";
 import AstrologyScreen from "../screens/AstrologyScreen";
 import BirthChartCalculatorScreen from "../screens/BirthChartCalculatorScreen";
 import PlanetaryHoursScreen from "../screens/PlanetaryHoursScreen";
@@ -164,6 +168,54 @@ function MoonStack() {
   );
 }
 
+// Book Stack Navigator
+function BookStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#000000",
+          borderBottomWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        headerTintColor: "white",
+        headerTitleStyle: {
+          fontWeight: "bold",
+          letterSpacing: 8,
+        },
+        headerTitle: "CORRESPONDENCES",
+      }}
+    >
+      <Stack.Screen
+        name="BookMain"
+        component={BookScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="BookEntries"
+        component={BookEntriesScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Glossary"
+        component={GlossaryScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Bibliography"
+        component={BibliographyScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Library"
+        component={LibraryScreen}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 export default function AppNavigator() {
   return (
     <FlowersProvider>
@@ -233,7 +285,7 @@ export default function AppNavigator() {
             />
             <Tab.Screen
               name="Book"
-              component={BookScreen}
+              component={BookStack}
               options={{
                 tabBarLabel: "",
                 tabBarIcon: ({ focused, size }) => (
