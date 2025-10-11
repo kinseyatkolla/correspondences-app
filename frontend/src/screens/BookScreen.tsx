@@ -454,10 +454,13 @@ export default function BookScreen() {
                     </View>
                   )}
 
-                  <WikipediaSection
-                    searchTerm={selectedEntry.name}
-                    wikiName={selectedEntry.wikiName}
-                  />
+                  {selectedEntry.wikiName !== null &&
+                    selectedEntry.wikiName !== "null" && (
+                      <WikipediaSection
+                        searchTerm={selectedEntry.name}
+                        wikiName={selectedEntry.wikiName}
+                      />
+                    )}
 
                   {selectedEntry.correspondences &&
                     selectedEntry.correspondences.length > 0 && (

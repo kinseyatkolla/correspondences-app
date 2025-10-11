@@ -11,9 +11,30 @@ import { overlayStyles } from "../styles/overlayStyles";
 
 interface WikipediaData {
   title: string;
+  description?: string;
   extract: string;
+  expandedExtract?: string;
+  extract_html?: string;
   url: string;
   thumbnail?: string;
+  thumbnailWidth?: number;
+  thumbnailHeight?: number;
+  originalimage?: string;
+  originalimageWidth?: number;
+  originalimageHeight?: number;
+  coordinates?: {
+    lat: number;
+    lon: number;
+  };
+  section?: {
+    title: string;
+    content: string;
+    anchor: string;
+  };
+  redirect?: {
+    from: string;
+    to: string;
+  };
 }
 
 interface WikipediaSectionProps {
@@ -111,12 +132,55 @@ export default function WikipediaSection({
           onPress={handleOpenWikipedia}
         >
           <Text style={{ color: "white", fontSize: 12, fontWeight: "600" }}>
-            Open Article
+            Full Article →
           </Text>
         </TouchableOpacity>
       </View>
 
-      <Text style={overlayStyles.sectionText}>{wikipediaData.extract}</Text>
+      {/* Show description if available */}
+      {wikipediaData.description && (
+        <Text
+          style={[
+            overlayStyles.sectionText,
+            {
+              fontSize: 14,
+              color: "#b19cd9",
+              fontStyle: "italic",
+              marginBottom: 12,
+            },
+          ]}
+        >
+          {wikipediaData.description}
+        </Text>
+      )}
+
+      {/* Show section-specific content if available, otherwise show expanded or general extract */}
+      {wikipediaData.section ? (
+        <Text style={overlayStyles.sectionText}>
+          {wikipediaData.section.content}
+        </Text>
+      ) : (
+        <Text style={overlayStyles.sectionText}>
+          {wikipediaData.expandedExtract || wikipediaData.extract}
+        </Text>
+      )}
+
+      {/* Show coordinates if available */}
+      {wikipediaData.coordinates && (
+        <Text
+          style={[
+            overlayStyles.sectionText,
+            {
+              fontSize: 12,
+              color: "#8a8a8a",
+              marginTop: 8,
+            },
+          ]}
+        >
+          📍 Coordinates: {wikipediaData.coordinates.lat.toFixed(4)}°,{" "}
+          {wikipediaData.coordinates.lon.toFixed(4)}°
+        </Text>
+      )}
 
       <Text
         style={[

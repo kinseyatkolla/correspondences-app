@@ -736,9 +736,30 @@ class ApiService {
     success: boolean;
     data: {
       title: string;
+      description?: string;
       extract: string;
+      expandedExtract?: string;
+      extract_html?: string;
       url: string;
       thumbnail?: string;
+      thumbnailWidth?: number;
+      thumbnailHeight?: number;
+      originalimage?: string;
+      originalimageWidth?: number;
+      originalimageHeight?: number;
+      coordinates?: {
+        lat: number;
+        lon: number;
+      };
+      section?: {
+        title: string;
+        content: string;
+        anchor: string;
+      };
+      redirect?: {
+        from: string;
+        to: string;
+      };
     };
   }> {
     return this.fetchData(
