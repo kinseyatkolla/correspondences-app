@@ -197,9 +197,6 @@ export default function BookScreen() {
             onSubmitEditing={handleSearch}
             keyboardAppearance="dark"
           />
-          <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-            <Text style={styles.searchButtonText}>🔍</Text>
-          </TouchableOpacity>
           {searchQuery.length > 0 && (
             <TouchableOpacity
               style={styles.clearButton}
@@ -208,6 +205,9 @@ export default function BookScreen() {
               <Text style={styles.clearButtonText}>✕</Text>
             </TouchableOpacity>
           )}
+          <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+            <Text style={styles.searchButtonText}>🔍</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -251,47 +251,39 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-  },
-  searchInput: {
     backgroundColor: "#000",
     borderRadius: 60,
     paddingHorizontal: 25,
     paddingVertical: 18,
+    borderWidth: 2,
+    borderColor: "#333",
+  },
+  searchInput: {
+    flex: 1,
     color: "#e6e6fa",
     fontSize: 13,
-    borderWidth: 20,
-    borderColor: "#000",
-    flex: 1,
-    marginRight: 10,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
   },
   searchButton: {
-    backgroundColor: "transparent",
-    borderRadius: 30,
-    padding: 15,
+    padding: 10,
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 50,
-    borderWidth: 0,
+    marginLeft: 10,
   },
   searchButtonText: {
     color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 20,
   },
   clearButton: {
-    backgroundColor: "transparent",
-    borderRadius: 30,
-    padding: 15,
+    padding: 10,
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 50,
-    marginLeft: 5,
-    borderWidth: 0,
+    marginLeft: 10,
   },
   clearButtonText: {
-    color: "#e6e6fa",
+    color: "#8a8a8a",
     fontSize: 18,
-    fontWeight: "bold",
   },
   linksContainer: {
     flexDirection: "row",
