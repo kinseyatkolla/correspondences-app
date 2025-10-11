@@ -186,9 +186,9 @@ export default function BookScreen() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Search Section - Full height centered */}
       <View style={styles.searchSection}>
-        <View style={sharedUI.searchContainer}>
+        <View style={styles.searchContainer}>
           <TextInput
-            style={sharedUI.searchInput}
+            style={styles.searchInput}
             placeholder="Search correspondences..."
             placeholderTextColor="#8a8a8a"
             value={searchQuery}
@@ -196,18 +196,15 @@ export default function BookScreen() {
             returnKeyType="search"
             onSubmitEditing={handleSearch}
           />
-          <TouchableOpacity
-            style={sharedUI.searchButton}
-            onPress={handleSearch}
-          >
-            <Text style={sharedUI.searchButtonText}>🔍</Text>
+          <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+            <Text style={styles.searchButtonText}>🔍</Text>
           </TouchableOpacity>
           {searchQuery.length > 0 && (
             <TouchableOpacity
-              style={sharedUI.clearButton}
+              style={styles.clearButton}
               onPress={handleClearSearch}
             >
-              <Text style={sharedUI.clearButtonText}>✕</Text>
+              <Text style={styles.clearButtonText}>✕</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -248,6 +245,52 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     marginBottom: 40,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+  },
+  searchInput: {
+    backgroundColor: "#000",
+    borderRadius: 60,
+    paddingHorizontal: 25,
+    paddingVertical: 18,
+    color: "#e6e6fa",
+    fontSize: 13,
+    borderWidth: 20,
+    borderColor: "#000",
+    flex: 1,
+    marginRight: 10,
+  },
+  searchButton: {
+    backgroundColor: "transparent",
+    borderRadius: 30,
+    padding: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 50,
+    borderWidth: 0,
+  },
+  searchButtonText: {
+    color: "#e6e6fa",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  clearButton: {
+    backgroundColor: "transparent",
+    borderRadius: 30,
+    padding: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 50,
+    marginLeft: 5,
+    borderWidth: 0,
+  },
+  clearButtonText: {
+    color: "#e6e6fa",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   linksContainer: {
     flexDirection: "row",
