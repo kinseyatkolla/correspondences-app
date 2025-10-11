@@ -49,6 +49,8 @@ export const overlayStyles = StyleSheet.create({
     backgroundColor: "#4a2c7a",
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 1000,
+    elevation: 5, // For Android
   },
   closeButtonText: {
     color: "#e6e6fa",
