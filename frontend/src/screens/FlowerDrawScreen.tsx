@@ -16,7 +16,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { Accelerometer } from "expo-sensors";
 import { FlowerEssence } from "../services/api";
-import { useFlowers, FlowerFlowerCardData } from "../contexts/FlowersContext";
+import { useFlowers, FlowerCardData } from "../contexts/FlowersContext";
 import { sharedUI } from "../styles/sharedUI";
 
 // ============================================================================
@@ -135,6 +135,32 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
           setHasLoadedInitialState(true);
         });
       }
+
+      // Set up accelerometer listener when screen comes into focus
+      let lastShake = 0;
+      const SHAKE_THRESHOLD = 2.5;
+      const SHAKE_TIMEOUT = 3000;
+
+      const handleShake = (event: any) => {
+        const { x, y, z } = event;
+        const acceleration = Math.sqrt(x * x + y * y + z * z);
+        const now = Date.now();
+
+        if (acceleration > SHAKE_THRESHOLD && now - lastShake > SHAKE_TIMEOUT) {
+          lastShake = now;
+          shuffleCards();
+        }
+      };
+
+      // Set up accelerometer with slower update interval for flowers only
+      Accelerometer.setUpdateInterval(200);
+      const subscription = Accelerometer.addListener(handleShake);
+
+      // Cleanup function - runs when screen loses focus
+      return () => {
+        subscription?.remove();
+        // Note: Don't reset global accelerometer interval as it may interfere with other screens
+      };
     }, [hasLoadedInitialState])
   );
 
@@ -147,7 +173,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
 
   // ===== CARD MANAGEMENT =====
   const initializeCards = () => {
-    const newCards: FlowerFlowerCardData[] = [];
+    const newCards: FlowerCardData[] = [];
     const margin = 50;
     const availableWidth = SCREEN_WIDTH - CARD_WIDTH - margin * 2;
     const availableHeight = SCREEN_HEIGHT - CARD_HEIGHT - margin * 2;
@@ -309,32 +335,6 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
     const dy = touch1.pageY - touch2.pageY;
     return Math.sqrt(dx * dx + dy * dy);
   };
-
-  // ===== SHAKE DETECTION =====
-  useEffect(() => {
-    let lastShake = 0;
-    const SHAKE_THRESHOLD = 2.5; // Increased from 1.2 to make it less sensitive
-    const SHAKE_TIMEOUT = 3000; // Increased from 1000ms to 3000ms (3 seconds)
-
-    const handleShake = (event: any) => {
-      const { x, y, z } = event;
-      const acceleration = Math.sqrt(x * x + y * y + z * z);
-      const now = Date.now();
-
-      if (acceleration > SHAKE_THRESHOLD && now - lastShake > SHAKE_TIMEOUT) {
-        lastShake = now;
-        shuffleCards();
-      }
-    };
-
-    // Set up accelerometer with slower update interval
-    Accelerometer.setUpdateInterval(200); // Slower updates to reduce sensitivity
-    const subscription = Accelerometer.addListener(handleShake);
-
-    return () => {
-      subscription?.remove();
-    };
-  }, []);
 
   // ===== RENDER CARD =====
   const renderCard = (card: FlowerCardData) => {

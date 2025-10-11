@@ -13,7 +13,11 @@ import {
   ImageBackground,
   Animated,
 } from "react-native";
-import { GestureHandlerRootView, Gesture } from "react-native-gesture-handler";
+import {
+  GestureHandlerRootView,
+  Gesture,
+  GestureDetector,
+} from "react-native-gesture-handler";
 import DateTimePickerDrawer from "../components/DateTimePickerDrawer";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { apiService, BirthData, BirthChart } from "../services/api";
@@ -268,36 +272,44 @@ export default function AstrologyScreen({ navigation }: any) {
   };
 
   // Handle swipe gestures
-  const panGesture = Gesture.Pan().onEnd((event) => {
-    const { translationX } = event;
-    const threshold = 50; // Minimum swipe distance
+  const panGesture = Gesture.Pan()
+    .onEnd((event) => {
+      try {
+        const translationX = event.translationX || 0;
+        const threshold = 50; // Minimum swipe distance
 
-    if (translationX > threshold) {
-      // Swipe right to left - go to previous day
-      const newDate = new Date(displayDate);
-      newDate.setDate(newDate.getDate() - 1);
-      console.log(
-        "🔄 Swiping to previous day:",
-        newDate,
-        "currentChart available:",
-        !!currentChart
-      );
-      setDisplayDate(newDate);
-      fetchChartForDate(newDate);
-    } else if (translationX < -threshold) {
-      // Swipe left to right - go to next day
-      const newDate = new Date(displayDate);
-      newDate.setDate(newDate.getDate() + 1);
-      console.log(
-        "🔄 Swiping to next day:",
-        newDate,
-        "currentChart available:",
-        !!currentChart
-      );
-      setDisplayDate(newDate);
-      fetchChartForDate(newDate);
-    }
-  });
+        if (translationX > threshold) {
+          // Swipe right - go to previous day
+          const newDate = new Date(displayDate);
+          newDate.setDate(newDate.getDate() - 1);
+          console.log(
+            "🔄 Swiping to previous day:",
+            newDate,
+            "currentChart available:",
+            !!currentChart
+          );
+          setDisplayDate(newDate);
+          fetchChartForDate(newDate);
+        } else if (translationX < -threshold) {
+          // Swipe left - go to next day
+          const newDate = new Date(displayDate);
+          newDate.setDate(newDate.getDate() + 1);
+          console.log(
+            "🔄 Swiping to next day:",
+            newDate,
+            "currentChart available:",
+            !!currentChart
+          );
+          setDisplayDate(newDate);
+          fetchChartForDate(newDate);
+        }
+      } catch (error) {
+        console.error("Error handling swipe gesture:", error);
+      }
+    })
+    .activeOffsetX([-10, 10]) // Only activate when horizontal movement is detected
+    .failOffsetY([-20, 20]) // Fail if vertical movement is too much
+    .runOnJS(true); // Ensure gesture runs on JS thread for state updates
 
   // Use selected date chart if available, otherwise fall back to current chart
   const activeChart = selectedDateChart || currentChart;
@@ -391,242 +403,251 @@ export default function AstrologyScreen({ navigation }: any) {
   // ===== MAIN TEMPLATE =====
   return (
     <GestureHandlerRootView style={styles.container}>
-      <View style={styles.container} {...panGesture}>
-        {/* Layered gradient backgrounds */}
+      <GestureDetector gesture={panGesture}>
+        <View style={styles.container}>
+          {/* Layered gradient backgrounds */}
 
-        {/* Night gradient - always present as base layer */}
-        <Animated.View
-          style={[
-            styles.gradientLayer,
-            styles.nightLayer,
-            { opacity: nightOpacity },
-          ]}
-        >
-          <ImageBackground
-            source={backgroundImages.night}
-            style={styles.container}
-            resizeMode="cover"
-          />
-        </Animated.View>
-
-        {/* Day gradient - overlay layer */}
-        <Animated.View
-          style={[
-            styles.gradientLayer,
-            styles.dayLayer,
-            { opacity: dayOpacity },
-          ]}
-        >
-          <ImageBackground
-            source={backgroundImages.day}
-            style={styles.container}
-            resizeMode="cover"
-          />
-        </Animated.View>
-
-        {/* Dusk gradient - overlay layer */}
-        <Animated.View
-          style={[
-            styles.gradientLayer,
-            styles.duskLayer,
-            { opacity: duskOpacity },
-          ]}
-        >
-          <ImageBackground
-            source={backgroundImages.dusk}
-            style={styles.container}
-            resizeMode="cover"
-          />
-        </Animated.View>
-
-        {/* Dawn gradient - overlay layer */}
-        <Animated.View
-          style={[
-            styles.gradientLayer,
-            styles.dawnLayer,
-            { opacity: dawnOpacity },
-          ]}
-        >
-          <ImageBackground
-            source={backgroundImages.dawn}
-            style={styles.container}
-            resizeMode="cover"
-          />
-        </Animated.View>
-
-        {/* Content layer */}
-        <View style={styles.contentLayer}>
-          <ScrollView
-            style={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
+          {/* Night gradient - always present as base layer */}
+          <Animated.View
+            style={[
+              styles.gradientLayer,
+              styles.nightLayer,
+              { opacity: nightOpacity },
+            ]}
           >
-            {/* Current Planetary Hour */}
-            <View style={styles.stickyPlanetaryHour}>
-              <CurrentPlanetaryHour
-                planetaryHoursData={planetaryHoursData}
-                loading={planetaryHoursLoading}
-                onPress={() =>
-                  navigation.navigate("PlanetaryHours", {
-                    selectedDate: displayDate,
-                  })
-                }
-              />
-            </View>
-            {/* Current Chart Display */}
-            {activeChart && !ephemerisLoading && (
-              <View style={styles.chartContainer}>
-                {(() => {
-                  console.log("🎨 Rendering AstrologyChart with data:", {
-                    planetsCount: activeChart.planets
-                      ? Object.keys(activeChart.planets).length
-                      : 0,
-                    housesData: activeChart.houses
-                      ? {
-                          ascendant: activeChart.houses.ascendant,
-                          ascendantSign: activeChart.houses.ascendantSign,
-                          ascendantDegree: activeChart.houses.ascendantDegree,
-                        }
-                      : null,
-                    timestamp: new Date().toISOString(),
-                  });
-                  return null;
-                })()}
-                <AstrologyChart
-                  planets={activeChart.planets}
-                  houses={activeChart.houses}
-                  loading={refreshLoading}
-                  error={refreshError}
+            <ImageBackground
+              source={backgroundImages.night}
+              style={styles.container}
+              resizeMode="cover"
+            />
+          </Animated.View>
+
+          {/* Day gradient - overlay layer */}
+          <Animated.View
+            style={[
+              styles.gradientLayer,
+              styles.dayLayer,
+              { opacity: dayOpacity },
+            ]}
+          >
+            <ImageBackground
+              source={backgroundImages.day}
+              style={styles.container}
+              resizeMode="cover"
+            />
+          </Animated.View>
+
+          {/* Dusk gradient - overlay layer */}
+          <Animated.View
+            style={[
+              styles.gradientLayer,
+              styles.duskLayer,
+              { opacity: duskOpacity },
+            ]}
+          >
+            <ImageBackground
+              source={backgroundImages.dusk}
+              style={styles.container}
+              resizeMode="cover"
+            />
+          </Animated.View>
+
+          {/* Dawn gradient - overlay layer */}
+          <Animated.View
+            style={[
+              styles.gradientLayer,
+              styles.dawnLayer,
+              { opacity: dawnOpacity },
+            ]}
+          >
+            <ImageBackground
+              source={backgroundImages.dawn}
+              style={styles.container}
+              resizeMode="cover"
+            />
+          </Animated.View>
+
+          {/* Content layer */}
+          <View style={styles.contentLayer}>
+            <ScrollView
+              style={styles.scrollContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Current Planetary Hour */}
+              <View style={styles.stickyPlanetaryHour}>
+                <CurrentPlanetaryHour
+                  planetaryHoursData={planetaryHoursData}
+                  loading={planetaryHoursLoading}
+                  onPress={() =>
+                    navigation.navigate("PlanetaryHours", {
+                      selectedDate: displayDate,
+                    })
+                  }
                 />
               </View>
-            )}
+              {/* Current Chart Display */}
+              {activeChart && !ephemerisLoading && (
+                <View style={styles.chartContainer}>
+                  {(() => {
+                    console.log("🎨 Rendering AstrologyChart with data:", {
+                      planetsCount: activeChart.planets
+                        ? Object.keys(activeChart.planets).length
+                        : 0,
+                      housesData: activeChart.houses
+                        ? {
+                            ascendant: activeChart.houses.ascendant,
+                            ascendantSign: activeChart.houses.ascendantSign,
+                            ascendantDegree: activeChart.houses.ascendantDegree,
+                          }
+                        : null,
+                      timestamp: new Date().toISOString(),
+                    });
+                    return null;
+                  })()}
+                  <AstrologyChart
+                    planets={activeChart.planets}
+                    houses={activeChart.houses}
+                    loading={refreshLoading}
+                    error={refreshError}
+                  />
+                </View>
+              )}
 
-            {/* Loading indicator for selected date */}
-            {selectedDateLoading && (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#e6e6fa" />
-                <Text style={styles.loadingText}>
-                  Loading chart for selected date...
-                </Text>
-              </View>
-            )}
+              {/* Loading indicator for selected date */}
+              {selectedDateLoading && (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#e6e6fa" />
+                  <Text style={styles.loadingText}>
+                    Loading chart for selected date...
+                  </Text>
+                </View>
+              )}
 
-            {/* Current Planetary Positions */}
-            {activeChart && !ephemerisLoading && !selectedDateLoading && (
-              <View style={styles.cardContainer}>
-                <Text style={styles.cardTitle}>
-                  🌙 Current Planetary Positions
-                </Text>
-                {/* Ascendant */}
-                {activeChart.houses && (
-                  <View style={styles.planetRow}>
-                    <Text style={styles.zodiacSymbol}>
-                      {/* ascendant symbol */}
-                      <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
-                        !
-                      </Text>{" "}
-                      {/* zodiac symbol */}
-                      <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
-                        {
-                          getZodiacKeysFromNames()[
-                            activeChart.houses.ascendantSign
-                          ]
-                        }
-                      </Text>{" "}
-                    </Text>
-                    <Text style={styles.planetPosition}>
-                      {activeChart.houses.ascendantSign} Ascendant
-                    </Text>
-                    <Text style={styles.planetPosition}>
-                      {activeChart.houses.ascendantDegree &&
-                      !isNaN(
-                        parseFloat(
-                          activeChart.houses.ascendantDegree.toString()
+              {/* Current Planetary Positions */}
+              {activeChart && !ephemerisLoading && !selectedDateLoading && (
+                <View style={styles.cardContainer}>
+                  <Text style={styles.cardTitle}>
+                    🌙 Current Planetary Positions
+                  </Text>
+                  {/* Ascendant */}
+                  {activeChart.houses && (
+                    <View style={styles.planetRow}>
+                      <Text style={styles.zodiacSymbol}>
+                        {/* ascendant symbol */}
+                        <Text
+                          style={getPhysisSymbolStyle(fontLoaded, "medium")}
+                        >
+                          !
+                        </Text>{" "}
+                        {/* zodiac symbol */}
+                        <Text
+                          style={getPhysisSymbolStyle(fontLoaded, "medium")}
+                        >
+                          {
+                            getZodiacKeysFromNames()[
+                              activeChart.houses.ascendantSign
+                            ]
+                          }
+                        </Text>{" "}
+                      </Text>
+                      <Text style={styles.planetPosition}>
+                        {activeChart.houses.ascendantSign} Ascendant
+                      </Text>
+                      <Text style={styles.planetPosition}>
+                        {activeChart.houses.ascendantDegree &&
+                        !isNaN(
+                          parseFloat(
+                            activeChart.houses.ascendantDegree.toString()
+                          )
                         )
-                      )
-                        ? activeChart.houses.ascendantDegree
-                        : "Calculating..."}
-                    </Text>
-                  </View>
-                )}
-                {Object.entries(activeChart.planets).map(
-                  ([planetName, planet]) => {
-                    // Temporary test: force Pluto to be retrograde for testing
-                    const testPlanet =
-                      planetName === "pluto"
-                        ? { ...planet, isRetrograde: true }
-                        : planet;
-                    const planetKeys = getPlanetKeysFromNames();
-                    const zodiacKeys = getZodiacKeysFromNames();
-                    const capitalizedName =
-                      planetName.charAt(0).toUpperCase() + planetName.slice(1);
-                    // Special handling for north node
-                    const displayName =
-                      planetName === "northNode" ? "N. Node" : capitalizedName;
-                    const physisKey =
-                      planetKeys[
+                          ? activeChart.houses.ascendantDegree
+                          : "Calculating..."}
+                      </Text>
+                    </View>
+                  )}
+                  {Object.entries(activeChart.planets).map(
+                    ([planetName, planet]) => {
+                      // Temporary test: force Pluto to be retrograde for testing
+                      const testPlanet =
+                        planetName === "pluto"
+                          ? { ...planet, isRetrograde: true }
+                          : planet;
+                      const planetKeys = getPlanetKeysFromNames();
+                      const zodiacKeys = getZodiacKeysFromNames();
+                      const capitalizedName =
+                        planetName.charAt(0).toUpperCase() +
+                        planetName.slice(1);
+                      // Special handling for north node
+                      const displayName =
                         planetName === "northNode"
-                          ? "NorthNode"
-                          : capitalizedName
-                      ];
-                    const physisSymbol = physisKey;
-                    const zodiacKey = zodiacKeys[testPlanet.zodiacSignName];
-                    const physisZodiacSymbol = zodiacKey;
+                          ? "N. Node"
+                          : capitalizedName;
+                      const physisKey =
+                        planetKeys[
+                          planetName === "northNode"
+                            ? "NorthNode"
+                            : capitalizedName
+                        ];
+                      const physisSymbol = physisKey;
+                      const zodiacKey = zodiacKeys[testPlanet.zodiacSignName];
+                      const physisZodiacSymbol = zodiacKey;
 
-                    return (
-                      <View key={planetName} style={styles.planetRow}>
-                        <Text style={styles.zodiacSymbol}>
-                          {/* planet symbol  */}
-                          <Text
-                            style={getPhysisSymbolStyle(fontLoaded, "medium")}
-                          >
-                            {physisSymbol}
-                          </Text>{" "}
-                          {/* zodiac symbol */}
-                          <Text
-                            style={getPhysisSymbolStyle(fontLoaded, "medium")}
-                          >
-                            {physisZodiacSymbol}
-                          </Text>{" "}
-                        </Text>
-                        <Text style={styles.planetPosition}>
-                          {testPlanet.zodiacSignName} {displayName}
-                          {testPlanet.isRetrograde && (
-                            <Text style={styles.retrogradeIndicator}> R</Text>
-                          )}
-                        </Text>
-                        <Text style={styles.planetPosition}>
-                          {testPlanet.degreeFormatted}
-                        </Text>
-                      </View>
-                    );
-                  }
-                )}
-              </View>
-            )}
-          </ScrollView>
+                      return (
+                        <View key={planetName} style={styles.planetRow}>
+                          <Text style={styles.zodiacSymbol}>
+                            {/* planet symbol  */}
+                            <Text
+                              style={getPhysisSymbolStyle(fontLoaded, "medium")}
+                            >
+                              {physisSymbol}
+                            </Text>{" "}
+                            {/* zodiac symbol */}
+                            <Text
+                              style={getPhysisSymbolStyle(fontLoaded, "medium")}
+                            >
+                              {physisZodiacSymbol}
+                            </Text>{" "}
+                          </Text>
+                          <Text style={styles.planetPosition}>
+                            {testPlanet.zodiacSignName} {displayName}
+                            {testPlanet.isRetrograde && (
+                              <Text style={styles.retrogradeIndicator}> R</Text>
+                            )}
+                          </Text>
+                          <Text style={styles.planetPosition}>
+                            {testPlanet.degreeFormatted}
+                          </Text>
+                        </View>
+                      );
+                    }
+                  )}
+                </View>
+              )}
+            </ScrollView>
+          </View>
+
+          {/* Secondary Navigation Bar - Display Date */}
+          <TouchableOpacity style={styles.secondaryNavBar} onPress={openDrawer}>
+            <Text style={styles.secondaryNavText}>
+              {(() => {
+                const dateString = displayDate.toLocaleDateString("en-US", {
+                  weekday: "short",
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                });
+                const timeString = displayDate.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                });
+                return `${dateString} ${timeString}`;
+              })()}
+            </Text>
+            <Text style={styles.arrowIcon}>▼</Text>
+          </TouchableOpacity>
         </View>
-
-        {/* Secondary Navigation Bar - Display Date */}
-        <TouchableOpacity style={styles.secondaryNavBar} onPress={openDrawer}>
-          <Text style={styles.secondaryNavText}>
-            {(() => {
-              const dateString = displayDate.toLocaleDateString("en-US", {
-                weekday: "short",
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              });
-              const timeString = displayDate.toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              });
-              return `${dateString} ${timeString}`;
-            })()}
-          </Text>
-          <Text style={styles.arrowIcon}>▼</Text>
-        </TouchableOpacity>
-      </View>
+      </GestureDetector>
 
       {/* Date/Time Picker Drawer */}
       <DateTimePickerDrawer

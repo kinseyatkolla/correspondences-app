@@ -12,7 +12,11 @@ import {
   Dimensions,
   TouchableOpacity,
 } from "react-native";
-import { GestureHandlerRootView, Gesture } from "react-native-gesture-handler";
+import {
+  GestureHandlerRootView,
+  Gesture,
+  GestureDetector,
+} from "react-native-gesture-handler";
 import DateTimePickerDrawer from "../components/DateTimePickerDrawer";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { apiService, BirthData, BirthChart } from "../services/api";
@@ -443,24 +447,21 @@ export default function TithiInfoScreen({
   };
 
   // Handle swipe gestures
-  const panGesture = Gesture.Pan().onEnd((event) => {
-    const { translationX } = event;
-    const threshold = 50; // Minimum swipe distance
+  const panGesture = Gesture.Pan()
+    .onEnd((event) => {
+      try {
+        const translationX = event.translationX || 0;
+        const threshold = 50; // Minimum swipe distance
 
-    if (translationX > threshold) {
-      // Swipe right to left - go to previous day
-      const newDate = new Date(displayDate);
-      newDate.setDate(newDate.getDate() - 1);
-      setDisplayDate(newDate);
-      fetchChartForDate(newDate);
-    } else if (translationX < -threshold) {
-      // Swipe left to right - go to next day
-      const newDate = new Date(displayDate);
-      newDate.setDate(newDate.getDate() + 1);
-      setDisplayDate(newDate);
-      fetchChartForDate(newDate);
-    }
-  });
+        if (translationX > threshold) {
+          // Swipe right to go back to MoonScreen
+          navigation.goBack();
+        }
+      } catch (error) {
+        console.error("Error handling swipe gesture:", error);
+      }
+    })
+    .runOnJS(true); // Ensure gesture runs on JS thread for navigation
 
   // Use selected date chart if available, otherwise fall back to current chart
   const activeChart = selectedDateChart || currentChart;
@@ -527,134 +528,138 @@ export default function TithiInfoScreen({
   // ============================================================================
   return (
     <GestureHandlerRootView style={styles.container}>
-      <View style={styles.container} {...panGesture}>
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Background image that scrolls with content */}
-          <ImageBackground
-            source={require("../../assets/images/moon-gradient.png")}
-            style={styles.backgroundImage}
-            resizeMode="cover"
+      <GestureDetector gesture={panGesture}>
+        <View style={styles.container}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
           >
-            {activeChart ? (
-              <>
-                {/* Tithi Information */}
-                {currentTithi && tithiInfo && (
-                  <View style={styles.tithiContainer}>
-                    <Text style={styles.tithiTitle}>Tithi (Lunar Day)</Text>
-                    <Text style={styles.tithiNumber}>
-                      {currentTithi} - {tithiInfo.name}
-                    </Text>
-                    {tithiPercentageRemaining !== null && (
-                      <Text style={styles.tithiPercentage}>
-                        {tithiPercentageRemaining.toFixed(2)}% remaining
+            {/* Background image that scrolls with content */}
+            <ImageBackground
+              source={require("../../assets/images/moon-gradient.png")}
+              style={styles.backgroundImage}
+              resizeMode="cover"
+            >
+              {activeChart ? (
+                <>
+                  {/* Tithi Information */}
+                  {currentTithi && tithiInfo && (
+                    <View style={styles.tithiContainer}>
+                      <Text style={styles.tithiTitle}>Tithi (Lunar Day)</Text>
+                      <Text style={styles.tithiNumber}>
+                        {currentTithi} - {tithiInfo.name}
                       </Text>
-                    )}
-                    <Text style={styles.tithiNumbers}>
-                      Numbers: {tithiInfo.numbers[0]}, {tithiInfo.numbers[1]}
-                    </Text>
-                    <Text style={styles.pakshaText}>{paksha}</Text>
-
-                    {/* Debug information for tithi calculation */}
-                    {activeChart?.planets?.moon &&
-                      activeChart?.planets?.sun && (
-                        <View style={styles.debugContainer}>
-                          <Text style={styles.debugTitle}>Debug Info:</Text>
-                          <Text style={styles.debugText}>
-                            Moon Longitude:{" "}
-                            {activeChart.planets.moon.longitude.toFixed(2)}°
-                          </Text>
-                          <Text style={styles.debugText}>
-                            Sun Longitude:{" "}
-                            {activeChart.planets.sun.longitude.toFixed(2)}°
-                          </Text>
-                          <Text style={styles.debugText}>
-                            Difference:{" "}
-                            {(
-                              (activeChart.planets.moon.longitude -
-                                activeChart.planets.sun.longitude +
-                                360) %
-                              360
-                            ).toFixed(2)}
-                            °
-                          </Text>
-                          <Text style={styles.debugText}>
-                            Tithi Calculation:{" "}
-                            {(
-                              ((activeChart.planets.moon.longitude -
-                                activeChart.planets.sun.longitude +
-                                360) %
-                                360) /
-                              12
-                            ).toFixed(2)}
-                          </Text>
-                          {tithiPercentageRemaining !== null && (
-                            <Text style={styles.debugText}>
-                              Percentage Remaining:{" "}
-                              {tithiPercentageRemaining.toFixed(2)}%
-                            </Text>
-                          )}
-                        </View>
+                      {tithiPercentageRemaining !== null && (
+                        <Text style={styles.tithiPercentage}>
+                          {tithiPercentageRemaining.toFixed(2)}% remaining
+                        </Text>
                       )}
+                      <Text style={styles.tithiNumbers}>
+                        Numbers: {tithiInfo.numbers[0]}, {tithiInfo.numbers[1]}
+                      </Text>
+                      <Text style={styles.pakshaText}>{paksha}</Text>
 
-                    {/* Additional Tithi Information */}
-                    <View style={styles.tithiDetails}>
-                      <View style={styles.tithiDetailRow}>
-                        <Text style={styles.tithiDetailLabel}>
-                          Planet Ruler:
-                        </Text>
-                        <Text style={styles.tithiDetailValue}>
-                          {tithiInfo.planetRuler}
-                        </Text>
-                      </View>
-                      <View style={styles.tithiDetailRow}>
-                        <Text style={styles.tithiDetailLabel}>Division:</Text>
-                        <Text style={styles.tithiDetailValue}>
-                          {tithiInfo.division}
-                        </Text>
-                      </View>
-                      <View style={styles.tithiDetailRow}>
-                        <Text style={styles.tithiDetailLabel}>Deity:</Text>
-                        <Text style={styles.tithiDetailValue}>
-                          {tithiInfo.deity}
-                        </Text>
+                      {/* Debug information for tithi calculation */}
+                      {activeChart?.planets?.moon &&
+                        activeChart?.planets?.sun && (
+                          <View style={styles.debugContainer}>
+                            <Text style={styles.debugTitle}>Debug Info:</Text>
+                            <Text style={styles.debugText}>
+                              Moon Longitude:{" "}
+                              {activeChart.planets.moon.longitude.toFixed(2)}°
+                            </Text>
+                            <Text style={styles.debugText}>
+                              Sun Longitude:{" "}
+                              {activeChart.planets.sun.longitude.toFixed(2)}°
+                            </Text>
+                            <Text style={styles.debugText}>
+                              Difference:{" "}
+                              {(
+                                (activeChart.planets.moon.longitude -
+                                  activeChart.planets.sun.longitude +
+                                  360) %
+                                360
+                              ).toFixed(2)}
+                              °
+                            </Text>
+                            <Text style={styles.debugText}>
+                              Tithi Calculation:{" "}
+                              {(
+                                ((activeChart.planets.moon.longitude -
+                                  activeChart.planets.sun.longitude +
+                                  360) %
+                                  360) /
+                                12
+                              ).toFixed(2)}
+                            </Text>
+                            {tithiPercentageRemaining !== null && (
+                              <Text style={styles.debugText}>
+                                Percentage Remaining:{" "}
+                                {tithiPercentageRemaining.toFixed(2)}%
+                              </Text>
+                            )}
+                          </View>
+                        )}
+
+                      {/* Additional Tithi Information */}
+                      <View style={styles.tithiDetails}>
+                        <View style={styles.tithiDetailRow}>
+                          <Text style={styles.tithiDetailLabel}>
+                            Planet Ruler:
+                          </Text>
+                          <Text style={styles.tithiDetailValue}>
+                            {tithiInfo.planetRuler}
+                          </Text>
+                        </View>
+                        <View style={styles.tithiDetailRow}>
+                          <Text style={styles.tithiDetailLabel}>Division:</Text>
+                          <Text style={styles.tithiDetailValue}>
+                            {tithiInfo.division}
+                          </Text>
+                        </View>
+                        <View style={styles.tithiDetailRow}>
+                          <Text style={styles.tithiDetailLabel}>Deity:</Text>
+                          <Text style={styles.tithiDetailValue}>
+                            {tithiInfo.deity}
+                          </Text>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                )}
-              </>
-            ) : (
-              <>
-                <Text style={styles.description}>No chart data available</Text>
-              </>
-            )}
-          </ImageBackground>
-        </ScrollView>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Text style={styles.description}>
+                    No chart data available
+                  </Text>
+                </>
+              )}
+            </ImageBackground>
+          </ScrollView>
 
-        {/* Secondary Navigation Bar - Display Date */}
-        <TouchableOpacity style={styles.secondaryNavBar} onPress={openDrawer}>
-          <Text style={styles.secondaryNavText}>
-            {(() => {
-              const dateString = displayDate.toLocaleDateString("en-US", {
-                weekday: "short",
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              });
-              const timeString = displayDate.toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              });
-              return `${dateString} ${timeString}`;
-            })()}
-          </Text>
-          <Text style={styles.arrowIcon}>▼</Text>
-        </TouchableOpacity>
-      </View>
+          {/* Secondary Navigation Bar - Display Date */}
+          <TouchableOpacity style={styles.secondaryNavBar} onPress={openDrawer}>
+            <Text style={styles.secondaryNavText}>
+              {(() => {
+                const dateString = displayDate.toLocaleDateString("en-US", {
+                  weekday: "short",
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                });
+                const timeString = displayDate.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                });
+                return `${dateString} ${timeString}`;
+              })()}
+            </Text>
+            <Text style={styles.arrowIcon}>▼</Text>
+          </TouchableOpacity>
+        </View>
+      </GestureDetector>
 
       {/* Date/Time Picker Drawer */}
       <DateTimePickerDrawer
