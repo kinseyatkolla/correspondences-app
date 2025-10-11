@@ -1,7 +1,7 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -377,6 +377,9 @@ export default function MoonScreen({ navigation }: any) {
   // Debug flag to control aspect debugging display
   const DEBUG_ASPECTS = true;
 
+  // Ref for the ScrollView to control scrolling
+  const scrollViewRef = useRef<ScrollView>(null);
+
   // State for the currently displayed date
   const [displayDate, setDisplayDate] = useState(new Date());
 
@@ -538,6 +541,14 @@ export default function MoonScreen({ navigation }: any) {
     fetchChartForDate(now);
   };
 
+  // Handler for clicking on a lunation item
+  const handleLunationClick = (lunationDate: Date) => {
+    setDisplayDate(lunationDate);
+    fetchChartForDate(lunationDate);
+    // Scroll to top
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
   // Handle swipe gestures
   const panGesture = Gesture.Pan()
     .onEnd((event) => {
@@ -640,6 +651,7 @@ export default function MoonScreen({ navigation }: any) {
       <GestureDetector gesture={panGesture}>
         <View style={styles.container}>
           <ScrollView
+            ref={scrollViewRef}
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
@@ -1073,14 +1085,22 @@ export default function MoonScreen({ navigation }: any) {
                             });
 
                           return (
-                            <View key={index} style={styles.lunarPhaseRow}>
+                            <TouchableOpacity
+                              key={index}
+                              style={styles.lunarPhaseRow}
+                              onPress={() =>
+                                phase.localDateTime &&
+                                handleLunationClick(phase.localDateTime)
+                              }
+                              activeOpacity={0.7}
+                            >
                               <Text style={styles.lunarPhaseNameText}>
                                 {emoji} {phaseName}
                               </Text>
                               <Text style={styles.lunarPhaseDateText}>
                                 {dateString} at {timeString}
                               </Text>
-                            </View>
+                            </TouchableOpacity>
                           );
                         })}
                       </View>
