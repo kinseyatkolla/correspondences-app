@@ -15,11 +15,25 @@ import { apiService, FlowerEssence } from "../services/api";
 // CONSTANTS
 // ============================================================================
 const FLOWERS_CACHE_KEY = "flowers_cache";
+const FLOWERS_DRAW_STATE_KEY = "flowers_draw_state";
 const CACHE_EXPIRY_HOURS = 24; // Cache for 24 hours
 
 // ============================================================================
 // TYPES
 // ============================================================================
+export interface FlowerCardData {
+  id: string;
+  flower: FlowerEssence | null; // null means not assigned yet
+  x: number;
+  y: number;
+  rotation: number;
+  zIndex: number;
+  isFlipped: boolean;
+  isDragging: boolean;
+  cardBackIndex: number; // Index for random card back selection
+  reversed: boolean; // Whether the card is drawn upside down
+}
+
 interface FlowersContextType {
   flowers: FlowerEssence[];
   loading: boolean;
@@ -27,6 +41,12 @@ interface FlowersContextType {
   refreshFlowers: () => Promise<void>;
   lastUpdated: Date | null;
   isFromCache: boolean;
+  // Flower draw state management
+  drawState: FlowerCardData[];
+  setDrawState: (cards: FlowerCardData[]) => void;
+  saveDrawState: () => Promise<void>;
+  loadDrawState: () => Promise<FlowerCardData[] | null>;
+  clearDrawState: () => Promise<void>;
 }
 
 interface CachedFlowers {
@@ -52,6 +72,7 @@ export function FlowersProvider({ children }: FlowersProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
+  const [drawState, setDrawState] = useState<FlowerCardData[]>([]);
 
   const isCacheValid = (timestamp: number): boolean => {
     const now = Date.now();
@@ -88,6 +109,43 @@ export function FlowersProvider({ children }: FlowersProviderProps) {
       console.log("Flowers saved to cache");
     } catch (err) {
       console.error("Error saving to cache:", err);
+    }
+  };
+
+  // ===== DRAW STATE MANAGEMENT =====
+  const saveDrawState = async () => {
+    try {
+      await AsyncStorage.setItem(
+        FLOWERS_DRAW_STATE_KEY,
+        JSON.stringify(drawState)
+      );
+      console.log("Flower draw state saved");
+    } catch (err) {
+      console.error("Error saving draw state:", err);
+    }
+  };
+
+  const loadDrawState = async (): Promise<FlowerCardData[] | null> => {
+    try {
+      const saved = await AsyncStorage.getItem(FLOWERS_DRAW_STATE_KEY);
+      if (saved) {
+        const parsedState: FlowerCardData[] = JSON.parse(saved);
+        console.log("Loaded flower draw state:", parsedState.length, "cards");
+        return parsedState;
+      }
+    } catch (err) {
+      console.error("Error loading draw state:", err);
+    }
+    return null;
+  };
+
+  const clearDrawState = async () => {
+    try {
+      await AsyncStorage.removeItem(FLOWERS_DRAW_STATE_KEY);
+      setDrawState([]);
+      console.log("Flower draw state cleared");
+    } catch (err) {
+      console.error("Error clearing draw state:", err);
     }
   };
 
@@ -145,6 +203,11 @@ export function FlowersProvider({ children }: FlowersProviderProps) {
     refreshFlowers,
     lastUpdated,
     isFromCache,
+    drawState,
+    setDrawState,
+    saveDrawState,
+    loadDrawState,
+    clearDrawState,
   };
 
   return (

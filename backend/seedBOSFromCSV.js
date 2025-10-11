@@ -18,6 +18,8 @@ const categoryMapping = {
   aspect: "aspect",
   decan: "decan",
   tarotCard: "tarotCard",
+  metal: "metal",
+  wheelOfTheYear: "wheelOfTheYear",
 };
 
 // Simple function to determine relationship type - defaults to "correspondence"
@@ -50,60 +52,99 @@ function parseCSVLine(line) {
   return columns.map((col) => col.replace(/^"|"$/g, ""));
 }
 
-function parseCorrespondences(correspondenceString, sourceEntry) {
-  if (!correspondenceString || correspondenceString.trim() === "") {
+function parseCorrespondences(correspondenceColumns, sourceEntry) {
+  if (!correspondenceColumns || correspondenceColumns.length === 0) {
     return [];
   }
 
   const correspondences = [];
-  // Handle CSV parsing more carefully - split by comma but respect quoted strings
-  const items = [];
-  let current = "";
-  let inQuotes = false;
 
-  for (let i = 0; i < correspondenceString.length; i++) {
-    const char = correspondenceString[i];
-    if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === "," && !inQuotes) {
-      items.push(current.trim());
-      current = "";
-    } else {
-      current += char;
+  for (const correspondenceName of correspondenceColumns) {
+    if (!correspondenceName || correspondenceName.trim() === "") {
+      continue;
     }
-  }
-  items.push(current.trim());
 
-  for (const item of items) {
-    if (!item) continue;
+    const cleanName = correspondenceName.trim();
 
-    const cleanItem = item.replace(/^"|"$/g, ""); // Remove surrounding quotes
+    // Determine the type based on the source entry's category and the correspondence name
+    const type = determineCorrespondenceType(cleanName, sourceEntry);
+    const relationship = determineRelationship(type, cleanName, sourceEntry);
 
-    // Handle multiple correspondences in one item (like "taurus high-priestess")
-    const subItems = cleanItem.split(" ");
-    for (const subItem of subItems) {
-      const colonIndex = subItem.indexOf(":");
-      if (colonIndex === -1) continue;
-
-      const typePrefix = subItem.substring(0, colonIndex);
-      const name = subItem.substring(colonIndex + 1);
-
-      if (!name) continue;
-
-      const type = typePrefix.replace("s", ""); // Remove plural 's'
-      const relationship = determineRelationship(type, name, sourceEntry);
-
-      correspondences.push({
-        type: type,
-        name: name,
-        relationship: relationship,
-        system: "traditional", // Default system
-        strength: "primary", // Default strength
-      });
-    }
+    correspondences.push({
+      type: type,
+      name: cleanName,
+      relationship: relationship,
+      system: "traditional", // Default system
+      strength: "primary", // Default strength
+    });
   }
 
   return correspondences;
+}
+
+// Function to determine correspondence type based on the name and source context
+function determineCorrespondenceType(name, sourceEntry) {
+  // Define type patterns for common correspondences
+  const typePatterns = {
+    // Tarot cards
+    tarotCard:
+      /^(The )?(Fool|Magician|High Priestess|Empress|Emperor|Hierophant|Lovers|Chariot|Strength|Hermit|Wheel of Fortune|Justice|Hanged Man|Death|Temperance|Devil|Tower|Star|Moon|Sun|Judgement|World|Ace|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Page|Knight|Queen|King) (of )?(Cups|Wands|Swords|Pentacles|Coins)$/i,
+
+    // Zodiac signs
+    zodiacSign:
+      /^(Aries|Taurus|Gemini|Cancer|Leo|Virgo|Libra|Scorpio|Sagittarius|Capricorn|Aquarius|Pisces)$/i,
+
+    // Planets
+    planet:
+      /^(Sun|Moon|Mercury|Venus|Mars|Jupiter|Saturn|Uranus|Neptune|Pluto)$/i,
+
+    // Elements
+    element: /^(Fire|Air|Earth|Water)$/i,
+
+    // Colors
+    color:
+      /^(Red|Orange|Yellow|Green|Blue|Indigo|Violet|Black|White|Grey|Pink|Brown)$/i,
+
+    // Weekdays
+    weekday: /^(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)$/i,
+
+    // Seasons
+    season: /^(Spring|Summer|Fall|Winter)$/i,
+
+    // Metals
+    metal:
+      /^(Gold|Silver|Mercury|Copper|Iron|Tin|Lead|Zinc|Cobalt|Bismuth) (metal)?$/i,
+
+    // Numbers
+    number: /^[0-9]+$/,
+
+    // Modalities
+    modality: /^(Cardinal|Fixed|Mutable)$/i,
+
+    // Aspects
+    aspect: /^(Conjunction|Opposition|Trine|Square|Quincunx|Sextile|Septile)$/i,
+
+    // Houses
+    house: /^([0-9]+(st|nd|rd|th))$/i,
+
+    // Decans
+    decan:
+      /^(Aries|Taurus|Gemini|Cancer|Leo|Virgo|Libra|Scorpio|Sagittarius|Capricorn|Aquarius|Pisces) [1-3]$/i,
+
+    // Wheel of the Year
+    wheelOfTheYear:
+      /^(Winter Solstice|Midwinter|Yule|Imbolc|Candlemas|Spring Equinox|Ostara|Beltane|May Day|Summer Solstice|Midsummer|Litha|Lughnasadh|Lammas|Autumn Equinox|Mabon|Samhain|All Hallows)$/i,
+  };
+
+  // Check each pattern to determine type
+  for (const [type, pattern] of Object.entries(typePatterns)) {
+    if (pattern.test(name)) {
+      return type;
+    }
+  }
+
+  // Default fallback based on source entry category
+  return sourceEntry.category || "other";
 }
 
 function createBOSEntry(row) {
@@ -112,8 +153,8 @@ function createBOSEntry(row) {
     wikiName,
     topicCategory,
     description,
-    correspondences,
     keywords,
+    correspondenceColumns,
   } = row;
 
   // Skip if no name or topicCategory
@@ -131,7 +172,7 @@ function createBOSEntry(row) {
   };
 
   const parsedCorrespondences = parseCorrespondences(
-    correspondences,
+    correspondenceColumns,
     sourceEntry
   );
 
@@ -166,7 +207,7 @@ async function seedBOSFromCSV() {
     console.log("🗑️ Cleared existing BOS entries");
 
     // Read and parse CSV
-    const csvPath = "/Users/kinseywatts/Downloads/BOS - seed.csv";
+    const csvPath = "/Users/kinseywatts/Downloads/BOS - seed (1).csv";
     const csvContent = fs.readFileSync(csvPath, "utf8");
     const lines = csvContent.split("\n");
 
@@ -182,15 +223,24 @@ async function seedBOSFromCSV() {
     for (const line of dataLines) {
       // Parse CSV line properly handling quoted strings
       const columns = parseCSVLine(line);
-      if (columns.length < 6) continue; // Skip incomplete rows
+      if (columns.length < 9) continue; // Skip incomplete rows
+
+      // Extract correspondence columns (columns 9-17)
+      const correspondenceColumns = columns
+        .slice(9, 18)
+        .filter((col) => col && col.trim() !== "");
 
       const row = {
         name: columns[0]?.trim(),
         wikiName: columns[1]?.trim(),
         topicCategory: columns[2]?.trim(),
         description: columns[3]?.trim(),
-        correspondences: columns[4]?.trim(),
-        keywords: columns[9]?.trim(), // keywords column
+        images: columns[4]?.trim(),
+        references: columns[5]?.trim(),
+        keywords: columns[6]?.trim(), // keywords column
+        tarotLink: columns[7]?.trim(),
+        flowersLink: columns[8]?.trim(),
+        correspondenceColumns: correspondenceColumns,
       };
 
       const entry = createBOSEntry(row);

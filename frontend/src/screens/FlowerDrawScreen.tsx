@@ -16,25 +16,12 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { Accelerometer } from "expo-sensors";
 import { FlowerEssence } from "../services/api";
-import { useFlowers } from "../contexts/FlowersContext";
+import { useFlowers, FlowerFlowerCardData } from "../contexts/FlowersContext";
 import { sharedUI } from "../styles/sharedUI";
 
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
-
-interface CardData {
-  id: string;
-  flower: FlowerEssence | null; // null means not assigned yet
-  x: number;
-  y: number;
-  rotation: number;
-  zIndex: number;
-  isFlipped: boolean;
-  isDragging: boolean;
-  cardBackIndex: number; // Index for random card back selection
-  reversed: boolean; // Whether the card is drawn upside down
-}
 
 // ============================================================================
 // CONSTANTS
@@ -113,27 +100,54 @@ const cardBackImages = [
 // COMPONENT
 // ============================================================================
 export default function FlowerDrawScreen({ navigation, route }: any) {
-  const { flowers: allFlowers, loading: flowersLoading } = useFlowers();
-  const [cards, setCards] = useState<CardData[]>([]);
+  const {
+    flowers: allFlowers,
+    loading: flowersLoading,
+    drawState: cards,
+    setDrawState: setCards,
+    saveDrawState,
+    loadDrawState,
+  } = useFlowers();
   const [maxZIndex, setMaxZIndex] = useState(0);
   const lastTapRef = useRef<number>(0);
   const lastPinchDistance = useRef<number>(0);
   const lastFlipTime = useRef<number>(0);
   const [draggedCard, setDraggedCard] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [hasLoadedInitialState, setHasLoadedInitialState] = useState(false);
 
   // ===== LIFECYCLE =====
   useFocusEffect(
     useCallback(() => {
-      if (allFlowers.length > 0) {
-        initializeCards();
+      // Only load saved state once when the screen first comes into focus
+      if (!hasLoadedInitialState) {
+        loadDrawState().then((savedState) => {
+          if (savedState && savedState.length > 0) {
+            // Restore saved state
+            setCards(savedState);
+            // Find the highest z-index from saved state
+            const maxZ = Math.max(...savedState.map((card) => card.zIndex));
+            setMaxZIndex(maxZ);
+          } else {
+            // Initialize new cards if no saved state
+            initializeCards();
+          }
+          setHasLoadedInitialState(true);
+        });
       }
-    }, [allFlowers])
+    }, [hasLoadedInitialState])
   );
+
+  // Auto-save draw state whenever cards change
+  useEffect(() => {
+    if (cards.length > 0) {
+      saveDrawState();
+    }
+  }, [cards, saveDrawState]);
 
   // ===== CARD MANAGEMENT =====
   const initializeCards = () => {
-    const newCards: CardData[] = [];
+    const newCards: FlowerFlowerCardData[] = [];
     const margin = 50;
     const availableWidth = SCREEN_WIDTH - CARD_WIDTH - margin * 2;
     const availableHeight = SCREEN_HEIGHT - CARD_HEIGHT - margin * 2;
@@ -163,26 +177,47 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
     const availableWidth = SCREEN_WIDTH - CARD_WIDTH - margin * 2;
     const availableHeight = SCREEN_HEIGHT - CARD_HEIGHT - margin * 2;
 
-    setCards((prevCards) =>
-      prevCards.map((card) => ({
-        ...card,
-        x: margin + Math.random() * availableWidth,
-        y: margin + Math.random() * availableHeight,
-        rotation: (Math.random() - 0.5) * 60,
-        isFlipped: false,
-        cardBackIndex: Math.floor(Math.random() * cardBackImages.length),
-        reversed: false, // Reset reversal when shuffling
-      }))
-    );
+    // If no cards exist, initialize them with random positions
+    if (cards.length === 0) {
+      const newCards: FlowerCardData[] = [];
+      for (let i = 0; i < INITIAL_CARD_COUNT; i++) {
+        newCards.push({
+          id: `flower-card-${i}`,
+          flower: null,
+          x: margin + Math.random() * availableWidth,
+          y: margin + Math.random() * availableHeight,
+          rotation: (Math.random() - 0.5) * 60,
+          zIndex: i,
+          isFlipped: false,
+          isDragging: false,
+          cardBackIndex: Math.floor(Math.random() * cardBackImages.length),
+          reversed: false,
+        });
+      }
+      setCards(newCards);
+      setMaxZIndex(INITIAL_CARD_COUNT - 1);
+      return;
+    }
+
+    // If cards exist, shuffle their positions
+    const shuffledCards = cards.map((card: FlowerCardData) => ({
+      ...card,
+      x: margin + Math.random() * availableWidth,
+      y: margin + Math.random() * availableHeight,
+      rotation: (Math.random() - 0.5) * 60,
+      isFlipped: false,
+      cardBackIndex: Math.floor(Math.random() * cardBackImages.length),
+      reversed: false, // Reset reversal when shuffling
+    }));
+    setCards(shuffledCards);
   };
 
   const bringToFront = (cardId: string) => {
-    setCards((prevCards) =>
-      prevCards.map((card) => ({
-        ...card,
-        zIndex: card.id === cardId ? maxZIndex + 1 : card.zIndex,
-      }))
-    );
+    const updatedCards = cards.map((card: FlowerCardData) => ({
+      ...card,
+      zIndex: card.id === cardId ? maxZIndex + 1 : card.zIndex,
+    }));
+    setCards(updatedCards);
     setMaxZIndex((prev) => prev + 1);
   };
 
@@ -195,33 +230,32 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
     }
 
     lastFlipTime.current = now;
-    setCards((prevCards) =>
-      prevCards.map((card) => {
-        if (card.id === cardId) {
-          const newIsFlipped = !card.isFlipped;
+    const updatedCards = cards.map((card: FlowerCardData) => {
+      if (card.id === cardId) {
+        const newIsFlipped = !card.isFlipped;
 
-          // Assign a random flower when flipping to show the front
-          let assignedFlower = card.flower;
-          let isReversed = card.reversed;
-          if (newIsFlipped && !card.flower && allFlowers.length > 0) {
-            // Pick a random flower from the full collection
-            const randomIndex = Math.floor(Math.random() * allFlowers.length);
-            assignedFlower = allFlowers[randomIndex];
-            // Generate random reversal (50% chance)
-            isReversed = Math.random() < 0.5;
-          }
-
-          return {
-            ...card,
-            flower: assignedFlower,
-            isFlipped: newIsFlipped,
-            reversed: isReversed,
-            rotation: newIsFlipped ? 0 : (Math.random() - 0.5) * 60,
-          };
+        // Assign a random flower when flipping to show the front
+        let assignedFlower = card.flower;
+        let isReversed = card.reversed;
+        if (newIsFlipped && !card.flower && allFlowers.length > 0) {
+          // Pick a random flower from the full collection
+          const randomIndex = Math.floor(Math.random() * allFlowers.length);
+          assignedFlower = allFlowers[randomIndex];
+          // Generate random reversal (50% chance)
+          isReversed = Math.random() < 0.5;
         }
-        return card;
-      })
-    );
+
+        return {
+          ...card,
+          flower: assignedFlower,
+          isFlipped: newIsFlipped,
+          reversed: isReversed,
+          rotation: newIsFlipped ? 0 : (Math.random() - 0.5) * 60,
+        };
+      }
+      return card;
+    });
+    setCards(updatedCards);
   };
 
   const handleCardPress = (cardId: string) => {
@@ -242,9 +276,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
         y: touch.pageY - card.y,
       });
       bringToFront(cardId);
-      setCards((prevCards) =>
-        prevCards.map((c) => (c.id === cardId ? { ...c, isDragging: true } : c))
-      );
+      // Don't set isDragging immediately - wait for actual movement
     }
   };
 
@@ -254,20 +286,20 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
       const newX = touch.pageX - dragOffset.x;
       const newY = touch.pageY - dragOffset.y;
 
-      setCards((prevCards) =>
-        prevCards.map((c) => (c.id === cardId ? { ...c, x: newX, y: newY } : c))
+      const updatedCards = cards.map((c: FlowerCardData) =>
+        c.id === cardId ? { ...c, x: newX, y: newY, isDragging: true } : c
       );
+      setCards(updatedCards);
     }
   };
 
   const handleDragEnd = (cardId: string) => {
     if (draggedCard === cardId) {
       setDraggedCard(null);
-      setCards((prevCards) =>
-        prevCards.map((c) =>
-          c.id === cardId ? { ...c, isDragging: false } : c
-        )
+      const updatedCards = cards.map((c: FlowerCardData) =>
+        c.id === cardId ? { ...c, isDragging: false } : c
       );
+      setCards(updatedCards);
     }
   };
 
@@ -305,7 +337,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
   }, []);
 
   // ===== RENDER CARD =====
-  const renderCard = (card: CardData) => {
+  const renderCard = (card: FlowerCardData) => {
     return (
       <View
         key={card.id}
