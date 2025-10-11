@@ -320,6 +320,7 @@ export default function TarotScreen({ navigation, route }: any) {
             onChangeText={handleSearchInput}
             returnKeyType="search"
             onSubmitEditing={handleSearch}
+            keyboardAppearance="dark"
           />
           <TouchableOpacity
             style={sharedUI.searchButton}

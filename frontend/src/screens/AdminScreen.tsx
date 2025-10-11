@@ -166,6 +166,7 @@ export default function AdminScreen({ navigation }: AdminScreenProps) {
               value={titleInput}
               onChangeText={setTitleInput}
               returnKeyType="next"
+              keyboardAppearance="dark"
             />
           </View>
 
@@ -178,6 +179,7 @@ export default function AdminScreen({ navigation }: AdminScreenProps) {
               value={authorInput}
               onChangeText={setAuthorInput}
               returnKeyType="next"
+              keyboardAppearance="dark"
             />
           </View>
 
@@ -192,6 +194,7 @@ export default function AdminScreen({ navigation }: AdminScreenProps) {
               keyboardType="numeric"
               returnKeyType="search"
               onSubmitEditing={handleBookLookup}
+              keyboardAppearance="dark"
             />
           </View>
 

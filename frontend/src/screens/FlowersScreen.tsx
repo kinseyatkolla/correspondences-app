@@ -190,6 +190,7 @@ export default function FlowersScreen({ navigation }: any) {
             onChangeText={handleSearchInput}
             returnKeyType="search"
             onSubmitEditing={handleSearch}
+            keyboardAppearance="dark"
           />
           <TouchableOpacity
             style={sharedUI.searchButton}

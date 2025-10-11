@@ -195,6 +195,7 @@ export default function BookScreen() {
             onChangeText={handleSearchInput}
             returnKeyType="search"
             onSubmitEditing={handleSearch}
+            keyboardAppearance="dark"
           />
           <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
             <Text style={styles.searchButtonText}>🔍</Text>

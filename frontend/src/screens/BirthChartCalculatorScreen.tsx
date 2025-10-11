@@ -202,6 +202,7 @@ export default function BirthChartCalculatorScreen({ navigation }: any) {
                 }
                 keyboardType="numeric"
                 placeholder="1990"
+                keyboardAppearance="dark"
               />
             </View>
             <View style={styles.inputGroup}>
@@ -214,6 +215,7 @@ export default function BirthChartCalculatorScreen({ navigation }: any) {
                 }
                 keyboardType="numeric"
                 placeholder="1"
+                keyboardAppearance="dark"
               />
             </View>
             <View style={styles.inputGroup}>
@@ -226,6 +228,7 @@ export default function BirthChartCalculatorScreen({ navigation }: any) {
                 }
                 keyboardType="numeric"
                 placeholder="1"
+                keyboardAppearance="dark"
               />
             </View>
           </View>
@@ -241,6 +244,7 @@ export default function BirthChartCalculatorScreen({ navigation }: any) {
                 }
                 keyboardType="numeric"
                 placeholder="12"
+                keyboardAppearance="dark"
               />
             </View>
             <View style={styles.inputGroup}>
@@ -253,6 +257,7 @@ export default function BirthChartCalculatorScreen({ navigation }: any) {
                 }
                 keyboardType="numeric"
                 placeholder="0"
+                keyboardAppearance="dark"
               />
             </View>
           </View>
@@ -274,6 +279,7 @@ export default function BirthChartCalculatorScreen({ navigation }: any) {
                 }
                 keyboardType="numeric"
                 placeholder="40.7128"
+                keyboardAppearance="dark"
               />
             </View>
             <View style={styles.inputGroup}>
@@ -289,6 +295,7 @@ export default function BirthChartCalculatorScreen({ navigation }: any) {
                 }
                 keyboardType="numeric"
                 placeholder="-74.0060"
+                keyboardAppearance="dark"
               />
             </View>
           </View>

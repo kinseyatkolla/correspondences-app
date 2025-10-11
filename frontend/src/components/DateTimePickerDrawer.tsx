@@ -10,6 +10,7 @@ import {
   Modal,
   Animated,
   Platform,
+  ScrollView,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -144,13 +145,19 @@ export default function DateTimePickerDrawer({
               </TouchableOpacity>
             </View>
 
-            <View style={styles.drawerContent}>
+            <ScrollView
+              style={styles.drawerContent}
+              showsVerticalScrollIndicator={false}
+            >
               {/* Date Picker */}
               <View style={styles.pickerSection}>
                 <Text style={styles.pickerLabel}>Date</Text>
                 <TouchableOpacity
                   style={styles.pickerButton}
-                  onPress={() => setShowDatePicker(true)}
+                  onPress={() => {
+                    setShowDatePicker(true);
+                    setShowTimePicker(false);
+                  }}
                 >
                   <Text style={styles.pickerButtonText}>
                     {tempDate.toLocaleDateString("en-US", {
@@ -162,6 +169,27 @@ export default function DateTimePickerDrawer({
                   </Text>
                   <Text style={styles.pickerArrow}>▼</Text>
                 </TouchableOpacity>
+
+                {/* Inline Date Picker */}
+                {showDatePicker && (
+                  <View style={styles.inlinePickerContainer}>
+                    <DateTimePicker
+                      value={tempDate}
+                      mode="date"
+                      display={Platform.OS === "ios" ? "spinner" : "default"}
+                      onChange={onDateChange}
+                      maximumDate={
+                        new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+                      } // 1 year from now
+                      minimumDate={
+                        new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
+                      } // 1 year ago
+                      style={styles.inlineDateTimePicker}
+                      textColor="#e6e6fa"
+                      themeVariant="dark"
+                    />
+                  </View>
+                )}
               </View>
 
               {/* Time Picker */}
@@ -169,7 +197,10 @@ export default function DateTimePickerDrawer({
                 <Text style={styles.pickerLabel}>Time</Text>
                 <TouchableOpacity
                   style={styles.pickerButton}
-                  onPress={() => setShowTimePicker(true)}
+                  onPress={() => {
+                    setShowTimePicker(true);
+                    setShowDatePicker(false);
+                  }}
                 >
                   <Text style={styles.pickerButtonText}>
                     {tempDate.toLocaleTimeString("en-US", {
@@ -180,6 +211,21 @@ export default function DateTimePickerDrawer({
                   </Text>
                   <Text style={styles.pickerArrow}>▼</Text>
                 </TouchableOpacity>
+
+                {/* Inline Time Picker */}
+                {showTimePicker && (
+                  <View style={styles.inlinePickerContainer}>
+                    <DateTimePicker
+                      value={tempDate}
+                      mode="time"
+                      display={Platform.OS === "ios" ? "spinner" : "default"}
+                      onChange={onTimeChange}
+                      style={styles.inlineDateTimePicker}
+                      textColor="#e6e6fa"
+                      themeVariant="dark"
+                    />
+                  </View>
+                )}
               </View>
 
               {/* Action Buttons */}
@@ -200,32 +246,10 @@ export default function DateTimePickerDrawer({
                   <Text style={styles.applyButtonText}>Apply</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </ScrollView>
           </TouchableOpacity>
         </Animated.View>
       </TouchableOpacity>
-
-      {/* Date Picker Modal */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={tempDate}
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={onDateChange}
-          maximumDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)} // 1 year from now
-          minimumDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)} // 1 year ago
-        />
-      )}
-
-      {/* Time Picker Modal */}
-      {showTimePicker && (
-        <DateTimePicker
-          value={tempDate}
-          mode="time"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={onTimeChange}
-        />
-      )}
     </Modal>
   );
 }
@@ -244,7 +268,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 40,
-    maxHeight: 400,
+    maxHeight: 500,
   },
   drawerHeader: {
     flexDirection: "row",
@@ -325,5 +349,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
+  },
+  inlinePickerContainer: {
+    backgroundColor: "#1a1a1a",
+    marginTop: 8,
+    borderRadius: 10,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: "#444",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 1,
+    maxHeight: 120,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  inlineDateTimePicker: {
+    backgroundColor: "transparent",
+    height: 100,
+    width: "100%",
+    alignSelf: "center",
   },
 });
