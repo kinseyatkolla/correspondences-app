@@ -67,6 +67,12 @@ interface TithiData {
   deity: string;
 }
 
+interface LunarPhase {
+  moonPhase: string;
+  date: string;
+  localDateTime?: Date;
+}
+
 // ============================================================================
 // DATA & CONSTANTS
 // ============================================================================
@@ -382,6 +388,98 @@ export default function MoonScreen({ navigation }: any) {
   // State for the date/time picker drawer
   const [drawerVisible, setDrawerVisible] = useState(false);
 
+  // State for lunar phases
+  const [lunarPhases, setLunarPhases] = useState<LunarPhase[]>([]);
+  const [lunarPhasesLoading, setLunarPhasesLoading] = useState(false);
+
+  // Function to fetch lunar phases for the current and next month
+  const fetchLunarPhases = async (date: Date) => {
+    try {
+      setLunarPhasesLoading(true);
+      const currentMonth = date.getMonth() + 1; // JavaScript months are 0-based
+      const currentYear = date.getFullYear();
+
+      // Get lunar phases for current month
+      const currentMonthData = await apiService.getLunarPhases(
+        currentYear,
+        currentMonth
+      );
+
+      console.log("Current month data:", currentMonthData);
+
+      // Get lunar phases for next month to ensure we have future dates
+      const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+      const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+      const nextMonthData = await apiService.getLunarPhases(
+        nextYear,
+        nextMonth
+      );
+
+      console.log("Next month data:", nextMonthData);
+
+      // Check if we have valid data
+      if (!currentMonthData?.response?.data || !nextMonthData?.response?.data) {
+        console.error("No data received from OPALE API");
+        setLunarPhases([]);
+        return;
+      }
+
+      // Extract the data arrays from the response objects
+      const currentPhases = currentMonthData.response.data;
+      const nextPhases = nextMonthData.response.data;
+
+      // Combine both months
+      const allPhases = [...currentPhases, ...nextPhases];
+
+      if (allPhases.length === 0) {
+        console.warn("No lunar phases found in API response");
+        setLunarPhases([]);
+        return;
+      }
+
+      // Get timezone offset from location
+      const location = currentChart?.location || {
+        latitude: 40.7128,
+        longitude: -74.006,
+      };
+
+      // Convert UTC times to local times based on location
+      const phasesWithLocalTime = allPhases.map((phase) => {
+        // Parse the UTC date and time from OPALE API (format: "2022-01-02T18:33:31")
+        // The API returns UTC times without the Z suffix
+        const utcDateTime = new Date(`${phase.date}Z`);
+
+        // Calculate timezone offset based on longitude (rough approximation)
+        // More accurate would be to use a timezone library, but this gives a reasonable estimate
+        const timezoneOffsetHours = Math.round(location.longitude / 15);
+        const localDateTime = new Date(
+          utcDateTime.getTime() + timezoneOffsetHours * 60 * 60 * 1000
+        );
+
+        return {
+          ...phase,
+          localDateTime,
+        };
+      });
+
+      // Filter to only show phases after yesterday
+      const yesterday = new Date(date);
+      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setHours(0, 0, 0, 0);
+
+      const upcomingPhases = phasesWithLocalTime.filter(
+        (phase) => phase.localDateTime && phase.localDateTime > yesterday
+      );
+
+      setLunarPhases(upcomingPhases);
+    } catch (error) {
+      console.error("Error fetching lunar phases:", error);
+      setLunarPhases([]);
+    } finally {
+      setLunarPhasesLoading(false);
+    }
+  };
+
   // Function to fetch chart data for a specific date
   const fetchChartForDate = async (date: Date) => {
     try {
@@ -506,6 +604,9 @@ export default function MoonScreen({ navigation }: any) {
       if (!isToday && !selectedDateChart) {
         fetchChartForDate(displayDate);
       }
+
+      // Fetch lunar phases
+      fetchLunarPhases(displayDate);
     }
   }, [displayDate, currentChart]);
 
@@ -920,6 +1021,75 @@ export default function MoonScreen({ navigation }: any) {
                         })()}
                       </View>
                     )}
+
+                  {/* Upcoming Lunar Phases Section */}
+                  <View style={styles.lunarPhasesContainer}>
+                    <Text style={styles.lunarPhasesTitle}>
+                      Upcoming Lunations
+                    </Text>
+                    {lunarPhasesLoading ? (
+                      <ActivityIndicator size="small" color="#111111" />
+                    ) : lunarPhases.length > 0 ? (
+                      <View style={styles.lunarPhasesList}>
+                        {lunarPhases.map((phase, index) => {
+                          if (!phase.localDateTime) return null;
+
+                          // Format the phase name (convert from camelCase to spaced words)
+                          // e.g., "NewMoon" -> "New Moon"
+                          const phaseName = phase.moonPhase
+                            .replace(/([A-Z])/g, " $1")
+                            .trim();
+
+                          // Get the corresponding emoji for each moon phase
+                          let emoji = "🌙";
+                          switch (phase.moonPhase) {
+                            case "NewMoon":
+                              emoji = "🌑";
+                              break;
+                            case "FirstQuarter":
+                              emoji = "🌓";
+                              break;
+                            case "FullMoon":
+                              emoji = "🌕";
+                              break;
+                            case "LastQuarter":
+                              emoji = "🌗";
+                              break;
+                          }
+
+                          // Format the date and time
+                          const dateString =
+                            phase.localDateTime.toLocaleDateString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                            });
+
+                          const timeString =
+                            phase.localDateTime.toLocaleTimeString("en-US", {
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            });
+
+                          return (
+                            <View key={index} style={styles.lunarPhaseRow}>
+                              <Text style={styles.lunarPhaseNameText}>
+                                {emoji} {phaseName}
+                              </Text>
+                              <Text style={styles.lunarPhaseDateText}>
+                                {dateString} at {timeString}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    ) : (
+                      <Text style={styles.lunarPhaseEmptyText}>
+                        No upcoming lunar phases found
+                      </Text>
+                    )}
+                  </View>
                 </>
               ) : (
                 <>
@@ -928,7 +1098,6 @@ export default function MoonScreen({ navigation }: any) {
                 </>
               )}
 
-              <Text style={styles.description}>Moon month calendar</Text>
               <Text style={styles.description}>Moon in literature</Text>
               <Text style={styles.description}>Moon in pop culture</Text>
               <Text style={styles.description}>Moon in myth</Text>
@@ -1162,6 +1331,63 @@ const styles = StyleSheet.create({
   stickySubtitle: {
     fontSize: 16,
     fontWeight: "600",
+    textAlign: "center",
+  },
+  // Lunar phases section styles
+  lunarPhasesContainer: {
+    backgroundColor: "rgba(255, 255, 255, 0)",
+    padding: 24,
+    borderRadius: 12,
+    marginTop: 30,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0)",
+    minWidth: 300,
+    alignItems: "center",
+    shadowColor: "#ffffff",
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 8,
+  },
+  lunarPhasesTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#111111",
+    marginBottom: 20,
+    textAlign: "center",
+    letterSpacing: 0.5,
+  },
+  lunarPhasesList: {
+    width: "100%",
+    minWidth: 300,
+  },
+  lunarPhaseRow: {
+    flexDirection: "column",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#dadada",
+    alignItems: "flex-start",
+  },
+  lunarPhaseNameText: {
+    fontSize: 16,
+    color: "#111111",
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  lunarPhaseDateText: {
+    fontSize: 14,
+    color: "#444444",
+    fontWeight: "500",
+  },
+  lunarPhaseEmptyText: {
+    fontSize: 14,
+    color: "#666666",
+    fontStyle: "italic",
     textAlign: "center",
   },
 });

@@ -766,6 +766,34 @@ class ApiService {
       `/wikipedia/summary?search=${encodeURIComponent(searchTerm)}`
     );
   }
+
+  // OPALE Lunar Phases API (IMCCE)
+  async getLunarPhases(
+    year: number,
+    month: number
+  ): Promise<{
+    response: {
+      calendar: string;
+      timescale: string;
+      data: Array<{
+        date: string;
+        moonPhase: string;
+      }>;
+    };
+  }> {
+    try {
+      const response = await fetch(
+        `https://opale.imcce.fr/api/v1/phenomena/moonphases?year=${year}&month=${month}`
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("OPALE API Error:", error);
+      throw error;
+    }
+  }
 }
 
 // Export a singleton instance
