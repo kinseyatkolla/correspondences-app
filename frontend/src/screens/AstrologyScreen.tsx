@@ -694,7 +694,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
-    padding: 5,
+    padding: 0,
     paddingBottom: 50, // Account for calculator nav bar
   },
   chartContainer: {

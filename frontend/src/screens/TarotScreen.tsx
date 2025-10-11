@@ -23,7 +23,7 @@ import { sharedUI } from "../styles/sharedUI";
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function TarotScreen({ navigation }: any) {
+export default function TarotScreen({ navigation, route }: any) {
   const { tarotCards: allTarotCards, loading: tarotLoading } = useTarot();
   const [tarotCards, setTarotCards] = useState<TarotCard[]>([]);
   const [filteredCards, setFilteredCards] = useState<TarotCard[]>([]);
@@ -36,6 +36,27 @@ export default function TarotScreen({ navigation }: any) {
   useEffect(() => {
     filterTarotCards(searchQuery, selectedCategory);
   }, [allTarotCards, searchQuery, selectedCategory]);
+
+  // Handle navigation params (e.g., from Book of Shadows)
+  useEffect(() => {
+    if (route?.params?.searchQuery && allTarotCards.length > 0) {
+      const query = route.params.searchQuery;
+      setSearchQuery(query);
+
+      // Find and open the matching card
+      const matchingCard = allTarotCards.find(
+        (card) => card.name.toLowerCase() === query.toLowerCase()
+      );
+
+      if (matchingCard) {
+        setSelectedCard(matchingCard);
+        setModalVisible(true);
+      }
+
+      // Clear the param after processing
+      navigation.setParams({ searchQuery: undefined });
+    }
+  }, [route?.params?.searchQuery, allTarotCards]);
 
   // ===== FILTERING FUNCTIONS =====
   const filterTarotCards = useCallback(

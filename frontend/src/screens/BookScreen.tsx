@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import {
   apiService,
   BookOfShadowsEntry,
@@ -30,6 +31,7 @@ import WikipediaSection from "../components/WikipediaSection";
 // COMPONENT
 // ============================================================================
 export default function BookScreen() {
+  const navigation = useNavigation();
   const [bosEntries, setBosEntries] = useState<BookOfShadowsEntry[]>([]);
   const [filteredEntries, setFilteredEntries] = useState<BookOfShadowsEntry[]>(
     []
@@ -45,6 +47,7 @@ export default function BookScreen() {
   const [bibliographyModalVisible, setBibliographyModalVisible] =
     useState(false);
   const [glossaryModalVisible, setGlossaryModalVisible] = useState(false);
+  const [loadingCorrespondence, setLoadingCorrespondence] = useState(false);
 
   // ===== LIFECYCLE =====
   useEffect(() => {
@@ -144,6 +147,42 @@ export default function BookScreen() {
     setSearchQuery("");
     setFilteredEntries([]);
     setSelectedCategory(null);
+  };
+
+  const handleCorrespondencePress = async (correspondenceName: string) => {
+    try {
+      setLoadingCorrespondence(true);
+      const response = await apiService.getBookOfShadowsEntries(
+        correspondenceName
+      );
+      if (response.data && response.data.length > 0) {
+        // Find exact match first, otherwise use first result
+        const match =
+          response.data.find(
+            (entry) =>
+              entry.name.toLowerCase() === correspondenceName.toLowerCase()
+          ) || response.data[0];
+        setSelectedEntry(match);
+      } else {
+        Alert.alert("Not Found", `No entry found for "${correspondenceName}"`);
+      }
+    } catch (error) {
+      console.error("Error loading correspondence:", error);
+      Alert.alert("Error", "Failed to load correspondence entry");
+    } finally {
+      setLoadingCorrespondence(false);
+    }
+  };
+
+  const handleViewInTarot = () => {
+    if (selectedEntry) {
+      setModalVisible(false);
+      // Navigate to Tarot tab and specifically to the TarotList screen
+      (navigation as any).navigate("Tarot", {
+        screen: "TarotList",
+        params: { searchQuery: selectedEntry.name },
+      });
+    }
   };
 
   // ===== RENDER HELPERS =====
@@ -380,9 +419,6 @@ export default function BookScreen() {
                     <Text style={overlayStyles.modalTitle}>
                       {selectedEntry.name}
                     </Text>
-                    <Text style={overlayStyles.modalSubtitle}>
-                      {selectedEntry.category}
-                    </Text>
                     <TouchableOpacity
                       style={overlayStyles.closeButton}
                       onPress={() => setModalVisible(false)}
@@ -391,12 +427,32 @@ export default function BookScreen() {
                     </TouchableOpacity>
                   </View>
 
-                  <View style={overlayStyles.section}>
-                    <Text style={overlayStyles.sectionTitle}>Description</Text>
-                    <Text style={overlayStyles.sectionText}>
-                      {selectedEntry.description}
-                    </Text>
-                  </View>
+                  {/* Only show description if it exists and is not empty */}
+                  {selectedEntry.description &&
+                    selectedEntry.description.trim() !== "" && (
+                      <View style={overlayStyles.section}>
+                        <Text style={overlayStyles.sectionTitle}>
+                          Description
+                        </Text>
+                        <Text style={overlayStyles.sectionText}>
+                          {selectedEntry.description}
+                        </Text>
+                      </View>
+                    )}
+
+                  {/* Show link to Tarot if this is a tarot card */}
+                  {selectedEntry.category === "tarotCard" && (
+                    <View style={overlayStyles.section}>
+                      <TouchableOpacity
+                        style={styles.tarotLinkButton}
+                        onPress={handleViewInTarot}
+                      >
+                        <Text style={styles.tarotLinkText}>
+                          🃏 View in Tarot Collection
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
 
                   <WikipediaSection
                     searchTerm={selectedEntry.name}
@@ -409,24 +465,44 @@ export default function BookScreen() {
                         <Text style={overlayStyles.sectionTitle}>
                           Correspondences & Associations
                         </Text>
+                        {loadingCorrespondence && (
+                          <ActivityIndicator
+                            size="small"
+                            color="#b19cd9"
+                            style={{ marginVertical: 10 }}
+                          />
+                        )}
                         {selectedEntry.correspondences.map(
                           (correspondence, index) => (
-                            <Text key={index} style={overlayStyles.listItem}>
-                              • {correspondence.name} ({correspondence.type})
-                            </Text>
+                            <TouchableOpacity
+                              key={index}
+                              onPress={() =>
+                                handleCorrespondencePress(correspondence.name)
+                              }
+                              style={styles.correspondenceItem}
+                            >
+                              <Text style={styles.correspondenceText}>
+                                • {correspondence.name} ({correspondence.type})
+                              </Text>
+                            </TouchableOpacity>
                           )
                         )}
                       </View>
                     )}
 
-                  {selectedEntry.content && (
-                    <View style={overlayStyles.section}>
-                      <Text style={overlayStyles.sectionTitle}>Details</Text>
-                      <Text style={overlayStyles.sectionText}>
-                        {selectedEntry.content}
-                      </Text>
-                    </View>
-                  )}
+                  {/* Only show content/details if it exists and is not the default pattern */}
+                  {selectedEntry.content &&
+                    selectedEntry.content.trim() !== "" &&
+                    !selectedEntry.content.match(
+                      /^Correspondences and associations for .+$/i
+                    ) && (
+                      <View style={overlayStyles.section}>
+                        <Text style={overlayStyles.sectionTitle}>Details</Text>
+                        <Text style={overlayStyles.sectionText}>
+                          {selectedEntry.content}
+                        </Text>
+                      </View>
+                    )}
 
                   {selectedEntry.keywords &&
                     selectedEntry.keywords.length > 0 && (
@@ -494,5 +570,29 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginBottom: 20,
     justifyContent: "space-between",
+  },
+  tarotLinkButton: {
+    backgroundColor: "#b19cd9",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
+    marginVertical: 8,
+  },
+  tarotLinkText: {
+    color: "#111",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  correspondenceItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    marginVertical: 2,
+  },
+  correspondenceText: {
+    color: "#b19cd9",
+    fontSize: 15,
+    lineHeight: 22,
+    textDecorationLine: "underline",
   },
 });
