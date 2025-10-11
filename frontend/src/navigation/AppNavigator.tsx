@@ -2,7 +2,7 @@ import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
-import { Text } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet } from "react-native";
 import { FlowersProvider } from "../contexts/FlowersContext";
 import { TarotProvider } from "../contexts/TarotContext";
 
@@ -18,6 +18,7 @@ import BookEntriesScreen from "../screens/BookEntriesScreen";
 import GlossaryScreen from "../screens/GlossaryScreen";
 import BibliographyScreen from "../screens/BibliographyScreen";
 import LibraryScreen from "../screens/LibraryScreen";
+import AdminScreen from "../screens/AdminScreen";
 import AstrologyScreen from "../screens/AstrologyScreen";
 import BirthChartCalculatorScreen from "../screens/BirthChartCalculatorScreen";
 import PlanetaryHoursScreen from "../screens/PlanetaryHoursScreen";
@@ -57,6 +58,11 @@ function FlowersStack() {
         component={FlowersScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="Admin"
+        component={AdminScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -91,6 +97,11 @@ function TarotStack() {
       <Stack.Screen
         name="TarotList"
         component={TarotScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Admin"
+        component={AdminScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
@@ -131,6 +142,11 @@ function AstrologyStack() {
         component={PlanetaryHoursScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="Admin"
+        component={AdminScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -162,6 +178,11 @@ function MoonStack() {
       <Stack.Screen
         name="TithiInfo"
         component={TithiInfoScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Admin"
+        component={AdminScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
@@ -212,6 +233,11 @@ function BookStack() {
         component={LibraryScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="Admin"
+        component={AdminScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -223,7 +249,7 @@ export default function AppNavigator() {
         <NavigationContainer>
           <Tab.Navigator
             initialRouteName="Moon"
-            screenOptions={{
+            screenOptions={({ navigation }) => ({
               tabBarActiveTintColor: "#e6e6fa",
               tabBarInactiveTintColor: "#8a8a8a",
               tabBarStyle: {
@@ -244,8 +270,21 @@ export default function AppNavigator() {
                 fontWeight: "bold",
                 letterSpacing: 8,
               },
-              headerTitle: "CORRESPONDENCES",
-            }}
+              headerTitle: () => (
+                <TouchableOpacity
+                  onPress={() => {
+                    const state = navigation.getState();
+                    const currentRoute = state.routes[state.index];
+                    (navigation as any).navigate(currentRoute.name, {
+                      screen: "Admin",
+                    });
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={headerStyles.headerTitle}>CORRESPONDENCES</Text>
+                </TouchableOpacity>
+              ),
+            })}
           >
             <Tab.Screen
               name="Flowers"
@@ -313,3 +352,12 @@ export default function AppNavigator() {
     </FlowersProvider>
   );
 }
+
+const headerStyles = StyleSheet.create({
+  headerTitle: {
+    color: "white",
+    fontWeight: "bold",
+    letterSpacing: 8,
+    fontSize: 17,
+  },
+});
