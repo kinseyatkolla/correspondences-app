@@ -70,7 +70,13 @@ interface TithiData {
 interface LunarPhase {
   moonPhase: string;
   date: string;
+  utcDateTime?: Date;
   localDateTime?: Date;
+  moonPosition?: {
+    degree: number;
+    degreeFormatted: string;
+    zodiacSignName: string;
+  };
 }
 
 // ============================================================================
@@ -440,41 +446,84 @@ export default function MoonScreen({ navigation }: any) {
         return;
       }
 
-      // Get timezone offset from location
+      // Get timezone offset from location for display purposes only
       const location = currentChart?.location || {
         latitude: 40.7128,
         longitude: -74.006,
       };
 
-      // Convert UTC times to local times based on location
-      const phasesWithLocalTime = allPhases.map((phase) => {
+      // Calculate timezone offset based on longitude (rough approximation)
+      const timezoneOffsetHours = Math.round(location.longitude / 15);
+
+      // Parse UTC times and store both UTC and local for display
+      const phasesWithTimes = allPhases.map((phase) => {
         // Parse the UTC date and time from OPALE API (format: "2022-01-02T18:33:31")
         // The API returns UTC times without the Z suffix
         const utcDateTime = new Date(`${phase.date}Z`);
 
-        // Calculate timezone offset based on longitude (rough approximation)
-        // More accurate would be to use a timezone library, but this gives a reasonable estimate
-        const timezoneOffsetHours = Math.round(location.longitude / 15);
+        // Calculate local time ONLY for display purposes
         const localDateTime = new Date(
           utcDateTime.getTime() + timezoneOffsetHours * 60 * 60 * 1000
         );
 
         return {
           ...phase,
+          utcDateTime,
           localDateTime,
         };
       });
 
-      // Filter to only show phases after yesterday
+      // Filter to only show phases after yesterday (compare UTC times)
       const yesterday = new Date(date);
       yesterday.setDate(yesterday.getDate() - 1);
       yesterday.setHours(0, 0, 0, 0);
 
-      const upcomingPhases = phasesWithLocalTime.filter(
-        (phase) => phase.localDateTime && phase.localDateTime > yesterday
+      const upcomingPhases = phasesWithTimes.filter(
+        (phase) => phase.utcDateTime && phase.utcDateTime > yesterday
       );
 
-      setLunarPhases(upcomingPhases);
+      // Fetch moon positions for each lunation using UTC times
+      const phasesWithMoonPositions = await Promise.all(
+        upcomingPhases.map(async (phase) => {
+          if (!phase.utcDateTime) return phase;
+
+          try {
+            // Use UTC time for ephemeris query
+            const birthData: BirthData = {
+              year: phase.utcDateTime.getUTCFullYear(),
+              month: phase.utcDateTime.getUTCMonth() + 1,
+              day: phase.utcDateTime.getUTCDate(),
+              hour: phase.utcDateTime.getUTCHours(),
+              minute: phase.utcDateTime.getUTCMinutes(),
+              latitude: location.latitude,
+              longitude: location.longitude,
+            };
+
+            const chartResponse = await apiService.getBirthChart(birthData);
+
+            if (chartResponse.success && chartResponse.data?.planets?.moon) {
+              const moon = chartResponse.data.planets.moon;
+              return {
+                ...phase,
+                moonPosition: {
+                  degree: moon.degree,
+                  degreeFormatted: moon.degreeFormatted,
+                  zodiacSignName: moon.zodiacSignName,
+                },
+              };
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching moon position for ${phase.date}:`,
+              error
+            );
+          }
+
+          return phase;
+        })
+      );
+
+      setLunarPhases(phasesWithMoonPositions);
     } catch (error) {
       console.error("Error fetching lunar phases:", error);
       setLunarPhases([]);
@@ -484,7 +533,7 @@ export default function MoonScreen({ navigation }: any) {
   };
 
   // Function to fetch chart data for a specific date
-  const fetchChartForDate = async (date: Date) => {
+  const fetchChartForDate = async (date: Date, useUTC: boolean = false) => {
     try {
       // Use the same location as the current chart
       const location = currentChart?.location || {
@@ -492,14 +541,27 @@ export default function MoonScreen({ navigation }: any) {
         longitude: -74.006,
       };
 
-      const birthData: BirthData = {
-        year: date.getFullYear(),
-        month: date.getMonth() + 1, // JavaScript months are 0-based
-        day: date.getDate(),
-        hour: 12, // Use noon for the calculation
-        latitude: location.latitude,
-        longitude: location.longitude,
-      };
+      const birthData: BirthData = useUTC
+        ? {
+            // Use UTC components for exact ephemeris queries (e.g., lunations)
+            year: date.getUTCFullYear(),
+            month: date.getUTCMonth() + 1,
+            day: date.getUTCDate(),
+            hour: date.getUTCHours(),
+            minute: date.getUTCMinutes(),
+            latitude: location.latitude,
+            longitude: location.longitude,
+          }
+        : {
+            // Use local components for user-selected dates
+            year: date.getFullYear(),
+            month: date.getMonth() + 1,
+            day: date.getDate(),
+            hour: date.getHours(),
+            minute: date.getMinutes(),
+            latitude: location.latitude,
+            longitude: location.longitude,
+          };
 
       const response = await apiService.getBirthChart(birthData);
 
@@ -542,9 +604,10 @@ export default function MoonScreen({ navigation }: any) {
   };
 
   // Handler for clicking on a lunation item
-  const handleLunationClick = (lunationDate: Date) => {
-    setDisplayDate(lunationDate);
-    fetchChartForDate(lunationDate);
+  const handleLunationClick = (utcDate: Date, localDate: Date) => {
+    // Use local date for display, but fetch chart based on exact UTC time
+    setDisplayDate(localDate);
+    fetchChartForDate(utcDate, true); // true = use UTC components
     // Scroll to top
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
   };
@@ -861,6 +924,9 @@ export default function MoonScreen({ navigation }: any) {
                                             aspectName,
                                             otherPlanetSign,
                                             zodiacSymbol,
+                                            degree: planet.degree,
+                                            degreeFormatted:
+                                              planet.degreeFormatted,
                                           };
                                         })
                                       : [];
@@ -925,6 +991,9 @@ export default function MoonScreen({ navigation }: any) {
                                             otherPlanetSign,
                                             zodiacSymbol,
                                             orb: orb.toFixed(1),
+                                            degree: planet.degree,
+                                            degreeFormatted:
+                                              planet.degreeFormatted,
                                           };
                                         })
                                       : [];
@@ -950,11 +1019,14 @@ export default function MoonScreen({ navigation }: any) {
                                       key={planetName}
                                       style={styles.aspectTableRow}
                                     >
-                                      <Text style={styles.aspectLabelText}>
+                                      <View style={styles.aspectLeftColumn}>
                                         {/* Display deduplicated aspects */}
                                         {uniqueAspects.map(
                                           (aspectInfo, index) => (
-                                            <Text key={index}>
+                                            <Text
+                                              key={index}
+                                              style={styles.aspectLabelText}
+                                            >
                                               <Text
                                                 style={[
                                                   getPhysisSymbolStyle(
@@ -985,29 +1057,7 @@ export default function MoonScreen({ navigation }: any) {
                                               {planetName
                                                 .charAt(0)
                                                 .toUpperCase() +
-                                                planetName.slice(1)}{" "}
-                                              <Text
-                                                style={[
-                                                  getZodiacColorStyle(
-                                                    aspectInfo.otherPlanetSign
-                                                  ),
-                                                ]}
-                                              >
-                                                {aspectInfo.otherPlanetSign}
-                                              </Text>{" "}
-                                              <Text
-                                                style={[
-                                                  getPhysisSymbolStyle(
-                                                    fontLoaded,
-                                                    "large"
-                                                  ),
-                                                  getZodiacColorStyle(
-                                                    aspectInfo.otherPlanetSign
-                                                  ),
-                                                ]}
-                                              >
-                                                {aspectInfo.zodiacSymbol}
-                                              </Text>
+                                                planetName.slice(1)}
                                               {/* Show orb information for degree aspects */}
                                               {(aspectInfo as any).orb && (
                                                 <Text
@@ -1018,13 +1068,44 @@ export default function MoonScreen({ navigation }: any) {
                                                   orb)
                                                 </Text>
                                               )}
-                                              {index <
-                                                uniqueAspects.length - 1 &&
-                                                ", "}
                                             </Text>
                                           )
                                         )}
-                                      </Text>
+                                      </View>
+                                      <View style={styles.aspectRightColumn}>
+                                        {uniqueAspects.map(
+                                          (aspectInfo, index) => (
+                                            <Text
+                                              key={index}
+                                              style={[
+                                                styles.aspectPlanetPosition,
+                                                getZodiacColorStyle(
+                                                  aspectInfo.otherPlanetSign
+                                                ),
+                                              ]}
+                                            >
+                                              <Text
+                                                style={[
+                                                  getPhysisSymbolStyle(
+                                                    fontLoaded,
+                                                    "medium"
+                                                  ),
+                                                  getZodiacColorStyle(
+                                                    aspectInfo.otherPlanetSign
+                                                  ),
+                                                ]}
+                                              >
+                                                {aspectInfo.zodiacSymbol}
+                                              </Text>{" "}
+                                              {
+                                                (aspectInfo as any)
+                                                  .degreeFormatted
+                                              }{" "}
+                                              {aspectInfo.otherPlanetSign}
+                                            </Text>
+                                          )
+                                        )}
+                                      </View>
                                     </View>
                                   );
                                 })}
@@ -1089,17 +1170,55 @@ export default function MoonScreen({ navigation }: any) {
                               key={index}
                               style={styles.lunarPhaseRow}
                               onPress={() =>
+                                phase.utcDateTime &&
                                 phase.localDateTime &&
-                                handleLunationClick(phase.localDateTime)
+                                handleLunationClick(
+                                  phase.utcDateTime,
+                                  phase.localDateTime
+                                )
                               }
                               activeOpacity={0.7}
                             >
-                              <Text style={styles.lunarPhaseNameText}>
-                                {emoji} {phaseName}
-                              </Text>
-                              <Text style={styles.lunarPhaseDateText}>
-                                {dateString} at {timeString}
-                              </Text>
+                              <View style={styles.lunarPhaseLeftColumn}>
+                                <Text style={styles.lunarPhaseNameText}>
+                                  {emoji} {phaseName}
+                                </Text>
+                                <Text style={styles.lunarPhaseDateText}>
+                                  {dateString} at {timeString}
+                                </Text>
+                              </View>
+                              {phase.moonPosition && (
+                                <View style={styles.lunarPhaseRightColumn}>
+                                  <Text
+                                    style={[
+                                      styles.lunarPhaseMoonPosition,
+                                      getZodiacColorStyle(
+                                        phase.moonPosition.zodiacSignName
+                                      ),
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        getPhysisSymbolStyle(
+                                          fontLoaded,
+                                          "medium"
+                                        ),
+                                        getZodiacColorStyle(
+                                          phase.moonPosition.zodiacSignName
+                                        ),
+                                      ]}
+                                    >
+                                      {
+                                        getZodiacKeysFromNames()[
+                                          phase.moonPosition.zodiacSignName
+                                        ]
+                                      }
+                                    </Text>{" "}
+                                    {phase.moonPosition.degreeFormatted}{" "}
+                                    {phase.moonPosition.zodiacSignName}
+                                  </Text>
+                                </View>
+                              )}
                             </TouchableOpacity>
                           );
                         })}
@@ -1259,21 +1378,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#dadada",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  aspectLeftColumn: {
+    flex: 1,
+    flexDirection: "column",
     alignItems: "flex-start",
+  },
+  aspectRightColumn: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+    justifyContent: "center",
+    marginLeft: 12,
   },
   aspectLabelText: {
     fontSize: 14,
     color: "#111111",
     fontWeight: "600",
-    flex: 1,
-    flexGrow: 1,
+  },
+  aspectPlanetPosition: {
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "right",
   },
   orbLabelText: {
     fontSize: 12,
     color: "#666",
-    flex: 1,
     fontFamily: "monospace",
-    textAlign: "left",
   },
   // Color styles moved to colorUtils.ts for DRY principle
   // Essential dignities styles
@@ -1377,12 +1509,24 @@ const styles = StyleSheet.create({
     minWidth: 300,
   },
   lunarPhaseRow: {
-    flexDirection: "column",
+    flexDirection: "row",
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#dadada",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  lunarPhaseLeftColumn: {
+    flex: 1,
+    flexDirection: "column",
     alignItems: "flex-start",
+  },
+  lunarPhaseRightColumn: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+    justifyContent: "center",
+    marginLeft: 12,
   },
   lunarPhaseNameText: {
     fontSize: 16,
@@ -1394,6 +1538,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#444444",
     fontWeight: "500",
+  },
+  lunarPhaseMoonPosition: {
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "right",
   },
   lunarPhaseEmptyText: {
     fontSize: 14,
