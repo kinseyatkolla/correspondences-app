@@ -700,7 +700,7 @@ export default function MoonScreen({ navigation }: any) {
                 style={styles.moonPhaseSvg}
               />
 
-              {activeChart ? (
+              {activeChart && (
                 <>
                   <Text style={styles.title}>
                     {(() => {
@@ -1111,16 +1111,7 @@ export default function MoonScreen({ navigation }: any) {
                     )}
                   </View>
                 </>
-              ) : (
-                <>
-                  <Text style={styles.title}>Capricorn Moon</Text>
-                  <Text style={styles.description}>Waxing Gibbous</Text>
-                </>
               )}
-
-              <Text style={styles.description}>Moon in literature</Text>
-              <Text style={styles.description}>Moon in pop culture</Text>
-              <Text style={styles.description}>Moon in myth</Text>
             </ImageBackground>
           </ScrollView>
 
