@@ -549,6 +549,37 @@ export default function MoonScreen({ navigation }: any) {
               style={styles.backgroundImage}
               resizeMode="cover"
             >
+              {/* Moon Degree/Zodiac Sign - Top Right */}
+              {activeChart?.planets?.moon &&
+                !activeChart.planets.moon.error && (
+                  <View style={styles.scrollingMoonDegree}>
+                    <Text
+                      style={[
+                        styles.stickySubtitle,
+                        getZodiacColorStyle(
+                          activeChart.planets.moon.zodiacSignName
+                        ),
+                      ]}
+                    >
+                      {activeChart.planets.moon.degreeFormatted}{" "}
+                      <Text
+                        style={[
+                          getPhysisSymbolStyle(fontLoaded, "large"),
+                          getZodiacColorStyle(
+                            activeChart.planets.moon.zodiacSignName
+                          ),
+                        ]}
+                      >
+                        {
+                          getZodiacKeysFromNames()[
+                            activeChart.planets.moon.zodiacSignName
+                          ]
+                        }
+                      </Text>
+                    </Text>
+                  </View>
+                )}
+
               <MoonSvgImporter
                 svgName={currentMoonPhase.toString()}
                 width={240}
@@ -592,19 +623,6 @@ export default function MoonScreen({ navigation }: any) {
                       {currentTithi <= 15 ? "Waxing Moon" : "Waning Moon"}
                     </Text>
                   )}
-                  {activeChart.planets.moon &&
-                    !activeChart.planets.moon.error && (
-                      <Text style={styles.subtitle}>
-                        {activeChart.planets.moon.degreeFormatted}{" "}
-                        <Text style={getPhysisSymbolStyle(fontLoaded, "large")}>
-                          {
-                            getZodiacKeysFromNames()[
-                              activeChart.planets.moon.zodiacSignName
-                            ]
-                          }
-                        </Text>
-                      </Text>
-                    )}
 
                   {/* Essential Dignities */}
                   {activeChart.planets.moon &&
@@ -1130,5 +1148,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginLeft: 10,
+  },
+  // Scrolling moon degree/zodiac sign styles
+  scrollingMoonDegree: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 1000,
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderColor: "transparent",
+  },
+  stickySubtitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
   },
 });

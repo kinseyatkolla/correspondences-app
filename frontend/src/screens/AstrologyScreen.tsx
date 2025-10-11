@@ -770,8 +770,8 @@ const styles = StyleSheet.create({
   },
   stickyPlanetaryHour: {
     position: "absolute",
-    top: 20,
-    right: 20,
+    top: 10,
+    right: 10,
     zIndex: 1000,
   },
   // Card styles from PlanetaryHoursScreen
