@@ -19,16 +19,6 @@ export default function CurrentPlanetaryHour({
   const { fontLoaded } = usePhysisFont();
   const planetKeys = getPlanetKeysFromNames();
 
-  if (loading) {
-    return (
-      <TouchableOpacity style={styles.container} onPress={onPress}>
-        <Text style={styles.planetSymbol}>
-          <Text style={getPhysisSymbolStyle(fontLoaded, "large")}>?</Text>
-        </Text>
-      </TouchableOpacity>
-    );
-  }
-
   if (!planetaryHoursData?.currentHour) {
     return null; // Hide the component entirely when no data
   }
