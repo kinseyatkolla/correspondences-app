@@ -794,6 +794,59 @@ class ApiService {
       throw error;
     }
   }
+
+  // Get year-long ephemeris data for detecting ingresses and stations
+  async getYearEphemeris(
+    year: number,
+    latitude?: number,
+    longitude?: number,
+    sampleInterval?: number
+  ): Promise<{
+    success: boolean;
+    data: {
+      year: number;
+      location: { latitude: number; longitude: number };
+      sampleInterval: number;
+      totalSamples: number;
+      samples: Array<{
+        date: Date;
+        julianDay: number;
+        timestamp: string;
+        planets: Record<
+          string,
+          {
+            longitude: number;
+            speed: number;
+            zodiacSign: number;
+            zodiacSignName: string;
+            degree: number;
+            degreeFormatted: string;
+            isRetrograde: boolean;
+          }
+        >;
+      }>;
+    };
+  }> {
+    const requestBody: any = { year };
+    if (latitude !== undefined) requestBody.latitude = latitude;
+    if (longitude !== undefined) requestBody.longitude = longitude;
+    if (sampleInterval !== undefined) requestBody.sampleInterval = sampleInterval;
+
+    const response = await this.fetchData("/astrology/year-ephemeris", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    });
+
+    // Convert date strings back to Date objects
+    if (response.success && response.data?.samples) {
+      response.data.samples = response.data.samples.map((sample: any) => ({
+        ...sample,
+        date: new Date(sample.timestamp),
+      }));
+    }
+
+    return response;
+  }
 }
 
 // Export a singleton instance

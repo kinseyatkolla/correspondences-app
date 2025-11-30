@@ -703,4 +703,130 @@ router.get("/ephemeris-info", (req, res) => {
   }
 });
 
+// Get year-long ephemeris data for detecting ingresses and stations
+router.post("/year-ephemeris", (req, res) => {
+  console.log("🚀 YEAR EPHEMERIS ENDPOINT HIT 🚀");
+  try {
+    const {
+      year,
+      latitude = 40.7128, // Default to New York
+      longitude = -74.006,
+      sampleInterval = 24, // Hours between samples (default: daily)
+    } = req.body;
+
+    if (!year) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required parameter: year",
+      });
+    }
+
+    // Set topocentric location
+    sweph.set_topo(longitude, latitude, 0);
+
+    // Planet IDs to track (excluding Sun and Moon for ingresses, but including for stations)
+    const planetIds = [
+      { name: "mercury", id: 2, symbol: "☿" },
+      { name: "venus", id: 3, symbol: "♀" },
+      { name: "mars", id: 4, symbol: "♂" },
+      { name: "jupiter", id: 5, symbol: "♃" },
+      { name: "saturn", id: 6, symbol: "♄" },
+      { name: "uranus", id: 7, symbol: "♅" },
+      { name: "neptune", id: 8, symbol: "♆" },
+      { name: "pluto", id: 9, symbol: "♇" },
+    ];
+
+    // Sample data points throughout the year
+    const startDate = new Date(year, 0, 1, 12, 0, 0); // Jan 1, noon UTC
+    const endDate = new Date(year, 11, 31, 23, 59, 59); // Dec 31, end of day
+    const samples = [];
+
+    // Generate samples
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      const julianDay = calculateJulianDay(
+        currentDate.getUTCFullYear(),
+        currentDate.getUTCMonth() + 1,
+        currentDate.getUTCDate(),
+        currentDate.getUTCHours(),
+        currentDate.getUTCMinutes(),
+        currentDate.getUTCSeconds()
+      );
+
+      const sample = {
+        julianDay,
+        timestamp: currentDate.toISOString(),
+        planets: {},
+      };
+
+      // Calculate planetary positions
+      planetIds.forEach((planet) => {
+        try {
+          const result = sweph.calc_ut(
+            julianDay,
+            planet.id,
+            SEFLG_TOPOCTR | SEFLG_SPEED
+          );
+
+          if (result.data && result.data.length >= 4) {
+            const longitude = result.data[0];
+            const speed = result.data[3];
+            
+            // Debug: Log first few mercury calculations to check speed
+            if (planet.name === "mercury" && samples.length < 3) {
+              console.log(
+                `Mercury calc - JD: ${julianDay}, result.data length: ${result.data.length}, speed: ${speed}, longitude: ${longitude}`
+              );
+              console.log("Full result.data:", result.data);
+            }
+            
+            sample.planets[planet.name] = {
+              longitude,
+              speed,
+              zodiacSign: Math.floor(longitude / 30),
+              zodiacSignName: getZodiacSign(longitude),
+              degree: longitude % 30,
+              degreeFormatted: formatDegree(longitude),
+              isRetrograde: speed < 0,
+            };
+          } else {
+            // Debug: Log if result structure is unexpected
+            if (planet.name === "mercury" && samples.length < 3) {
+              console.log(
+                `Mercury calc - Unexpected result structure:`,
+                result
+              );
+            }
+          }
+        } catch (planetError) {
+          console.error(`Error calculating ${planet.name}:`, planetError);
+        }
+      });
+
+      samples.push(sample);
+
+      // Move to next sample time
+      currentDate.setUTCHours(currentDate.getUTCHours() + sampleInterval);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        year,
+        location: { latitude, longitude },
+        sampleInterval,
+        totalSamples: samples.length,
+        samples,
+      },
+    });
+  } catch (error) {
+    console.error("Year ephemeris calculation error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to calculate year ephemeris",
+      details: error.message,
+    });
+  }
+});
+
 module.exports = router;

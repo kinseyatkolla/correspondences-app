@@ -5,6 +5,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { Text, View, TouchableOpacity, StyleSheet } from "react-native";
 import { FlowersProvider } from "../contexts/FlowersContext";
 import { TarotProvider } from "../contexts/TarotContext";
+import { CalendarProvider } from "../contexts/CalendarContext";
 
 // Import screens
 import MoonScreen from "../screens/MoonScreen";
@@ -22,6 +23,7 @@ import AdminScreen from "../screens/AdminScreen";
 import AstrologyScreen from "../screens/AstrologyScreen";
 import BirthChartCalculatorScreen from "../screens/BirthChartCalculatorScreen";
 import PlanetaryHoursScreen from "../screens/PlanetaryHoursScreen";
+import CalendarScreen from "../screens/CalendarScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -189,7 +191,7 @@ function MoonStack() {
   );
 }
 
-// Book Stack Navigator
+// Book Stack Navigator (kept for future use, not currently in navigation)
 function BookStack() {
   return (
     <Stack.Navigator
@@ -239,6 +241,41 @@ function BookStack() {
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
+  );
+}
+
+// Calendar Stack Navigator
+function CalendarStack() {
+  return (
+    <CalendarProvider year={2025}>
+      <Stack.Navigator
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: "#000000",
+            borderBottomWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+          headerTintColor: "white",
+          headerTitleStyle: {
+            fontWeight: "bold",
+            letterSpacing: 8,
+          },
+          headerTitle: "CORRESPONDENCES",
+        }}
+      >
+        <Stack.Screen
+          name="CalendarMain"
+          component={CalendarScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Admin"
+          component={AdminScreen}
+          options={{ headerShown: false }}
+        />
+      </Stack.Navigator>
+    </CalendarProvider>
   );
 }
 
@@ -324,7 +361,7 @@ export default function AppNavigator() {
             />
             <Tab.Screen
               name="Book"
-              component={BookStack}
+              component={CalendarStack}
               options={{
                 tabBarLabel: "",
                 tabBarIcon: ({ focused, size }) => (

@@ -34,6 +34,12 @@ import {
   calculatePlanetaryHours,
   PlanetaryHoursData,
 } from "../utils/planetaryHoursUtils";
+import {
+  checkAllAspects,
+  checkAllWholeSignAspects,
+  getActiveAspects,
+} from "../utils/aspectUtils";
+import { getAspectColorStyle, getZodiacColorStyle } from "../utils/colorUtils";
 
 // ============================================================================
 // COMPONENT
@@ -400,6 +406,261 @@ export default function AstrologyScreen({ navigation }: any) {
     };
   };
 
+  // Helper function to get aspects for a planet/point (for compact display in cards)
+  const getAspectsForCard = (
+    sourceName: string,
+    sourcePlanet: any,
+    chart: BirthChart | any
+  ) => {
+    // Define consistent planet order
+    const planetOrder = [
+      "sun",
+      "moon",
+      "mercury",
+      "venus",
+      "mars",
+      "jupiter",
+      "saturn",
+      "uranus",
+      "neptune",
+      "pluto",
+      "northNode",
+    ];
+
+    // Get all planets except the source planet for comparison
+    const otherPlanets = Object.entries(chart.planets)
+      .filter(
+        ([name, planet]: [string, any]) =>
+          name !== sourceName && planet && !planet.error
+      )
+      .sort(([nameA], [nameB]) => {
+        const indexA = planetOrder.indexOf(nameA);
+        const indexB = planetOrder.indexOf(nameB);
+        const sortA = indexA === -1 ? 999 : indexA;
+        const sortB = indexB === -1 ? 999 : indexB;
+        return sortA - sortB;
+      });
+
+    // Add ascendant to other planets if source is not ascendant
+    if (sourceName !== "ascendant" && chart.houses) {
+      const ascendantPosition: any = {
+        longitude: chart.houses.ascendant,
+        zodiacSignName: chart.houses.ascendantSign,
+        degree: parseFloat(chart.houses.ascendantDegree) || 0,
+        degreeFormatted: chart.houses.ascendantDegree,
+      };
+      otherPlanets.push(["ascendant", ascendantPosition]);
+    }
+
+    const aspects: Array<{
+      planetName: string;
+      displayName: string;
+      aspectName: string;
+      orb?: string;
+    }> = [];
+
+    otherPlanets.forEach(([planetName, planet]: [string, any]) => {
+      // Check aspects with 3-degree orb (using utility functions)
+      // Only show aspects with 3-degree orb or less (no whole sign aspects)
+      const aspectResults = checkAllAspects(sourcePlanet, planet, 3);
+
+      // Format planet display name
+      const capitalizedPlanetName =
+        planetName.charAt(0).toUpperCase() + planetName.slice(1);
+      const displayPlanetName =
+        planetName === "northNode"
+          ? "N. Node"
+          : planetName === "ascendant"
+          ? "Ascendant"
+          : capitalizedPlanetName;
+
+      // Check degree-based aspects (3-degree orb or less)
+      // Since we're using orb=3, hasAspect will only be true if orb <= 3
+      Object.entries(aspectResults).forEach(([aspectName, result]) => {
+        if (result.hasAspect) {
+          aspects.push({
+            planetName: displayPlanetName,
+            displayName: displayPlanetName,
+            aspectName,
+            orb: result.orb ? result.orb.toFixed(1) : undefined,
+          });
+        }
+      });
+    });
+
+    return aspects;
+  };
+
+  // Helper function to render aspects for a planet or point
+  const renderAspectsSection = (
+    sourceName: string,
+    sourcePlanet: any,
+    emoji: string,
+    displayName: string,
+    chart: BirthChart | any
+  ) => {
+    // Define consistent planet order
+    const planetOrder = [
+      "sun",
+      "moon",
+      "mercury",
+      "venus",
+      "mars",
+      "jupiter",
+      "saturn",
+      "uranus",
+      "neptune",
+      "pluto",
+      "northNode",
+    ];
+
+    // Get all planets except the source planet for comparison, sorted by planet order
+    const otherPlanets = Object.entries(chart.planets)
+      .filter(
+        ([name, planet]: [string, any]) =>
+          name !== sourceName && planet && !planet.error
+      )
+      .sort(([nameA], [nameB]) => {
+        const indexA = planetOrder.indexOf(nameA);
+        const indexB = planetOrder.indexOf(nameB);
+        const sortA = indexA === -1 ? 999 : indexA;
+        const sortB = indexB === -1 ? 999 : indexB;
+        return sortA - sortB;
+      });
+
+    // Add ascendant to other planets if source is not ascendant
+    if (sourceName !== "ascendant" && chart.houses) {
+      const ascendantPosition: any = {
+        longitude: chart.houses.ascendant,
+        zodiacSignName: chart.houses.ascendantSign,
+        degree: parseFloat(chart.houses.ascendantDegree) || 0,
+        degreeFormatted: chart.houses.ascendantDegree,
+      };
+      otherPlanets.push(["ascendant", ascendantPosition]);
+    }
+
+    const planetsWithAspects = otherPlanets.filter(
+      ([planetName, planet]: [string, any]) => {
+        const allActiveAspects = getActiveAspects(sourcePlanet, planet);
+        return allActiveAspects.length > 0;
+      }
+    );
+
+    if (planetsWithAspects.length === 0) {
+      return <Text style={styles.noAspectsText}>No active aspects</Text>;
+    }
+
+    return (
+      <View style={styles.aspectsList}>
+        {planetsWithAspects.map(([planetName, planet]: [string, any]) => {
+          // Get all aspect results with orb information
+          const allAspectResults = checkAllAspects(sourcePlanet, planet);
+          const allWholeSignAspectResults = checkAllWholeSignAspects(
+            sourcePlanet,
+            planet
+          );
+
+          const otherPlanetSign = planet.zodiacSignName;
+          const zodiacSymbol = getZodiacKeysFromNames()[otherPlanetSign];
+
+          // Format degree-based aspects with orb information
+          const degreeAspects = Object.entries(allAspectResults)
+            .filter(([aspectName, result]) => result.hasAspect)
+            .map(([aspectName, result]) => ({
+              aspectName,
+              otherPlanetSign,
+              zodiacSymbol,
+              orb: result.orb ? result.orb.toFixed(1) : undefined,
+              degree: planet.degree,
+              degreeFormatted: planet.degreeFormatted,
+            }));
+
+          // Format whole sign aspects
+          const wholeSignAspects = Object.entries(allWholeSignAspectResults)
+            .filter(([aspectName, result]) => result.hasAspect)
+            .map(([aspectName, result]) => ({
+              aspectName,
+              otherPlanetSign,
+              zodiacSymbol,
+              degree: planet.degree,
+              degreeFormatted: planet.degreeFormatted,
+            }));
+
+          // Combine and deduplicate aspects
+          const allAspects = [...wholeSignAspects, ...degreeAspects];
+          const uniqueAspects = allAspects.filter((aspect, index, array) => {
+            return (
+              array.findIndex((a) => a.aspectName === aspect.aspectName) ===
+              index
+            );
+          });
+
+          const capitalizedPlanetName =
+            planetName.charAt(0).toUpperCase() + planetName.slice(1);
+          const displayPlanetName =
+            planetName === "northNode"
+              ? "N. Node"
+              : planetName === "ascendant"
+              ? "Ascendant"
+              : capitalizedPlanetName;
+
+          return (
+            <View key={planetName} style={styles.aspectTableRow}>
+              <View style={styles.aspectLeftColumn}>
+                {uniqueAspects.map((aspectInfo, index) => (
+                  <Text key={index} style={styles.aspectLabelText}>
+                    <Text
+                      style={[
+                        getPhysisSymbolStyle(fontLoaded, "large"),
+                        getZodiacColorStyle(sourcePlanet.zodiacSignName),
+                      ]}
+                    >
+                      {getZodiacKeysFromNames()[sourcePlanet.zodiacSignName]}
+                    </Text>{" "}
+                    {displayName}{" "}
+                    <Text style={[getAspectColorStyle(aspectInfo.aspectName)]}>
+                      {aspectInfo.aspectName}
+                    </Text>{" "}
+                    {displayPlanetName}
+                    {/* Show orb information for degree aspects */}
+                    {(aspectInfo as any).orb && (
+                      <Text style={styles.orbLabelText}>
+                        {" "}
+                        ({(aspectInfo as any).orb}° orb)
+                      </Text>
+                    )}
+                  </Text>
+                ))}
+              </View>
+              <View style={styles.aspectRightColumn}>
+                {uniqueAspects.map((aspectInfo, index) => (
+                  <Text
+                    key={index}
+                    style={[
+                      styles.aspectPlanetPosition,
+                      getZodiacColorStyle(aspectInfo.otherPlanetSign),
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        getPhysisSymbolStyle(fontLoaded, "medium"),
+                        getZodiacColorStyle(aspectInfo.otherPlanetSign),
+                      ]}
+                    >
+                      {aspectInfo.zodiacSymbol}
+                    </Text>{" "}
+                    {(aspectInfo as any).degreeFormatted}{" "}
+                    {aspectInfo.otherPlanetSign}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
+
   // ===== MAIN TEMPLATE =====
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -522,6 +783,393 @@ export default function AstrologyScreen({ navigation }: any) {
                   </Text>
                 </View>
               )}
+
+              {/* Planet Cards Grid */}
+              {activeChart && !ephemerisLoading && !selectedDateLoading && (
+                <View style={styles.planetCardsContainer}>
+                  {(() => {
+                    const planetPairs = [
+                      [
+                        {
+                          name: "ascendant",
+                          displayName: "Ascendant",
+                          data: activeChart.houses
+                            ? {
+                                degreeFormatted:
+                                  activeChart.houses.ascendantDegree,
+                                zodiacSignName:
+                                  activeChart.houses.ascendantSign,
+                                symbol: "!",
+                              }
+                            : null,
+                        },
+                        {
+                          name: "sun",
+                          displayName: "Sun",
+                          data: activeChart.planets?.sun
+                            ? {
+                                degreeFormatted:
+                                  activeChart.planets.sun.degreeFormatted,
+                                zodiacSignName:
+                                  activeChart.planets.sun.zodiacSignName,
+                                symbol: getPlanetKeysFromNames()["Sun"],
+                              }
+                            : null,
+                        },
+                      ],
+                      [
+                        {
+                          name: "moon",
+                          displayName: "Moon",
+                          data: activeChart.planets?.moon
+                            ? {
+                                degreeFormatted:
+                                  activeChart.planets.moon.degreeFormatted,
+                                zodiacSignName:
+                                  activeChart.planets.moon.zodiacSignName,
+                                symbol: getPlanetKeysFromNames()["Moon"],
+                              }
+                            : null,
+                        },
+                        {
+                          name: "mercury",
+                          displayName: "Mercury",
+                          data: activeChart.planets?.mercury
+                            ? {
+                                degreeFormatted:
+                                  activeChart.planets.mercury.degreeFormatted,
+                                zodiacSignName:
+                                  activeChart.planets.mercury.zodiacSignName,
+                                symbol: getPlanetKeysFromNames()["Mercury"],
+                              }
+                            : null,
+                        },
+                      ],
+                      [
+                        {
+                          name: "venus",
+                          displayName: "Venus",
+                          data: activeChart.planets?.venus
+                            ? {
+                                degreeFormatted:
+                                  activeChart.planets.venus.degreeFormatted,
+                                zodiacSignName:
+                                  activeChart.planets.venus.zodiacSignName,
+                                symbol: getPlanetKeysFromNames()["Venus"],
+                              }
+                            : null,
+                        },
+                        {
+                          name: "mars",
+                          displayName: "Mars",
+                          data: activeChart.planets?.mars
+                            ? {
+                                degreeFormatted:
+                                  activeChart.planets.mars.degreeFormatted,
+                                zodiacSignName:
+                                  activeChart.planets.mars.zodiacSignName,
+                                symbol: getPlanetKeysFromNames()["Mars"],
+                              }
+                            : null,
+                        },
+                      ],
+                      [
+                        {
+                          name: "jupiter",
+                          displayName: "Jupiter",
+                          data: activeChart.planets?.jupiter
+                            ? {
+                                degreeFormatted:
+                                  activeChart.planets.jupiter.degreeFormatted,
+                                zodiacSignName:
+                                  activeChart.planets.jupiter.zodiacSignName,
+                                symbol: getPlanetKeysFromNames()["Jupiter"],
+                              }
+                            : null,
+                        },
+                        {
+                          name: "saturn",
+                          displayName: "Saturn",
+                          data: activeChart.planets?.saturn
+                            ? {
+                                degreeFormatted:
+                                  activeChart.planets.saturn.degreeFormatted,
+                                zodiacSignName:
+                                  activeChart.planets.saturn.zodiacSignName,
+                                symbol: getPlanetKeysFromNames()["Saturn"],
+                              }
+                            : null,
+                        },
+                      ],
+                      [
+                        {
+                          name: "uranus",
+                          displayName: "Uranus",
+                          data: activeChart.planets?.uranus
+                            ? {
+                                degreeFormatted:
+                                  activeChart.planets.uranus.degreeFormatted,
+                                zodiacSignName:
+                                  activeChart.planets.uranus.zodiacSignName,
+                                symbol: getPlanetKeysFromNames()["Uranus"],
+                              }
+                            : null,
+                        },
+                        {
+                          name: "neptune",
+                          displayName: "Neptune",
+                          data: activeChart.planets?.neptune
+                            ? {
+                                degreeFormatted:
+                                  activeChart.planets.neptune.degreeFormatted,
+                                zodiacSignName:
+                                  activeChart.planets.neptune.zodiacSignName,
+                                symbol: getPlanetKeysFromNames()["Neptune"],
+                              }
+                            : null,
+                        },
+                      ],
+                      [
+                        {
+                          name: "pluto",
+                          displayName: "Pluto",
+                          data: activeChart.planets?.pluto
+                            ? {
+                                degreeFormatted:
+                                  activeChart.planets.pluto.degreeFormatted,
+                                zodiacSignName:
+                                  activeChart.planets.pluto.zodiacSignName,
+                                symbol: getPlanetKeysFromNames()["Pluto"],
+                              }
+                            : null,
+                        },
+                        {
+                          name: "northNode",
+                          displayName: "N. Node",
+                          data: activeChart.planets?.northNode
+                            ? {
+                                degreeFormatted:
+                                  activeChart.planets.northNode.degreeFormatted,
+                                zodiacSignName:
+                                  activeChart.planets.northNode.zodiacSignName,
+                                symbol: getPlanetKeysFromNames()["NorthNode"],
+                              }
+                            : null,
+                        },
+                      ],
+                    ];
+
+                    return (
+                      <View style={styles.planetCardsGrid}>
+                        {planetPairs.map((pair, rowIndex) => (
+                          <View key={rowIndex} style={styles.planetCardsRow}>
+                            {pair.map((planet, colIndex) => {
+                              if (!planet.data) return null;
+
+                              const zodiacColor = getZodiacColorStyle(
+                                planet.data.zodiacSignName
+                              ).color;
+                              const zodiacSymbol =
+                                getZodiacKeysFromNames()[
+                                  planet.data.zodiacSignName
+                                ];
+
+                              return (
+                                <View
+                                  key={planet.name}
+                                  style={[
+                                    styles.planetCard,
+                                    { backgroundColor: zodiacColor },
+                                  ]}
+                                >
+                                  <View style={styles.planetCardHeader}>
+                                    <Text style={styles.planetCardHeaderText}>
+                                      {planet.data.degreeFormatted}{" "}
+                                      <Text
+                                        style={[
+                                          getPhysisSymbolStyle(
+                                            fontLoaded,
+                                            "medium"
+                                          ),
+                                          styles.planetCardHeaderText,
+                                        ]}
+                                      >
+                                        {zodiacSymbol}
+                                      </Text>{" "}
+                                      {planet.displayName}
+                                    </Text>
+                                  </View>
+                                  <View style={styles.planetCardContent}>
+                                    {(() => {
+                                      // Get planet data for aspect calculations
+                                      let planetData: any;
+                                      if (planet.name === "ascendant") {
+                                        if (!activeChart.houses) {
+                                          return (
+                                            <Text
+                                              style={
+                                                styles.planetCardContentText
+                                              }
+                                            >
+                                              No data
+                                            </Text>
+                                          );
+                                        }
+                                        planetData = {
+                                          longitude:
+                                            activeChart.houses.ascendant,
+                                          zodiacSignName:
+                                            activeChart.houses.ascendantSign,
+                                          degree:
+                                            parseFloat(
+                                              activeChart.houses.ascendantDegree
+                                            ) || 0,
+                                          degreeFormatted:
+                                            activeChart.houses.ascendantDegree,
+                                        };
+                                      } else {
+                                        planetData =
+                                          activeChart.planets[planet.name];
+                                      }
+
+                                      if (!planetData) {
+                                        return (
+                                          <Text
+                                            style={styles.planetCardContentText}
+                                          >
+                                            No data
+                                          </Text>
+                                        );
+                                      }
+
+                                      const aspects = getAspectsForCard(
+                                        planet.name,
+                                        planetData,
+                                        activeChart
+                                      );
+
+                                      if (aspects.length === 0) {
+                                        return (
+                                          <Text
+                                            style={styles.planetCardContentText}
+                                          >
+                                            No aspects
+                                          </Text>
+                                        );
+                                      }
+
+                                      return (
+                                        <View
+                                          style={styles.planetCardAspectsList}
+                                        >
+                                          {aspects.map((aspect, index) => (
+                                            <Text
+                                              key={index}
+                                              style={
+                                                styles.planetCardAspectText
+                                              }
+                                            >
+                                              {aspect.aspectName}{" "}
+                                              {aspect.displayName}
+                                              {aspect.orb && (
+                                                <Text
+                                                  style={
+                                                    styles.planetCardAspectOrb
+                                                  }
+                                                >
+                                                  {" "}
+                                                  ({aspect.orb}°)
+                                                </Text>
+                                              )}
+                                            </Text>
+                                          ))}
+                                        </View>
+                                      );
+                                    })()}
+                                  </View>
+                                </View>
+                              );
+                            })}
+                          </View>
+                        ))}
+                      </View>
+                    );
+                  })()}
+                </View>
+              )}
+
+              {/* Planet Aspects Sections */}
+              {activeChart &&
+                !ephemerisLoading &&
+                !selectedDateLoading &&
+                (() => {
+                  const planetConfigs = [
+                    { name: "sun", emoji: "☀️", displayName: "Sun" },
+                    { name: "moon", emoji: "🌙", displayName: "Moon" },
+                    { name: "mercury", emoji: "☿", displayName: "Mercury" },
+                    { name: "venus", emoji: "♀", displayName: "Venus" },
+                    { name: "mars", emoji: "♂", displayName: "Mars" },
+                    { name: "jupiter", emoji: "♃", displayName: "Jupiter" },
+                    { name: "saturn", emoji: "♄", displayName: "Saturn" },
+                    { name: "uranus", emoji: "♅", displayName: "Uranus" },
+                    { name: "neptune", emoji: "♆", displayName: "Neptune" },
+                    { name: "pluto", emoji: "♇", displayName: "Pluto" },
+                    { name: "northNode", emoji: "☊", displayName: "N. Node" },
+                  ];
+
+                  return (
+                    <>
+                      {/* Planet Aspects */}
+                      {planetConfigs.map((config) => {
+                        const planet = activeChart.planets[config.name];
+                        if (!planet || planet.error) return null;
+
+                        return (
+                          <View key={config.name} style={styles.cardContainer}>
+                            <Text style={styles.cardTitle}>
+                              {config.emoji} {config.displayName} Aspects
+                            </Text>
+                            {renderAspectsSection(
+                              config.name,
+                              planet,
+                              config.emoji,
+                              config.displayName,
+                              activeChart
+                            )}
+                          </View>
+                        );
+                      })}
+
+                      {/* Ascendant Aspects */}
+                      {activeChart.houses &&
+                        activeChart.houses.ascendant &&
+                        activeChart.houses.ascendantSign && (
+                          <View style={styles.cardContainer}>
+                            <Text style={styles.cardTitle}>
+                              ! Ascendant Aspects
+                            </Text>
+                            {renderAspectsSection(
+                              "ascendant",
+                              {
+                                longitude: activeChart.houses.ascendant,
+                                zodiacSignName:
+                                  activeChart.houses.ascendantSign,
+                                degree:
+                                  parseFloat(
+                                    activeChart.houses.ascendantDegree
+                                  ) || 0,
+                                degreeFormatted:
+                                  activeChart.houses.ascendantDegree,
+                              },
+                              "!",
+                              "Ascendant",
+                              activeChart
+                            )}
+                          </View>
+                        )}
+                    </>
+                  );
+                })()}
 
               {/* Current Planetary Positions */}
               {activeChart && !ephemerisLoading && !selectedDateLoading && (
@@ -791,5 +1439,107 @@ const styles = StyleSheet.create({
     color: "#e6e6fa",
     marginBottom: 10,
     textAlign: "center",
+  },
+  // Aspect styles
+  aspectsList: {
+    width: "100%",
+  },
+  aspectTableRow: {
+    flexDirection: "row",
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.2)",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  aspectLeftColumn: {
+    flex: 1,
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
+  aspectRightColumn: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+    justifyContent: "center",
+    marginLeft: 12,
+  },
+  aspectLabelText: {
+    fontSize: 14,
+    color: "#e6e6fa",
+    fontWeight: "600",
+  },
+  aspectPlanetPosition: {
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "right",
+  },
+  orbLabelText: {
+    fontSize: 12,
+    color: "#b0b0b0",
+    fontFamily: "monospace",
+  },
+  noAspectsText: {
+    fontSize: 14,
+    color: "#b0b0b0",
+    fontStyle: "italic",
+    textAlign: "center",
+    paddingVertical: 10,
+  },
+  // Planet Cards Grid styles
+  planetCardsContainer: {
+    paddingHorizontal: 15,
+    marginBottom: 20,
+  },
+  planetCardsGrid: {
+    width: "100%",
+  },
+  planetCardsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 15,
+    gap: 15,
+  },
+  planetCard: {
+    flex: 1,
+    borderRadius: 10,
+    overflow: "hidden",
+    minHeight: 100,
+  },
+  planetCardHeader: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.2)",
+  },
+  planetCardHeaderText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#ffffff",
+    textAlign: "center",
+  },
+  planetCardContent: {
+    padding: 12,
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  planetCardContentText: {
+    fontSize: 12,
+    color: "#ffffff",
+    opacity: 0.8,
+  },
+  planetCardAspectsList: {
+    width: "100%",
+  },
+  planetCardAspectText: {
+    fontSize: 11,
+    color: "#ffffff",
+    marginBottom: 4,
+    lineHeight: 16,
+  },
+  planetCardAspectOrb: {
+    fontSize: 10,
+    opacity: 0.7,
+    fontFamily: "monospace",
   },
 });
