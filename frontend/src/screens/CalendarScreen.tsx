@@ -1,7 +1,7 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -12,8 +12,9 @@ import {
 } from "react-native";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { useCalendar } from "../contexts/CalendarContext";
+import { useYear } from "../contexts/YearContext";
 import { apiService, BirthData } from "../services/api";
-import { getZodiacColorStyle } from "../utils/colorUtils";
+import { getZodiacColorStyle, getAspectColorStyle } from "../utils/colorUtils";
 import { usePhysisFont, getPhysisSymbolStyle } from "../utils/physisFont";
 import { getZodiacKeysFromNames } from "../utils/physisSymbolMap";
 
@@ -59,6 +60,7 @@ interface IngressEvent {
   localDateTime: Date;
   degree: number;
   degreeFormatted: string;
+  isRetrograde: boolean;
 }
 
 interface StationEvent {
@@ -74,7 +76,29 @@ interface StationEvent {
   zodiacSignName: string;
 }
 
-type CalendarEvent = LunationEvent | IngressEvent | StationEvent;
+interface AspectEvent {
+  id: string;
+  type: "aspect";
+  planet1: string;
+  planet2: string;
+  aspectName: "conjunct" | "opposition" | "square" | "trine" | "sextile";
+  date: Date;
+  utcDateTime: Date;
+  localDateTime: Date;
+  orb: number;
+  planet1Position: {
+    degree: number;
+    degreeFormatted: string;
+    zodiacSignName: string;
+  };
+  planet2Position: {
+    degree: number;
+    degreeFormatted: string;
+    zodiacSignName: string;
+  };
+}
+
+type CalendarEvent = LunationEvent | IngressEvent | StationEvent | AspectEvent;
 
 // ============================================================================
 // COMPONENT
@@ -82,26 +106,105 @@ type CalendarEvent = LunationEvent | IngressEvent | StationEvent;
 export default function CalendarScreen() {
   const { currentChart } = useAstrology();
   const { fontLoaded } = usePhysisFont();
+  const { year: selectedYear, setYear: setSelectedYear } = useYear();
   const { events: calendarEvents, loading: calendarLoading } = useCalendar();
 
   const [lunationEvents, setLunationEvents] = useState<LunationEvent[]>([]);
   const [lunationsLoading, setLunationsLoading] = useState(true);
   const [filterStates, setFilterStates] = useState({
     lunation: true,
-    aspect: false,
+    aspect: true,
     ingress: true,
     station: true,
   });
 
-  // Fetch all lunations for 2025
+  const scrollViewRef = useRef<ScrollView>(null);
+  const hasScrolledToToday = useRef(false);
+  const todayItemRef = useRef<View>(null);
+
+  // Fetch all lunations when year changes
   useEffect(() => {
     fetchAllLunations();
-  }, []);
+    // Reset scroll flag when year changes so we can auto-scroll to today if needed
+    hasScrolledToToday.current = false;
+  }, [selectedYear]);
+
+  // Auto-scroll to today when year changes to current year and data loads
+  useEffect(() => {
+    const today = new Date();
+    const todayYear = today.getFullYear();
+    
+    // Only auto-scroll if we just switched to the current year and data has loaded
+    if (
+      selectedYear === todayYear &&
+      !loading &&
+      filteredEvents &&
+      filteredEvents.length > 0 &&
+      !hasScrolledToToday.current &&
+      scrollViewRef.current
+    ) {
+      // Small delay to ensure layout is complete, then scroll
+      const timeoutId = setTimeout(() => {
+        if (!hasScrolledToToday.current) {
+          // Call the scroll logic directly here to avoid dependency issues
+          const safeAllEvents = allEvents || [];
+          const currentFilteredEvents = safeAllEvents.filter((event) => filterStates[event.type]);
+          if (currentFilteredEvents && currentFilteredEvents.length > 0) {
+            const todayDate = today.getDate();
+            const todayMonth = today.getMonth();
+            
+            let targetIndex = currentFilteredEvents.findIndex((event) => {
+              const eventDate = new Date(event.localDateTime);
+              const eventYear = eventDate.getFullYear();
+              const eventMonth = eventDate.getMonth();
+              const eventDay = eventDate.getDate();
+              
+              return (
+                eventYear > todayYear ||
+                (eventYear === todayYear && eventMonth > todayMonth) ||
+                (eventYear === todayYear && eventMonth === todayMonth && eventDay >= todayDate)
+              );
+            });
+
+            if (targetIndex < 0) {
+              for (let i = currentFilteredEvents.length - 1; i >= 0; i--) {
+                const eventDate = new Date(currentFilteredEvents[i].localDateTime);
+                if (
+                  eventDate.getFullYear() < todayYear ||
+                  (eventDate.getFullYear() === todayYear &&
+                    eventDate.getMonth() < todayMonth) ||
+                  (eventDate.getFullYear() === todayYear &&
+                    eventDate.getMonth() === todayMonth &&
+                    eventDate.getDate() < todayDate)
+                ) {
+                  targetIndex = i;
+                  break;
+                }
+              }
+              if (targetIndex < 0) targetIndex = 0;
+            }
+
+            const contentPadding = 20;
+            const estimatedItemHeight = 85.5;
+            const scrollY = contentPadding + (targetIndex * estimatedItemHeight);
+            
+            scrollViewRef.current?.scrollTo({
+              y: Math.max(0, scrollY - 10),
+              animated: true,
+            });
+            hasScrolledToToday.current = true;
+          }
+        }
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [selectedYear, loading, filteredEvents?.length, allEvents?.length, filterStates]);
 
   const fetchAllLunations = async () => {
     try {
       setLunationsLoading(true);
-      const year = 2025;
+      const year = selectedYear;
       const allPhases: LunarPhase[] = [];
 
       // Fetch all 12 months
@@ -133,14 +236,19 @@ export default function CalendarScreen() {
         longitude: -74.006,
       };
 
-      // Calculate timezone offset based on longitude (rough approximation)
-      const timezoneOffsetHours = Math.round(location.longitude / 15);
+      // Use device's actual timezone offset (accounts for DST and timezone boundaries)
+      const getTimezoneOffset = (date: Date): number => {
+        // Get timezone offset in minutes, convert to hours
+        return -date.getTimezoneOffset() / 60;
+      };
 
       // Parse UTC times and store both UTC and local for display
       const phasesWithTimes = allPhases.map((phase) => {
         const utcDateTime = new Date(`${phase.date}Z`);
+        // Use the actual timezone offset for this specific date (accounts for DST)
+        const tzOffsetHours = getTimezoneOffset(utcDateTime);
         const localDateTime = new Date(
-          utcDateTime.getTime() + timezoneOffsetHours * 60 * 60 * 1000
+          utcDateTime.getTime() + tzOffsetHours * 60 * 60 * 1000
         );
 
         return {
@@ -250,15 +358,19 @@ export default function CalendarScreen() {
 
   // Combine all events
   const allEvents: CalendarEvent[] = [
-    ...lunationEvents,
+    ...(lunationEvents || []),
     ...(calendarEvents || []),
   ];
 
   // Sort chronologically
   allEvents.sort((a, b) => a.utcDateTime.getTime() - b.utcDateTime.getTime());
 
+  // Filter events based on active filters
+  const filteredEvents = (allEvents || []).filter((event) => filterStates[event.type]);
+
   // Debug logging
   React.useEffect(() => {
+    if (!allEvents || allEvents.length === 0) return;
     const eventCounts = allEvents.reduce(
       (acc, event) => {
         acc[event.type] = (acc[event.type] || 0) + 1;
@@ -268,10 +380,143 @@ export default function CalendarScreen() {
     );
     console.log("CalendarScreen - All events:", eventCounts);
     console.log("CalendarScreen - Filter states:", filterStates);
-  }, [allEvents.length, filterStates]);
+  }, [allEvents?.length, filterStates]);
 
-  // Filter events based on active filters
-  const filteredEvents = allEvents.filter((event) => filterStates[event.type]);
+  // Function to scroll to today's event (or nearest event)
+  const scrollToToday = () => {
+    const today = new Date();
+    const todayYear = today.getFullYear();
+    
+    // If we're on a different year, switch to current year first
+    if (selectedYear !== todayYear) {
+      console.log(`🔍 scrollToToday - Switching from year ${selectedYear} to ${todayYear}`);
+      setSelectedYear(todayYear);
+      // Reset scroll flag so we can scroll after year change
+      hasScrolledToToday.current = false;
+      // The scroll will happen automatically when data loads via the auto-scroll on load logic
+      return;
+    }
+    
+    // Always use current filteredEvents - recalculate on each call
+    const currentFilteredEvents = (allEvents || []).filter((event) => filterStates[event.type]);
+    
+    if (!scrollViewRef.current || !currentFilteredEvents || currentFilteredEvents.length === 0) {
+      console.log("🔍 scrollToToday - No events or no scrollView ref");
+      return;
+    }
+    
+    // Reset the scroll flag so we can scroll again after filter changes
+    hasScrolledToToday.current = false;
+
+    const todayDate = today.getDate();
+    const todayMonth = today.getMonth();
+
+    console.log("🔍 scrollToToday - Today:", {
+      fullDate: today.toISOString(),
+      dateString: today.toDateString(),
+      year: todayYear,
+      month: todayMonth,
+      date: todayDate,
+    });
+    console.log("🔍 scrollToToday - Total events:", currentFilteredEvents.length);
+    console.log("🔍 scrollToToday - Active filters:", filterStates);
+    
+    // Log first few events to see what we're comparing against
+    console.log("🔍 scrollToToday - First 5 events:");
+    currentFilteredEvents.slice(0, 5).forEach((event, idx) => {
+      const eventDate = new Date(event.localDateTime);
+      console.log(`  Event ${idx}: ${eventDate.toDateString()} (${event.type})`);
+    });
+
+    // Find the first event that is today or upcoming (using same logic as isToday)
+    let targetIndex = currentFilteredEvents.findIndex((event) => {
+      const eventDate = new Date(event.localDateTime);
+      const eventYear = eventDate.getFullYear();
+      const eventMonth = eventDate.getMonth();
+      const eventDay = eventDate.getDate();
+      
+      const isTodayOrFuture =
+        eventYear > todayYear ||
+        (eventYear === todayYear && eventMonth > todayMonth) ||
+        (eventYear === todayYear && eventMonth === todayMonth && eventDay >= todayDate);
+      
+      return isTodayOrFuture;
+    });
+
+    console.log("🔍 scrollToToday - Initial targetIndex:", targetIndex);
+
+    // If no event for today or upcoming, find the last event before today
+    if (targetIndex < 0) {
+      // Find the last event before today
+      for (let i = currentFilteredEvents.length - 1; i >= 0; i--) {
+        const eventDate = new Date(currentFilteredEvents[i].localDateTime);
+        if (
+          eventDate.getFullYear() < todayYear ||
+          (eventDate.getFullYear() === todayYear &&
+            eventDate.getMonth() < todayMonth) ||
+          (eventDate.getFullYear() === todayYear &&
+            eventDate.getMonth() === todayMonth &&
+            eventDate.getDate() < todayDate)
+        ) {
+          targetIndex = i;
+          break;
+        }
+      }
+      // If still no index found, use the first event
+      if (targetIndex < 0) {
+        targetIndex = 0;
+      }
+    }
+
+    console.log("🔍 scrollToToday - Final targetIndex:", targetIndex);
+    if (targetIndex >= 0 && targetIndex < currentFilteredEvents.length) {
+      const targetEvent = currentFilteredEvents[targetIndex];
+      console.log(
+        "🔍 scrollToToday - Target event date:",
+        new Date(targetEvent.localDateTime).toDateString(),
+        "Type:",
+        targetEvent.type
+      );
+    }
+
+    // Calculate scroll position
+    // Header and filters are OUTSIDE the ScrollView, so we only scroll within the content
+    // ScrollView content has padding: 20px, and each item is approximately 80-85px tall
+    setTimeout(() => {
+      if (!scrollViewRef.current) return;
+
+      const contentPadding = 20; // ScrollView contentContainerStyle padding
+      const estimatedItemHeight = 85.5; // Fine-tuned estimate based on testing
+      const scrollY = contentPadding + (targetIndex * estimatedItemHeight);
+      
+      console.log("🔍 scrollToToday - Calculating scroll:", {
+        targetIndex,
+        totalEvents: currentFilteredEvents.length,
+        estimatedItemHeight,
+        contentPadding,
+        calculatedScrollY: scrollY,
+      });
+
+      scrollViewRef.current.scrollTo({
+        y: Math.max(0, scrollY - 10), // Small offset to show item at top
+        animated: true,
+      });
+    }, 100);
+  };
+
+  // Function to handle scrolling to today's item when it's measured (for auto-scroll on load)
+  const handleTodayItemLayout = (event: any) => {
+    if (!hasScrolledToToday.current && scrollViewRef.current) {
+      const { y } = event.nativeEvent.layout;
+      // y is the top position of the item relative to ScrollView content
+      // Scroll with tiny offset to ensure item is visible at top
+      scrollViewRef.current.scrollTo({
+        y: Math.max(0, y - 5), // Tiny offset to ensure item is visible at top
+        animated: true,
+      });
+      hasScrolledToToday.current = true;
+    }
+  };
 
   const loading = lunationsLoading || calendarLoading;
 
@@ -293,96 +538,127 @@ export default function CalendarScreen() {
     });
   };
 
+  // Check if a date is today
+  const isToday = (date: Date): boolean => {
+    const today = new Date();
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>2025</Text>
-      </View>
-
-      {/* Filter Checkboxes */}
-      <View style={styles.filtersContainer}>
-        <Text style={styles.filtersTitle}>Filter by Category:</Text>
-        <View style={styles.filtersRow}>
+      {/* Combined Header with Year and Filters */}
+      <View style={styles.headerContainer}>
+        <View style={styles.headerLeft}>
           <TouchableOpacity
-            style={styles.filterCheckbox}
-            onPress={() => toggleFilter("lunation")}
+            style={styles.yearNavButton}
+            onPress={() => setSelectedYear(selectedYear - 1)}
             activeOpacity={0.7}
           >
-            <View
-              style={[
-                styles.checkbox,
-                filterStates.lunation && styles.checkboxChecked,
-              ]}
-            >
-              {filterStates.lunation && (
-                <Text style={styles.checkmark}>✓</Text>
-              )}
-            </View>
-            <Text style={styles.filterLabel}>Lunations</Text>
+            <Text style={styles.yearNavButtonText}>‹</Text>
           </TouchableOpacity>
-
+          <Text style={styles.headerText}>{selectedYear}</Text>
           <TouchableOpacity
-            style={styles.filterCheckbox}
-            onPress={() => toggleFilter("aspect")}
-            activeOpacity={0.7}
-            disabled={true}
-          >
-            <View
-              style={[
-                styles.checkbox,
-                filterStates.aspect && styles.checkboxChecked,
-                styles.checkboxDisabled,
-              ]}
-            >
-              {filterStates.aspect && (
-                <Text style={styles.checkmark}>✓</Text>
-              )}
-            </View>
-            <Text style={[styles.filterLabel, styles.filterLabelDisabled]}>
-              Aspects
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.filterCheckbox}
-            onPress={() => toggleFilter("ingress")}
+            style={styles.yearNavButton}
+            onPress={() => setSelectedYear(selectedYear + 1)}
             activeOpacity={0.7}
           >
-            <View
-              style={[
-                styles.checkbox,
-                filterStates.ingress && styles.checkboxChecked,
-              ]}
-            >
-              {filterStates.ingress && (
-                <Text style={styles.checkmark}>✓</Text>
-              )}
-            </View>
-            <Text style={styles.filterLabel}>Ingresses</Text>
+            <Text style={styles.yearNavButtonText}>›</Text>
           </TouchableOpacity>
-
+        </View>
+        <View style={styles.headerCenter}>
           <TouchableOpacity
-            style={styles.filterCheckbox}
-            onPress={() => toggleFilter("station")}
+            style={styles.scrollToTodayButton}
+            onPress={scrollToToday}
             activeOpacity={0.7}
           >
-            <View
-              style={[
-                styles.checkbox,
-                filterStates.station && styles.checkboxChecked,
-              ]}
-            >
-              {filterStates.station && (
-                <Text style={styles.checkmark}>✓</Text>
-              )}
-            </View>
-            <Text style={styles.filterLabel}>Stations</Text>
+            <Text style={styles.scrollToTodayButtonText}>Today</Text>
           </TouchableOpacity>
+        </View>
+        <View style={styles.headerRight}>
+          <View style={styles.filterRow}>
+            <TouchableOpacity
+              style={styles.filterCheckbox}
+              onPress={() => toggleFilter("lunation")}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  filterStates.lunation && styles.checkboxChecked,
+                ]}
+              >
+                {filterStates.lunation && (
+                  <Text style={styles.checkmark}>✓</Text>
+                )}
+              </View>
+              <Text style={styles.filterLabel}>Lunations</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.filterCheckbox}
+              onPress={() => toggleFilter("aspect")}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  filterStates.aspect && styles.checkboxChecked,
+                ]}
+              >
+                {filterStates.aspect && (
+                  <Text style={styles.checkmark}>✓</Text>
+                )}
+              </View>
+              <Text style={styles.filterLabel}>Aspects</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.filterRow}>
+            <TouchableOpacity
+              style={styles.filterCheckbox}
+              onPress={() => toggleFilter("ingress")}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  filterStates.ingress && styles.checkboxChecked,
+                ]}
+              >
+                {filterStates.ingress && (
+                  <Text style={styles.checkmark}>✓</Text>
+                )}
+              </View>
+              <Text style={styles.filterLabel}>Ingresses</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.filterCheckbox}
+              onPress={() => toggleFilter("station")}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  filterStates.station && styles.checkboxChecked,
+                ]}
+              >
+                {filterStates.station && (
+                  <Text style={styles.checkmark}>✓</Text>
+                )}
+              </View>
+              <Text style={styles.filterLabel}>Stations</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
       {/* Events List */}
       <ScrollView
+        ref={scrollViewRef}
         style={styles.eventsList}
         contentContainerStyle={styles.eventsListContent}
         showsVerticalScrollIndicator={false}
@@ -392,12 +668,66 @@ export default function CalendarScreen() {
             <ActivityIndicator size="large" color="#e6e6fa" />
             <Text style={styles.loadingText}>Loading events...</Text>
           </View>
-        ) : filteredEvents.length > 0 ? (
-          filteredEvents.map((event) => {
+        ) : filteredEvents && filteredEvents.length > 0 ? (
+          (() => {
+            // Calculate target index once before mapping
+            const today = new Date();
+            const todayDate = today.getDate();
+            const todayMonth = today.getMonth();
+            const todayYear = today.getFullYear();
+
+            // Find the first event that is today or upcoming
+            let targetIndex = filteredEvents.findIndex((event) => {
+              const eventDate = new Date(event.localDateTime);
+              return (
+                eventDate.getFullYear() > todayYear ||
+                (eventDate.getFullYear() === todayYear &&
+                  eventDate.getMonth() > todayMonth) ||
+                (eventDate.getFullYear() === todayYear &&
+                  eventDate.getMonth() === todayMonth &&
+                  eventDate.getDate() >= todayDate)
+              );
+            });
+
+            // If no event for today or upcoming, find the last event before today
+            if (targetIndex < 0) {
+              for (let i = filteredEvents.length - 1; i >= 0; i--) {
+                const eventDate = new Date(filteredEvents[i].localDateTime);
+                if (
+                  eventDate.getFullYear() < todayYear ||
+                  (eventDate.getFullYear() === todayYear &&
+                    eventDate.getMonth() < todayMonth) ||
+                  (eventDate.getFullYear() === todayYear &&
+                    eventDate.getMonth() === todayMonth &&
+                    eventDate.getDate() < todayDate)
+                ) {
+                  targetIndex = i;
+                  break;
+                }
+              }
+              if (targetIndex < 0) targetIndex = 0;
+            }
+
+            return filteredEvents.map((event, index) => {
+              const isTargetEvent = index === targetIndex;
+            
             // Render lunation event
             if (event.type === "lunation") {
+              const eventIsToday = isToday(event.localDateTime);
               return (
-                <View key={event.id} style={styles.eventItem}>
+                <View
+                  key={event.id}
+                  ref={isTargetEvent ? todayItemRef : undefined}
+                  onLayout={
+                    isTargetEvent && !hasScrolledToToday.current
+                      ? handleTodayItemLayout
+                      : undefined
+                  }
+                  style={[
+                    styles.eventItem,
+                    eventIsToday && styles.eventItemToday,
+                  ]}
+                >
                   <View style={styles.eventLeftColumn}>
                     <Text style={styles.eventTitle}>
                       {getPhaseEmoji(event.title)} {event.title}
@@ -441,6 +771,7 @@ export default function CalendarScreen() {
             // Render ingress event
             if (event.type === "ingress") {
               const planetSymbols: Record<string, string> = {
+                sun: "☉",
                 mercury: "☿",
                 venus: "♀",
                 mars: "♂",
@@ -454,12 +785,19 @@ export default function CalendarScreen() {
               const planetName =
                 event.planet.charAt(0).toUpperCase() + event.planet.slice(1);
 
+              const eventIsToday = isToday(event.localDateTime);
               return (
-                <View key={event.id} style={styles.eventItem}>
+                <View
+                  key={event.id}
+                  style={[
+                    styles.eventItem,
+                    eventIsToday && styles.eventItemToday,
+                  ]}
+                >
                   <View style={styles.eventLeftColumn}>
                     <Text style={styles.eventTitle}>
-                      {planetSymbols[event.planet] || "•"} {planetName} enters{" "}
-                      {event.toSign}
+                      {planetSymbols[event.planet] || "•"} {planetName}
+                      {event.isRetrograde ? " Rx" : ""} enters {event.toSign}
                     </Text>
                     <Text style={styles.eventDate}>
                       {formatDate(event.localDateTime)} at{" "}
@@ -508,8 +846,21 @@ export default function CalendarScreen() {
                   ? "stations retrograde"
                   : "stations direct";
 
+              const eventIsToday = isToday(event.localDateTime);
               return (
-                <View key={event.id} style={styles.eventItem}>
+                <View
+                  key={event.id}
+                  ref={isTargetEvent ? todayItemRef : undefined}
+                  onLayout={
+                    isTargetEvent && !hasScrolledToToday.current
+                      ? handleTodayItemLayout
+                      : undefined
+                  }
+                  style={[
+                    styles.eventItem,
+                    eventIsToday && styles.eventItemToday,
+                  ]}
+                >
                   <View style={styles.eventLeftColumn}>
                     <Text style={styles.eventTitle}>
                       {planetSymbols[event.planet] || "•"} {planetName}{" "}
@@ -521,15 +872,17 @@ export default function CalendarScreen() {
                     </Text>
                   </View>
                   <View style={styles.eventRightColumn}>
-                    <Text
-                      style={[
-                        styles.eventMoonPosition,
-                        event.stationType === "retrograde"
-                          ? { color: "#FF6B6B" }
-                          : { color: "#51CF66" },
-                      ]}
-                    >
-                      {event.stationType === "retrograde" ? "R" : "D"}{" "}
+                    <Text style={styles.eventMoonPosition}>
+                      <Text
+                        style={{
+                          color:
+                            event.stationType === "retrograde"
+                              ? "#FF6B6B"
+                              : "#51CF66",
+                        }}
+                      >
+                        {event.stationType === "retrograde" ? "R" : "D"}
+                      </Text>{" "}
                       <Text
                         style={[
                           getPhysisSymbolStyle(fontLoaded, "medium"),
@@ -538,7 +891,110 @@ export default function CalendarScreen() {
                       >
                         {getZodiacKeysFromNames()[event.zodiacSignName]}
                       </Text>{" "}
-                      {event.degreeFormatted} {event.zodiacSignName}
+                      <Text
+                        style={getZodiacColorStyle(event.zodiacSignName)}
+                      >
+                        {event.degreeFormatted} {event.zodiacSignName}
+                      </Text>
+                    </Text>
+                  </View>
+                </View>
+              );
+            }
+
+            // Render aspect event
+            if (event.type === "aspect") {
+              const planetSymbols: Record<string, string> = {
+                sun: "☉",
+                mercury: "☿",
+                venus: "♀",
+                mars: "♂",
+                jupiter: "♃",
+                saturn: "♄",
+                uranus: "♅",
+                neptune: "♆",
+                pluto: "♇",
+              };
+
+              const planet1Name =
+                event.planet1.charAt(0).toUpperCase() + event.planet1.slice(1);
+              const planet2Name =
+                event.planet2.charAt(0).toUpperCase() + event.planet2.slice(1);
+              
+              // Format aspect name (capitalize first letter)
+              const aspectName =
+                event.aspectName.charAt(0).toUpperCase() +
+                event.aspectName.slice(1);
+
+              const eventIsToday = isToday(event.localDateTime);
+              return (
+                <View
+                  key={event.id}
+                  ref={isTargetEvent ? todayItemRef : undefined}
+                  onLayout={
+                    isTargetEvent && !hasScrolledToToday.current
+                      ? handleTodayItemLayout
+                      : undefined
+                  }
+                  style={[
+                    styles.eventItem,
+                    eventIsToday && styles.eventItemToday,
+                  ]}
+                >
+                  <View style={styles.eventLeftColumn}>
+                    <Text style={styles.eventTitle}>
+                      {planetSymbols[event.planet1] || "•"} {planet1Name}{" "}
+                      {aspectName} {planetSymbols[event.planet2] || "•"}{" "}
+                      {planet2Name}
+                    </Text>
+                    <Text style={styles.eventDate}>
+                      {formatDate(event.localDateTime)} at{" "}
+                      {formatTime(event.localDateTime)}
+                    </Text>
+                  </View>
+                  <View style={styles.eventRightColumn}>
+                    <Text
+                      style={[
+                        styles.eventMoonPosition,
+                        getZodiacColorStyle(event.planet1Position.zodiacSignName),
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          getPhysisSymbolStyle(fontLoaded, "medium"),
+                          getZodiacColorStyle(
+                            event.planet1Position.zodiacSignName
+                          ),
+                        ]}
+                      >
+                        {getZodiacKeysFromNames()[
+                          event.planet1Position.zodiacSignName
+                        ]}
+                      </Text>{" "}
+                      {event.planet1Position.degreeFormatted}{" "}
+                      {event.planet1Position.zodiacSignName}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.eventMoonPosition,
+                        getZodiacColorStyle(event.planet2Position.zodiacSignName),
+                        { marginTop: 4 },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          getPhysisSymbolStyle(fontLoaded, "medium"),
+                          getZodiacColorStyle(
+                            event.planet2Position.zodiacSignName
+                          ),
+                        ]}
+                      >
+                        {getZodiacKeysFromNames()[
+                          event.planet2Position.zodiacSignName
+                        ]}
+                      </Text>{" "}
+                      {event.planet2Position.degreeFormatted}{" "}
+                      {event.planet2Position.zodiacSignName}
                     </Text>
                   </View>
                 </View>
@@ -546,7 +1002,8 @@ export default function CalendarScreen() {
             }
 
             return null;
-          })
+            });
+          })()
         ) : (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No events found</Text>
@@ -565,49 +1022,83 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#111",
   },
-  header: {
-    padding: 20,
+  headerContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#333",
   },
-  headerText: {
+  headerLeft: {
+    flex: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  yearNavButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  yearNavButtonText: {
     color: "#e6e6fa",
     fontSize: 24,
     fontWeight: "bold",
-    letterSpacing: 2,
   },
-  filtersContainer: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  filtersTitle: {
+  headerText: {
     color: "#e6e6fa",
-    fontSize: 14,
-    fontWeight: "600",
-    letterSpacing: 1,
-    marginBottom: 15,
+    fontSize: 20,
+    fontWeight: "bold",
+    letterSpacing: 2,
+    minWidth: 60,
+    textAlign: "center",
   },
-  filtersRow: {
+  headerCenter: {
+    flex: 0,
+    justifyContent: "center",
+    marginHorizontal: 5,
+  },
+  scrollToTodayButton: {
+    backgroundColor: "#2a2a3a",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#e6e6fa",
+  },
+  scrollToTodayButtonText: {
+    color: "#e6e6fa",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  headerRight: {
+    flex: 1,
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "flex-end",
+    gap: 4,
+  },
+  filterRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 15,
+    gap: 8,
+    alignItems: "center",
   },
   filterCheckbox: {
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 20,
-    marginBottom: 10,
+    gap: 4,
   },
   checkbox: {
-    width: 20,
-    height: 20,
+    width: 16,
+    height: 16,
     borderWidth: 2,
     borderColor: "#e6e6fa",
-    borderRadius: 4,
-    marginRight: 8,
+    borderRadius: 3,
+    marginRight: 6,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "transparent",
@@ -621,12 +1112,12 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: "#111",
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "bold",
   },
   filterLabel: {
     color: "#e6e6fa",
-    fontSize: 14,
+    fontSize: 12,
   },
   filterLabelDisabled: {
     color: "#555",
@@ -659,6 +1150,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#333",
+  },
+  eventItemToday: {
+    borderColor: "#e6e6fa",
+    borderWidth: 2,
+    backgroundColor: "#222",
   },
   eventLeftColumn: {
     flex: 1,

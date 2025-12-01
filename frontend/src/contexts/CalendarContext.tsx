@@ -7,7 +7,14 @@ import React, {
   useCallback,
 } from "react";
 import { useAstrology } from "./AstrologyContext";
-import { apiService } from "../services/api";
+import { apiService, PlanetPosition } from "../services/api";
+import {
+  checkForConjunct,
+  checkForOpposition,
+  checkForSquare,
+  checkForTrine,
+  checkForSextile,
+} from "../utils/aspectUtils";
 
 // ============================================================================
 // TYPES
@@ -23,6 +30,7 @@ interface IngressEvent {
   localDateTime: Date;
   degree: number;
   degreeFormatted: string;
+  isRetrograde: boolean;
 }
 
 interface StationEvent {
@@ -38,7 +46,29 @@ interface StationEvent {
   zodiacSignName: string;
 }
 
-type CalendarEvent = IngressEvent | StationEvent;
+interface AspectEvent {
+  id: string;
+  type: "aspect";
+  planet1: string;
+  planet2: string;
+  aspectName: "conjunct" | "opposition" | "square" | "trine" | "sextile";
+  date: Date;
+  utcDateTime: Date;
+  localDateTime: Date;
+  orb: number;
+  planet1Position: {
+    degree: number;
+    degreeFormatted: string;
+    zodiacSignName: string;
+  };
+  planet2Position: {
+    degree: number;
+    degreeFormatted: string;
+    zodiacSignName: string;
+  };
+}
+
+type CalendarEvent = IngressEvent | StationEvent | AspectEvent;
 
 interface CalendarContextType {
   year: number;
@@ -72,6 +102,7 @@ export function CalendarProvider({
     (samples: any[]): CalendarEvent[] => {
       const detectedEvents: CalendarEvent[] = [];
       const planetNames = [
+        "sun",
         "mercury",
         "venus",
         "mars",
@@ -87,7 +118,15 @@ export function CalendarProvider({
         latitude: 40.7128,
         longitude: -74.006,
       };
-      const timezoneOffsetHours = Math.round(location.longitude / 15);
+      
+      // Use device's actual timezone offset instead of rough longitude-based calculation
+      // This accounts for DST and actual timezone boundaries
+      // We calculate the offset for each event's specific date to handle DST changes throughout the year
+      const getTimezoneOffset = (date: Date): number => {
+        // Get timezone offset in minutes, convert to hours
+        // getTimezoneOffset() returns offset in minutes, negative means ahead of UTC
+        return -date.getTimezoneOffset() / 60;
+      };
 
       // Track previous state for each planet
       const planetStates: Record<
@@ -110,6 +149,11 @@ export function CalendarProvider({
           previousSampleTime: null,
         };
       });
+
+      // Track previous aspect states to detect when aspects become exact
+      // Key format: "planet1-planet2-aspectType"
+      const aspectStates: Record<string, { wasExact: boolean; orb: number }> =
+        {};
 
       // Process each sample
       console.log(`Processing ${samples.length} ephemeris samples for station detection`);
@@ -158,17 +202,19 @@ export function CalendarProvider({
             );
           }
 
-          // Detect ingress (zodiac sign change)
-          if (
-            prevState.zodiacSign !== -1 &&
-            prevState.zodiacSign !== currentZodiacSign
-          ) {
-            // Find the exact time between previous and current sample using binary search
-            // For now, use the current sample time (we can refine this later)
-            const utcDateTime = sampleDate;
-            const localDateTime = new Date(
-              utcDateTime.getTime() + timezoneOffsetHours * 60 * 60 * 1000
-            );
+            // Detect ingress (zodiac sign change)
+            if (
+              prevState.zodiacSign !== -1 &&
+              prevState.zodiacSign !== currentZodiacSign
+            ) {
+              // Find the exact time between previous and current sample using binary search
+              // For now, use the current sample time (we can refine this later)
+              const utcDateTime = sampleDate;
+              // Use the actual timezone offset for this specific date (accounts for DST)
+              const tzOffsetHours = getTimezoneOffset(sampleDate);
+              const localDateTime = new Date(
+                utcDateTime.getTime() + tzOffsetHours * 60 * 60 * 1000
+              );
 
             const signs = [
               "Aries",
@@ -185,6 +231,13 @@ export function CalendarProvider({
               "Pisces",
             ];
 
+            // Determine if planet is retrograde (negative speed means retrograde)
+            // If speed is null/undefined/NaN, default to false (not retrograde)
+            const isRetrograde = currentSpeed !== null && 
+                                 currentSpeed !== undefined && 
+                                 !isNaN(currentSpeed) && 
+                                 currentSpeed < 0;
+
             const ingressEvent: IngressEvent = {
               id: `ingress-${planetName}-${sample.timestamp}`,
               type: "ingress",
@@ -196,6 +249,7 @@ export function CalendarProvider({
               localDateTime,
               degree: planet.degree,
               degreeFormatted: planet.degreeFormatted,
+              isRetrograde,
             };
 
             detectedEvents.push(ingressEvent);
@@ -221,8 +275,10 @@ export function CalendarProvider({
 
           if (speedCrossedZero) {
             const utcDateTime = sampleDate;
+            // Use the actual timezone offset for this specific date (accounts for DST)
+            const tzOffsetHours = getTimezoneOffset(sampleDate);
             const localDateTime = new Date(
-              utcDateTime.getTime() + timezoneOffsetHours * 60 * 60 * 1000
+              utcDateTime.getTime() + tzOffsetHours * 60 * 60 * 1000
             );
 
             // Determine station type based on direction change
@@ -266,6 +322,114 @@ export function CalendarProvider({
             previousSampleTime: sampleDate,
           };
         });
+
+        // Detect aspects between all planet pairs
+        // Use a small orb (0.5 degrees) to catch exact aspects with 12-hour sampling
+        const ASPECT_ORB = 0.5;
+        const aspectTypes = [
+          { name: "conjunct" as const, check: checkForConjunct },
+          { name: "opposition" as const, check: checkForOpposition },
+          { name: "square" as const, check: checkForSquare },
+          { name: "trine" as const, check: checkForTrine },
+          { name: "sextile" as const, check: checkForSextile },
+        ];
+
+        // Check all planet pairs
+        for (let i = 0; i < planetNames.length; i++) {
+          for (let j = i + 1; j < planetNames.length; j++) {
+            const planet1Name = planetNames[i];
+            const planet2Name = planetNames[j];
+            const planet1 = sample.planets[planet1Name];
+            const planet2 = sample.planets[planet2Name];
+
+            if (!planet1 || !planet2) continue;
+
+            // Convert to PlanetPosition format for aspect checking
+            const planet1Pos: PlanetPosition = {
+              longitude: planet1.longitude,
+              latitude: planet1.latitude || 0,
+              distance: planet1.distance || 0,
+              speed: planet1.speed || 0,
+              zodiacSign: planet1.zodiacSign,
+              zodiacSignName: planet1.zodiacSignName,
+              degree: planet1.degree,
+              degreeFormatted: planet1.degreeFormatted,
+              symbol: "",
+            };
+
+            const planet2Pos: PlanetPosition = {
+              longitude: planet2.longitude,
+              latitude: planet2.latitude || 0,
+              distance: planet2.distance || 0,
+              speed: planet2.speed || 0,
+              zodiacSign: planet2.zodiacSign,
+              zodiacSignName: planet2.zodiacSignName,
+              degree: planet2.degree,
+              degreeFormatted: planet2.degreeFormatted,
+              symbol: "",
+            };
+
+            // Check each aspect type
+            for (const aspectType of aspectTypes) {
+              const aspectKey = `${planet1Name}-${planet2Name}-${aspectType.name}`;
+              const aspectResult = aspectType.check(
+                planet1Pos,
+                planet2Pos,
+                ASPECT_ORB
+              );
+
+              const prevAspectState = aspectStates[aspectKey];
+              const isCurrentlyExact =
+                aspectResult.hasAspect &&
+                aspectResult.orb !== undefined &&
+                aspectResult.orb <= ASPECT_ORB;
+
+              // Detect when aspect becomes exact (was not exact before, now is exact)
+              if (
+                isCurrentlyExact &&
+                (!prevAspectState || !prevAspectState.wasExact)
+              ) {
+                const utcDateTime = sampleDate;
+                // Use the actual timezone offset for this specific date (accounts for DST)
+                const tzOffsetHours = getTimezoneOffset(sampleDate);
+                const localDateTime = new Date(
+                  utcDateTime.getTime() + tzOffsetHours * 60 * 60 * 1000
+                );
+
+                // Create aspect event
+                const aspectEvent: AspectEvent = {
+                  id: `aspect-${planet1Name}-${planet2Name}-${aspectType.name}-${sample.timestamp}`,
+                  type: "aspect",
+                  planet1: planet1Name,
+                  planet2: planet2Name,
+                  aspectName: aspectType.name,
+                  date: localDateTime,
+                  utcDateTime,
+                  localDateTime,
+                  orb: aspectResult.orb || 0,
+                  planet1Position: {
+                    degree: planet1.degree,
+                    degreeFormatted: planet1.degreeFormatted,
+                    zodiacSignName: planet1.zodiacSignName,
+                  },
+                  planet2Position: {
+                    degree: planet2.degree,
+                    degreeFormatted: planet2.degreeFormatted,
+                    zodiacSignName: planet2.zodiacSignName,
+                  },
+                };
+
+                detectedEvents.push(aspectEvent);
+              }
+
+              // Update aspect state
+              aspectStates[aspectKey] = {
+                wasExact: isCurrentlyExact,
+                orb: aspectResult.orb || 999,
+              };
+            }
+          }
+        }
       }
 
       // Sort events chronologically

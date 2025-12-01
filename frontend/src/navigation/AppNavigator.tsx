@@ -6,6 +6,7 @@ import { Text, View, TouchableOpacity, StyleSheet } from "react-native";
 import { FlowersProvider } from "../contexts/FlowersContext";
 import { TarotProvider } from "../contexts/TarotContext";
 import { CalendarProvider } from "../contexts/CalendarContext";
+import { YearProvider, useYear } from "../contexts/YearContext";
 
 // Import screens
 import MoonScreen from "../screens/MoonScreen";
@@ -246,8 +247,9 @@ function BookStack() {
 
 // Calendar Stack Navigator
 function CalendarStack() {
+  const { year } = useYear();
   return (
-    <CalendarProvider year={2025}>
+    <CalendarProvider year={year}>
       <Stack.Navigator
         screenOptions={{
           headerStyle: {
@@ -281,9 +283,10 @@ function CalendarStack() {
 
 export default function AppNavigator() {
   return (
-    <FlowersProvider>
-      <TarotProvider>
-        <NavigationContainer>
+    <YearProvider>
+      <FlowersProvider>
+        <TarotProvider>
+          <NavigationContainer>
           <Tab.Navigator
             initialRouteName="Moon"
             screenOptions={({ navigation }) => ({
@@ -387,6 +390,7 @@ export default function AppNavigator() {
         </NavigationContainer>
       </TarotProvider>
     </FlowersProvider>
+    </YearProvider>
   );
 }
 

@@ -724,8 +724,9 @@ router.post("/year-ephemeris", (req, res) => {
     // Set topocentric location
     sweph.set_topo(longitude, latitude, 0);
 
-    // Planet IDs to track (excluding Sun and Moon for ingresses, but including for stations)
+    // Planet IDs to track (including Sun for ingresses, excluding Moon)
     const planetIds = [
+      { name: "sun", id: 0, symbol: "☉" },
       { name: "mercury", id: 2, symbol: "☿" },
       { name: "venus", id: 3, symbol: "♀" },
       { name: "mars", id: 4, symbol: "♂" },
