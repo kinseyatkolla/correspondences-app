@@ -808,7 +808,33 @@ class ApiService {
       location: { latitude: number; longitude: number };
       sampleInterval: number;
       totalSamples: number;
-      samples: Array<{
+      events?: Array<{
+        type: "ingress" | "station" | "aspect";
+        planet?: string;
+        fromSign?: string;
+        toSign?: string;
+        stationType?: "retrograde" | "direct";
+        planet1?: string;
+        planet2?: string;
+        aspectName?: "conjunct" | "opposition" | "square" | "trine" | "sextile";
+        utcDateTime: string;
+        degree?: number;
+        degreeFormatted?: string;
+        zodiacSignName?: string;
+        isRetrograde?: boolean;
+        orb?: number;
+        planet1Position?: {
+          degree: number;
+          degreeFormatted: string;
+          zodiacSignName: string;
+        };
+        planet2Position?: {
+          degree: number;
+          degreeFormatted: string;
+          zodiacSignName: string;
+        };
+      }>;
+      samples?: Array<{
         date: Date;
         julianDay: number;
         timestamp: string;
@@ -837,7 +863,7 @@ class ApiService {
       body: JSON.stringify(requestBody),
     });
 
-    // Convert date strings back to Date objects
+    // Convert date strings back to Date objects for samples (if present)
     if (response.success && response.data?.samples) {
       response.data.samples = response.data.samples.map((sample: any) => ({
         ...sample,

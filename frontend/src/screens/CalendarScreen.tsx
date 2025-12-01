@@ -16,7 +16,10 @@ import { useYear } from "../contexts/YearContext";
 import { apiService, BirthData } from "../services/api";
 import { getZodiacColorStyle, getAspectColorStyle } from "../utils/colorUtils";
 import { usePhysisFont, getPhysisSymbolStyle } from "../utils/physisFont";
-import { getZodiacKeysFromNames } from "../utils/physisSymbolMap";
+import {
+  getZodiacKeysFromNames,
+  getPlanetKeysFromNames,
+} from "../utils/physisSymbolMap";
 
 // ============================================================================
 // TYPES
@@ -133,7 +136,7 @@ export default function CalendarScreen() {
   useEffect(() => {
     const today = new Date();
     const todayYear = today.getFullYear();
-    
+
     // Only auto-scroll if we just switched to the current year and data has loaded
     if (
       selectedYear === todayYear &&
@@ -148,27 +151,33 @@ export default function CalendarScreen() {
         if (!hasScrolledToToday.current) {
           // Call the scroll logic directly here to avoid dependency issues
           const safeAllEvents = allEvents || [];
-          const currentFilteredEvents = safeAllEvents.filter((event) => filterStates[event.type]);
+          const currentFilteredEvents = safeAllEvents.filter(
+            (event) => filterStates[event.type]
+          );
           if (currentFilteredEvents && currentFilteredEvents.length > 0) {
             const todayDate = today.getDate();
             const todayMonth = today.getMonth();
-            
+
             let targetIndex = currentFilteredEvents.findIndex((event) => {
               const eventDate = new Date(event.localDateTime);
               const eventYear = eventDate.getFullYear();
               const eventMonth = eventDate.getMonth();
               const eventDay = eventDate.getDate();
-              
+
               return (
                 eventYear > todayYear ||
                 (eventYear === todayYear && eventMonth > todayMonth) ||
-                (eventYear === todayYear && eventMonth === todayMonth && eventDay >= todayDate)
+                (eventYear === todayYear &&
+                  eventMonth === todayMonth &&
+                  eventDay >= todayDate)
               );
             });
 
             if (targetIndex < 0) {
               for (let i = currentFilteredEvents.length - 1; i >= 0; i--) {
-                const eventDate = new Date(currentFilteredEvents[i].localDateTime);
+                const eventDate = new Date(
+                  currentFilteredEvents[i].localDateTime
+                );
                 if (
                   eventDate.getFullYear() < todayYear ||
                   (eventDate.getFullYear() === todayYear &&
@@ -186,8 +195,8 @@ export default function CalendarScreen() {
 
             const contentPadding = 20;
             const estimatedItemHeight = 85.5;
-            const scrollY = contentPadding + (targetIndex * estimatedItemHeight);
-            
+            const scrollY = contentPadding + targetIndex * estimatedItemHeight;
+
             scrollViewRef.current?.scrollTo({
               y: Math.max(0, scrollY - 10),
               animated: true,
@@ -196,10 +205,16 @@ export default function CalendarScreen() {
           }
         }
       }, 500);
-      
+
       return () => clearTimeout(timeoutId);
     }
-  }, [selectedYear, loading, filteredEvents?.length, allEvents?.length, filterStates]);
+  }, [
+    selectedYear,
+    loading,
+    filteredEvents?.length,
+    allEvents?.length,
+    filterStates,
+  ]);
 
   const fetchAllLunations = async () => {
     try {
@@ -303,9 +318,7 @@ export default function CalendarScreen() {
         .filter((phase) => phase.utcDateTime && phase.localDateTime)
         .map((phase, index) => {
           // Format the phase name (convert from camelCase to spaced words)
-          const phaseName = phase.moonPhase
-            .replace(/([A-Z])/g, " $1")
-            .trim();
+          const phaseName = phase.moonPhase.replace(/([A-Z])/g, " $1").trim();
 
           return {
             id: `lunation-${index}-${phase.date}`,
@@ -366,18 +379,17 @@ export default function CalendarScreen() {
   allEvents.sort((a, b) => a.utcDateTime.getTime() - b.utcDateTime.getTime());
 
   // Filter events based on active filters
-  const filteredEvents = (allEvents || []).filter((event) => filterStates[event.type]);
+  const filteredEvents = (allEvents || []).filter(
+    (event) => filterStates[event.type]
+  );
 
   // Debug logging
   React.useEffect(() => {
     if (!allEvents || allEvents.length === 0) return;
-    const eventCounts = allEvents.reduce(
-      (acc, event) => {
-        acc[event.type] = (acc[event.type] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
+    const eventCounts = allEvents.reduce((acc, event) => {
+      acc[event.type] = (acc[event.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
     console.log("CalendarScreen - All events:", eventCounts);
     console.log("CalendarScreen - Filter states:", filterStates);
   }, [allEvents?.length, filterStates]);
@@ -386,25 +398,33 @@ export default function CalendarScreen() {
   const scrollToToday = () => {
     const today = new Date();
     const todayYear = today.getFullYear();
-    
+
     // If we're on a different year, switch to current year first
     if (selectedYear !== todayYear) {
-      console.log(`🔍 scrollToToday - Switching from year ${selectedYear} to ${todayYear}`);
+      console.log(
+        `🔍 scrollToToday - Switching from year ${selectedYear} to ${todayYear}`
+      );
       setSelectedYear(todayYear);
       // Reset scroll flag so we can scroll after year change
       hasScrolledToToday.current = false;
       // The scroll will happen automatically when data loads via the auto-scroll on load logic
       return;
     }
-    
+
     // Always use current filteredEvents - recalculate on each call
-    const currentFilteredEvents = (allEvents || []).filter((event) => filterStates[event.type]);
-    
-    if (!scrollViewRef.current || !currentFilteredEvents || currentFilteredEvents.length === 0) {
+    const currentFilteredEvents = (allEvents || []).filter(
+      (event) => filterStates[event.type]
+    );
+
+    if (
+      !scrollViewRef.current ||
+      !currentFilteredEvents ||
+      currentFilteredEvents.length === 0
+    ) {
       console.log("🔍 scrollToToday - No events or no scrollView ref");
       return;
     }
-    
+
     // Reset the scroll flag so we can scroll again after filter changes
     hasScrolledToToday.current = false;
 
@@ -418,14 +438,19 @@ export default function CalendarScreen() {
       month: todayMonth,
       date: todayDate,
     });
-    console.log("🔍 scrollToToday - Total events:", currentFilteredEvents.length);
+    console.log(
+      "🔍 scrollToToday - Total events:",
+      currentFilteredEvents.length
+    );
     console.log("🔍 scrollToToday - Active filters:", filterStates);
-    
+
     // Log first few events to see what we're comparing against
     console.log("🔍 scrollToToday - First 5 events:");
     currentFilteredEvents.slice(0, 5).forEach((event, idx) => {
       const eventDate = new Date(event.localDateTime);
-      console.log(`  Event ${idx}: ${eventDate.toDateString()} (${event.type})`);
+      console.log(
+        `  Event ${idx}: ${eventDate.toDateString()} (${event.type})`
+      );
     });
 
     // Find the first event that is today or upcoming (using same logic as isToday)
@@ -434,12 +459,14 @@ export default function CalendarScreen() {
       const eventYear = eventDate.getFullYear();
       const eventMonth = eventDate.getMonth();
       const eventDay = eventDate.getDate();
-      
+
       const isTodayOrFuture =
         eventYear > todayYear ||
         (eventYear === todayYear && eventMonth > todayMonth) ||
-        (eventYear === todayYear && eventMonth === todayMonth && eventDay >= todayDate);
-      
+        (eventYear === todayYear &&
+          eventMonth === todayMonth &&
+          eventDay >= todayDate);
+
       return isTodayOrFuture;
     });
 
@@ -487,8 +514,8 @@ export default function CalendarScreen() {
 
       const contentPadding = 20; // ScrollView contentContainerStyle padding
       const estimatedItemHeight = 85.5; // Fine-tuned estimate based on testing
-      const scrollY = contentPadding + (targetIndex * estimatedItemHeight);
-      
+      const scrollY = contentPadding + targetIndex * estimatedItemHeight;
+
       console.log("🔍 scrollToToday - Calculating scroll:", {
         targetIndex,
         totalEvents: currentFilteredEvents.length,
@@ -609,9 +636,7 @@ export default function CalendarScreen() {
                   filterStates.aspect && styles.checkboxChecked,
                 ]}
               >
-                {filterStates.aspect && (
-                  <Text style={styles.checkmark}>✓</Text>
-                )}
+                {filterStates.aspect && <Text style={styles.checkmark}>✓</Text>}
               </View>
               <Text style={styles.filterLabel}>Aspects</Text>
             </TouchableOpacity>
@@ -710,298 +735,399 @@ export default function CalendarScreen() {
 
             return filteredEvents.map((event, index) => {
               const isTargetEvent = index === targetIndex;
-            
-            // Render lunation event
-            if (event.type === "lunation") {
-              const eventIsToday = isToday(event.localDateTime);
-              return (
-                <View
-                  key={event.id}
-                  ref={isTargetEvent ? todayItemRef : undefined}
-                  onLayout={
-                    isTargetEvent && !hasScrolledToToday.current
-                      ? handleTodayItemLayout
-                      : undefined
-                  }
-                  style={[
-                    styles.eventItem,
-                    eventIsToday && styles.eventItemToday,
-                  ]}
-                >
-                  <View style={styles.eventLeftColumn}>
-                    <Text style={styles.eventTitle}>
-                      {getPhaseEmoji(event.title)} {event.title}
-                    </Text>
-                    <Text style={styles.eventDate}>
-                      {formatDate(event.localDateTime)} at{" "}
-                      {formatTime(event.localDateTime)}
-                    </Text>
-                  </View>
-                  {event.moonPosition && (
-                    <View style={styles.eventRightColumn}>
-                      <Text
-                        style={[
-                          styles.eventMoonPosition,
-                          getZodiacColorStyle(
-                            event.moonPosition.zodiacSignName
-                          ),
-                        ]}
-                      >
+
+              // Render lunation event
+              if (event.type === "lunation") {
+                const eventIsToday = isToday(event.localDateTime);
+                return (
+                  <View
+                    key={event.id}
+                    ref={isTargetEvent ? todayItemRef : undefined}
+                    onLayout={
+                      isTargetEvent && !hasScrolledToToday.current
+                        ? handleTodayItemLayout
+                        : undefined
+                    }
+                    style={[
+                      styles.eventItem,
+                      eventIsToday && styles.eventItemToday,
+                    ]}
+                  >
+                    <View style={styles.eventLeftColumn}>
+                      <Text style={styles.eventTitle}>
+                        {getPhaseEmoji(event.title)} {event.title}
+                      </Text>
+                      <Text style={styles.eventDate}>
+                        {formatDate(event.localDateTime)} at{" "}
+                        {formatTime(event.localDateTime)}
+                      </Text>
+                    </View>
+                    {event.moonPosition && (
+                      <View style={styles.eventRightColumn}>
                         <Text
                           style={[
-                            getPhysisSymbolStyle(fontLoaded, "medium"),
+                            styles.eventMoonPosition,
                             getZodiacColorStyle(
                               event.moonPosition.zodiacSignName
                             ),
                           ]}
                         >
-                          {getZodiacKeysFromNames()[
-                            event.moonPosition.zodiacSignName
-                          ]}
-                        </Text>{" "}
-                        {event.moonPosition.degreeFormatted}{" "}
-                        {event.moonPosition.zodiacSignName}
+                          <Text
+                            style={[
+                              getPhysisSymbolStyle(fontLoaded, "medium"),
+                              getZodiacColorStyle(
+                                event.moonPosition.zodiacSignName
+                              ),
+                            ]}
+                          >
+                            {
+                              getZodiacKeysFromNames()[
+                                event.moonPosition.zodiacSignName
+                              ]
+                            }
+                          </Text>{" "}
+                          {event.moonPosition.degreeFormatted}{" "}
+                          {event.moonPosition.zodiacSignName}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              }
+
+              // Render ingress event
+              if (event.type === "ingress") {
+                const planetSymbols: Record<string, string> = {
+                  sun: "☉",
+                  mercury: "☿",
+                  venus: "♀",
+                  mars: "♂",
+                  jupiter: "♃",
+                  saturn: "♄",
+                  uranus: "♅",
+                  neptune: "♆",
+                  pluto: "♇",
+                };
+
+                const planetName =
+                  event.planet.charAt(0).toUpperCase() + event.planet.slice(1);
+
+                const eventIsToday = isToday(event.localDateTime);
+                return (
+                  <View
+                    key={event.id}
+                    style={[
+                      styles.eventItem,
+                      eventIsToday && styles.eventItemToday,
+                    ]}
+                  >
+                    <View style={styles.eventLeftColumn}>
+                      <Text style={styles.eventTitle}>
+                        {planetName}
+                        {event.isRetrograde ? " Rx" : ""} enters {event.toSign}
+                      </Text>
+                      <Text style={styles.eventDate}>
+                        {formatDate(event.localDateTime)} at{" "}
+                        {formatTime(event.localDateTime)}
                       </Text>
                     </View>
-                  )}
-                </View>
-              );
-            }
-
-            // Render ingress event
-            if (event.type === "ingress") {
-              const planetSymbols: Record<string, string> = {
-                sun: "☉",
-                mercury: "☿",
-                venus: "♀",
-                mars: "♂",
-                jupiter: "♃",
-                saturn: "♄",
-                uranus: "♅",
-                neptune: "♆",
-                pluto: "♇",
-              };
-
-              const planetName =
-                event.planet.charAt(0).toUpperCase() + event.planet.slice(1);
-
-              const eventIsToday = isToday(event.localDateTime);
-              return (
-                <View
-                  key={event.id}
-                  style={[
-                    styles.eventItem,
-                    eventIsToday && styles.eventItemToday,
-                  ]}
-                >
-                  <View style={styles.eventLeftColumn}>
-                    <Text style={styles.eventTitle}>
-                      {planetSymbols[event.planet] || "•"} {planetName}
-                      {event.isRetrograde ? " Rx" : ""} enters {event.toSign}
-                    </Text>
-                    <Text style={styles.eventDate}>
-                      {formatDate(event.localDateTime)} at{" "}
-                      {formatTime(event.localDateTime)}
-                    </Text>
-                  </View>
-                  <View style={styles.eventRightColumn}>
-                    <Text
-                      style={[
-                        styles.eventMoonPosition,
-                        getZodiacColorStyle(event.toSign),
-                      ]}
-                    >
+                    <View style={styles.eventRightColumn}>
                       <Text
                         style={[
-                          getPhysisSymbolStyle(fontLoaded, "medium"),
+                          styles.eventMoonPosition,
                           getZodiacColorStyle(event.toSign),
                         ]}
                       >
-                        {getZodiacKeysFromNames()[event.toSign]}
-                      </Text>{" "}
-                      {event.degreeFormatted} {event.toSign}
-                    </Text>
-                  </View>
-                </View>
-              );
-            }
-
-            // Render station event
-            if (event.type === "station") {
-              const planetSymbols: Record<string, string> = {
-                mercury: "☿",
-                venus: "♀",
-                mars: "♂",
-                jupiter: "♃",
-                saturn: "♄",
-                uranus: "♅",
-                neptune: "♆",
-                pluto: "♇",
-              };
-
-              const planetName =
-                event.planet.charAt(0).toUpperCase() + event.planet.slice(1);
-              const stationLabel =
-                event.stationType === "retrograde"
-                  ? "stations retrograde"
-                  : "stations direct";
-
-              const eventIsToday = isToday(event.localDateTime);
-              return (
-                <View
-                  key={event.id}
-                  ref={isTargetEvent ? todayItemRef : undefined}
-                  onLayout={
-                    isTargetEvent && !hasScrolledToToday.current
-                      ? handleTodayItemLayout
-                      : undefined
-                  }
-                  style={[
-                    styles.eventItem,
-                    eventIsToday && styles.eventItemToday,
-                  ]}
-                >
-                  <View style={styles.eventLeftColumn}>
-                    <Text style={styles.eventTitle}>
-                      {planetSymbols[event.planet] || "•"} {planetName}{" "}
-                      {stationLabel}
-                    </Text>
-                    <Text style={styles.eventDate}>
-                      {formatDate(event.localDateTime)} at{" "}
-                      {formatTime(event.localDateTime)}
-                    </Text>
-                  </View>
-                  <View style={styles.eventRightColumn}>
-                    <Text style={styles.eventMoonPosition}>
-                      <Text
-                        style={{
-                          color:
-                            event.stationType === "retrograde"
-                              ? "#FF6B6B"
-                              : "#51CF66",
-                        }}
-                      >
-                        {event.stationType === "retrograde" ? "R" : "D"}
-                      </Text>{" "}
-                      <Text
-                        style={[
-                          getPhysisSymbolStyle(fontLoaded, "medium"),
-                          getZodiacColorStyle(event.zodiacSignName),
-                        ]}
-                      >
-                        {getZodiacKeysFromNames()[event.zodiacSignName]}
-                      </Text>{" "}
-                      <Text
-                        style={getZodiacColorStyle(event.zodiacSignName)}
-                      >
-                        {event.degreeFormatted} {event.zodiacSignName}
+                        <Text
+                          style={[
+                            getPhysisSymbolStyle(fontLoaded, "medium"),
+                            getZodiacColorStyle(event.toSign),
+                          ]}
+                        >
+                          {getPlanetKeysFromNames()[
+                            event.planet.charAt(0).toUpperCase() +
+                              event.planet.slice(1)
+                          ] || ""}
+                        </Text>
+                        {"  "}
+                        <Text
+                          style={[
+                            getPhysisSymbolStyle(fontLoaded, "medium"),
+                            getZodiacColorStyle(event.toSign),
+                          ]}
+                        >
+                          {getZodiacKeysFromNames()[event.toSign]}
+                        </Text>
+                        {"  "}
+                        {event.degreeFormatted} {event.toSign}
                       </Text>
-                    </Text>
+                    </View>
                   </View>
-                </View>
-              );
-            }
+                );
+              }
 
-            // Render aspect event
-            if (event.type === "aspect") {
-              const planetSymbols: Record<string, string> = {
-                sun: "☉",
-                mercury: "☿",
-                venus: "♀",
-                mars: "♂",
-                jupiter: "♃",
-                saturn: "♄",
-                uranus: "♅",
-                neptune: "♆",
-                pluto: "♇",
-              };
+              // Render station event
+              if (event.type === "station") {
+                const planetSymbols: Record<string, string> = {
+                  mercury: "☿",
+                  venus: "♀",
+                  mars: "♂",
+                  jupiter: "♃",
+                  saturn: "♄",
+                  uranus: "♅",
+                  neptune: "♆",
+                  pluto: "♇",
+                };
 
-              const planet1Name =
-                event.planet1.charAt(0).toUpperCase() + event.planet1.slice(1);
-              const planet2Name =
-                event.planet2.charAt(0).toUpperCase() + event.planet2.slice(1);
-              
-              // Format aspect name (capitalize first letter)
-              const aspectName =
-                event.aspectName.charAt(0).toUpperCase() +
-                event.aspectName.slice(1);
+                const planetName =
+                  event.planet.charAt(0).toUpperCase() + event.planet.slice(1);
+                const stationLabel =
+                  event.stationType === "retrograde"
+                    ? "stations retrograde"
+                    : "stations direct";
 
-              const eventIsToday = isToday(event.localDateTime);
-              return (
-                <View
-                  key={event.id}
-                  ref={isTargetEvent ? todayItemRef : undefined}
-                  onLayout={
-                    isTargetEvent && !hasScrolledToToday.current
-                      ? handleTodayItemLayout
-                      : undefined
-                  }
-                  style={[
-                    styles.eventItem,
-                    eventIsToday && styles.eventItemToday,
-                  ]}
-                >
-                  <View style={styles.eventLeftColumn}>
-                    <Text style={styles.eventTitle}>
-                      {planetSymbols[event.planet1] || "•"} {planet1Name}{" "}
-                      {aspectName} {planetSymbols[event.planet2] || "•"}{" "}
-                      {planet2Name}
-                    </Text>
-                    <Text style={styles.eventDate}>
-                      {formatDate(event.localDateTime)} at{" "}
-                      {formatTime(event.localDateTime)}
-                    </Text>
+                const eventIsToday = isToday(event.localDateTime);
+                return (
+                  <View
+                    key={event.id}
+                    ref={isTargetEvent ? todayItemRef : undefined}
+                    onLayout={
+                      isTargetEvent && !hasScrolledToToday.current
+                        ? handleTodayItemLayout
+                        : undefined
+                    }
+                    style={[
+                      styles.eventItem,
+                      eventIsToday && styles.eventItemToday,
+                    ]}
+                  >
+                    <View style={styles.eventLeftColumn}>
+                      <Text style={styles.eventTitle}>
+                        {planetName} {stationLabel}
+                      </Text>
+                      <Text style={styles.eventDate}>
+                        {formatDate(event.localDateTime)} at{" "}
+                        {formatTime(event.localDateTime)}
+                      </Text>
+                    </View>
+                    <View style={styles.eventRightColumn}>
+                      <Text style={styles.eventMoonPosition}>
+                        <Text
+                          style={{
+                            color:
+                              event.stationType === "retrograde"
+                                ? "#FF6B6B"
+                                : "#51CF66",
+                          }}
+                        >
+                          {event.stationType === "retrograde" ? "R" : "D"}
+                        </Text>{" "}
+                        <Text
+                          style={[
+                            getPhysisSymbolStyle(fontLoaded, "medium"),
+                            getZodiacColorStyle(event.zodiacSignName),
+                          ]}
+                        >
+                          {getPlanetKeysFromNames()[
+                            event.planet.charAt(0).toUpperCase() +
+                              event.planet.slice(1)
+                          ] || ""}
+                        </Text>
+                        {"  "}
+                        <Text
+                          style={[
+                            getPhysisSymbolStyle(fontLoaded, "medium"),
+                            getZodiacColorStyle(event.zodiacSignName),
+                          ]}
+                        >
+                          {getZodiacKeysFromNames()[event.zodiacSignName]}
+                        </Text>
+                        {"  "}
+                        <Text style={getZodiacColorStyle(event.zodiacSignName)}>
+                          {event.degreeFormatted} {event.zodiacSignName}
+                        </Text>
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.eventRightColumn}>
-                    <Text
-                      style={[
-                        styles.eventMoonPosition,
-                        getZodiacColorStyle(event.planet1Position.zodiacSignName),
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          getPhysisSymbolStyle(fontLoaded, "medium"),
-                          getZodiacColorStyle(
-                            event.planet1Position.zodiacSignName
-                          ),
-                        ]}
-                      >
-                        {getZodiacKeysFromNames()[
-                          event.planet1Position.zodiacSignName
-                        ]}
-                      </Text>{" "}
-                      {event.planet1Position.degreeFormatted}{" "}
-                      {event.planet1Position.zodiacSignName}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.eventMoonPosition,
-                        getZodiacColorStyle(event.planet2Position.zodiacSignName),
-                        { marginTop: 4 },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          getPhysisSymbolStyle(fontLoaded, "medium"),
-                          getZodiacColorStyle(
-                            event.planet2Position.zodiacSignName
-                          ),
-                        ]}
-                      >
-                        {getZodiacKeysFromNames()[
-                          event.planet2Position.zodiacSignName
-                        ]}
-                      </Text>{" "}
-                      {event.planet2Position.degreeFormatted}{" "}
-                      {event.planet2Position.zodiacSignName}
-                    </Text>
-                  </View>
-                </View>
-              );
-            }
+                );
+              }
 
-            return null;
+              // Render aspect event
+              if (event.type === "aspect") {
+                const planetSymbols: Record<string, string> = {
+                  sun: "☉",
+                  mercury: "☿",
+                  venus: "♀",
+                  mars: "♂",
+                  jupiter: "♃",
+                  saturn: "♄",
+                  uranus: "♅",
+                  neptune: "♆",
+                  pluto: "♇",
+                };
+
+                const planet1Name =
+                  event.planet1.charAt(0).toUpperCase() +
+                  event.planet1.slice(1);
+                const planet2Name =
+                  event.planet2.charAt(0).toUpperCase() +
+                  event.planet2.slice(1);
+
+                // Format aspect name (capitalize first letter)
+                const aspectName =
+                  event.aspectName.charAt(0).toUpperCase() +
+                  event.aspectName.slice(1);
+
+                const eventIsToday = isToday(event.localDateTime);
+                return (
+                  <View
+                    key={event.id}
+                    ref={isTargetEvent ? todayItemRef : undefined}
+                    onLayout={
+                      isTargetEvent && !hasScrolledToToday.current
+                        ? handleTodayItemLayout
+                        : undefined
+                    }
+                    style={[
+                      styles.eventItem,
+                      eventIsToday && styles.eventItemToday,
+                    ]}
+                  >
+                    <View style={styles.eventLeftColumn}>
+                      <Text style={styles.eventTitle}>
+                        {planet1Name} {aspectName} {planet2Name}
+                      </Text>
+                      <Text style={styles.eventDate}>
+                        {formatDate(event.localDateTime)} at{" "}
+                        {formatTime(event.localDateTime)}
+                      </Text>
+                    </View>
+                    <View style={styles.eventRightColumn}>
+                      {event.aspectName === "conjunct" ? (
+                        // For conjunctions, show only one position since both planets are at the same place
+                        <Text
+                          style={[
+                            styles.eventMoonPosition,
+                            getZodiacColorStyle(
+                              event.planet1Position.zodiacSignName
+                            ),
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              getPhysisSymbolStyle(fontLoaded, "medium"),
+                              getZodiacColorStyle(
+                                event.planet1Position.zodiacSignName
+                              ),
+                            ]}
+                          >
+                            {getPlanetKeysFromNames()[planet1Name] || ""}
+                          </Text>
+                          {"  "}
+                          <Text
+                            style={[
+                              getPhysisSymbolStyle(fontLoaded, "medium"),
+                              getZodiacColorStyle(
+                                event.planet1Position.zodiacSignName
+                              ),
+                            ]}
+                          >
+                            {
+                              getZodiacKeysFromNames()[
+                                event.planet1Position.zodiacSignName
+                              ]
+                            }
+                          </Text>
+                          {"  "}
+                          {event.planet1Position.degreeFormatted}{" "}
+                          {event.planet1Position.zodiacSignName}
+                        </Text>
+                      ) : (
+                        // For other aspects, show both positions
+                        <>
+                          <Text
+                            style={[
+                              styles.eventMoonPosition,
+                              getZodiacColorStyle(
+                                event.planet1Position.zodiacSignName
+                              ),
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                getPhysisSymbolStyle(fontLoaded, "medium"),
+                                getZodiacColorStyle(
+                                  event.planet1Position.zodiacSignName
+                                ),
+                              ]}
+                            >
+                              {getPlanetKeysFromNames()[planet1Name] || ""}
+                            </Text>
+                            {"  "}
+                            <Text
+                              style={[
+                                getPhysisSymbolStyle(fontLoaded, "medium"),
+                                getZodiacColorStyle(
+                                  event.planet1Position.zodiacSignName
+                                ),
+                              ]}
+                            >
+                              {
+                                getZodiacKeysFromNames()[
+                                  event.planet1Position.zodiacSignName
+                                ]
+                              }
+                            </Text>
+                            {"  "}
+                            {event.planet1Position.degreeFormatted}{" "}
+                            {event.planet1Position.zodiacSignName}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.eventMoonPosition,
+                              getZodiacColorStyle(
+                                event.planet2Position.zodiacSignName
+                              ),
+                              { marginTop: 4 },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                getPhysisSymbolStyle(fontLoaded, "medium"),
+                                getZodiacColorStyle(
+                                  event.planet2Position.zodiacSignName
+                                ),
+                              ]}
+                            >
+                              {getPlanetKeysFromNames()[planet2Name] || ""}
+                            </Text>
+                            {"  "}
+                            <Text
+                              style={[
+                                getPhysisSymbolStyle(fontLoaded, "medium"),
+                                getZodiacColorStyle(
+                                  event.planet2Position.zodiacSignName
+                                ),
+                              ]}
+                            >
+                              {
+                                getZodiacKeysFromNames()[
+                                  event.planet2Position.zodiacSignName
+                                ]
+                              }
+                            </Text>
+                            {"  "}
+                            {event.planet2Position.degreeFormatted}{" "}
+                            {event.planet2Position.zodiacSignName}
+                          </Text>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                );
+              }
+
+              return null;
             });
           })()
         ) : (

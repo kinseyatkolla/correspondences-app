@@ -97,9 +97,10 @@ export function CalendarProvider({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Process ephemeris samples to detect ingresses and stations
-  const processEphemerisData = useCallback(
-    (samples: any[]): CalendarEvent[] => {
+  // NOTE: Event detection and timestamp refinement is now handled by the backend
+  // The following function is kept for reference but is no longer used
+  const _unused_processEphemerisData = useCallback(
+    (samples: any[]): { events: CalendarEvent[]; refinementData: EventWithRefinement[]; samples: any[] } => {
       const detectedEvents: CalendarEvent[] = [];
       const planetNames = [
         "sun",
@@ -137,8 +138,19 @@ export function CalendarProvider({
           longitude: number | null; // Track longitude to detect direction changes
           previousLongitude: number | null; // Track previous longitude to calculate speed
           previousSampleTime: Date | null; // Track previous sample time
+          previousSampleIndex: number | null; // Track previous sample index for timestamp refinement
         }
       > = {};
+      
+      // Interface for event refinement data
+      interface EventWithRefinement {
+        event: CalendarEvent;
+        prevSampleIndex?: number;
+        currentSampleIndex: number;
+        prevLongitude?: number;
+        prevSpeed?: number;
+        prevAspectAngle?: number;
+      }
 
       planetNames.forEach((planetName) => {
         planetStates[planetName] = {
@@ -147,8 +159,12 @@ export function CalendarProvider({
           longitude: null,
           previousLongitude: null,
           previousSampleTime: null,
+          previousSampleIndex: null,
         };
       });
+      
+      // Track events with refinement data
+      const eventsWithRefinement: EventWithRefinement[] = [];
 
       // Track previous aspect states to detect when aspects become exact
       // Key format: "planet1-planet2-aspectType"
@@ -207,53 +223,60 @@ export function CalendarProvider({
               prevState.zodiacSign !== -1 &&
               prevState.zodiacSign !== currentZodiacSign
             ) {
-              // Find the exact time between previous and current sample using binary search
-              // For now, use the current sample time (we can refine this later)
+              // Store event with refinement data for later timestamp refinement
+              const signs = [
+                "Aries",
+                "Taurus",
+                "Gemini",
+                "Cancer",
+                "Leo",
+                "Virgo",
+                "Libra",
+                "Scorpio",
+                "Sagittarius",
+                "Capricorn",
+                "Aquarius",
+                "Pisces",
+              ];
+
+              // Determine if planet is retrograde (negative speed means retrograde)
+              // If speed is null/undefined/NaN, default to false (not retrograde)
+              const isRetrograde = currentSpeed !== null && 
+                                   currentSpeed !== undefined && 
+                                   !isNaN(currentSpeed) && 
+                                   currentSpeed < 0;
+
+              // Use approximate time for now, will refine later
               const utcDateTime = sampleDate;
-              // Use the actual timezone offset for this specific date (accounts for DST)
               const tzOffsetHours = getTimezoneOffset(sampleDate);
               const localDateTime = new Date(
                 utcDateTime.getTime() + tzOffsetHours * 60 * 60 * 1000
               );
 
-            const signs = [
-              "Aries",
-              "Taurus",
-              "Gemini",
-              "Cancer",
-              "Leo",
-              "Virgo",
-              "Libra",
-              "Scorpio",
-              "Sagittarius",
-              "Capricorn",
-              "Aquarius",
-              "Pisces",
-            ];
+              const ingressEvent: IngressEvent = {
+                id: `ingress-${planetName}-${sample.timestamp}`,
+                type: "ingress",
+                planet: planetName,
+                fromSign: signs[prevState.zodiacSign],
+                toSign: signs[currentZodiacSign],
+                date: localDateTime,
+                utcDateTime,
+                localDateTime,
+                degree: planet.degree,
+                degreeFormatted: planet.degreeFormatted,
+                isRetrograde,
+              };
 
-            // Determine if planet is retrograde (negative speed means retrograde)
-            // If speed is null/undefined/NaN, default to false (not retrograde)
-            const isRetrograde = currentSpeed !== null && 
-                                 currentSpeed !== undefined && 
-                                 !isNaN(currentSpeed) && 
-                                 currentSpeed < 0;
-
-            const ingressEvent: IngressEvent = {
-              id: `ingress-${planetName}-${sample.timestamp}`,
-              type: "ingress",
-              planet: planetName,
-              fromSign: signs[prevState.zodiacSign],
-              toSign: signs[currentZodiacSign],
-              date: localDateTime,
-              utcDateTime,
-              localDateTime,
-              degree: planet.degree,
-              degreeFormatted: planet.degreeFormatted,
-              isRetrograde,
-            };
-
-            detectedEvents.push(ingressEvent);
-          }
+              // Store with refinement data
+              eventsWithRefinement.push({
+                event: ingressEvent,
+                prevSampleIndex: prevState.previousSampleIndex ?? undefined,
+                currentSampleIndex: i,
+                prevLongitude: prevState.previousLongitude ?? undefined,
+              });
+              
+              detectedEvents.push(ingressEvent);
+            }
 
           // Detect station (when speed changes sign - crosses zero)
           // This happens when degree switches from increasing to decreasing (retrograde)
@@ -274,8 +297,8 @@ export function CalendarProvider({
             prevSpeedSign !== currentSpeedSign;
 
           if (speedCrossedZero) {
+            // Use approximate time for now, will refine later
             const utcDateTime = sampleDate;
-            // Use the actual timezone offset for this specific date (accounts for DST)
             const tzOffsetHours = getTimezoneOffset(sampleDate);
             const localDateTime = new Date(
               utcDateTime.getTime() + tzOffsetHours * 60 * 60 * 1000
@@ -310,6 +333,14 @@ export function CalendarProvider({
               }
             );
 
+            // Store with refinement data
+            eventsWithRefinement.push({
+              event: stationEvent,
+              prevSampleIndex: prevState.previousSampleIndex ?? undefined,
+              currentSampleIndex: i,
+              prevSpeed: prevState.speed ?? undefined,
+            });
+
             detectedEvents.push(stationEvent);
           }
 
@@ -320,6 +351,7 @@ export function CalendarProvider({
             longitude: currentLongitude,
             previousLongitude: currentLongitude,
             previousSampleTime: sampleDate,
+            previousSampleIndex: i - 1,
           };
         });
 
@@ -389,8 +421,25 @@ export function CalendarProvider({
                 isCurrentlyExact &&
                 (!prevAspectState || !prevAspectState.wasExact)
               ) {
+                // Calculate aspect angle for refinement
+                const aspectAngles: Record<string, number> = {
+                  conjunct: 0,
+                  sextile: 60,
+                  square: 90,
+                  trine: 120,
+                  opposition: 180,
+                };
+                const aspectAngle = aspectAngles[aspectType.name] || 0;
+                const currentAspectAngle = ((planet1.longitude - planet2.longitude) % 360 + 360) % 360;
+                
+                // Get previous aspect angle if available
+                let prevAspectAngle: number | undefined;
+                if (prevAspectState && prevAspectState.orb !== undefined && prevAspectState.orb !== 999) {
+                  // Estimate previous angle from orb
+                  prevAspectAngle = aspectAngle; // Will be refined with actual calculation
+                }
+
                 const utcDateTime = sampleDate;
-                // Use the actual timezone offset for this specific date (accounts for DST)
                 const tzOffsetHours = getTimezoneOffset(sampleDate);
                 const localDateTime = new Date(
                   utcDateTime.getTime() + tzOffsetHours * 60 * 60 * 1000
@@ -419,6 +468,24 @@ export function CalendarProvider({
                   },
                 };
 
+                // Calculate previous aspect angle from previous sample if available
+                let actualPrevAspectAngle: number | undefined;
+                if (i > 0 && samples[i - 1]?.planets) {
+                  const prevP1 = samples[i - 1].planets[planet1Name];
+                  const prevP2 = samples[i - 1].planets[planet2Name];
+                  if (prevP1 && prevP2) {
+                    actualPrevAspectAngle = ((prevP1.longitude - prevP2.longitude) % 360 + 360) % 360;
+                  }
+                }
+                
+                // Store with refinement data
+                eventsWithRefinement.push({
+                  event: aspectEvent,
+                  prevSampleIndex: i > 0 ? i - 1 : undefined,
+                  currentSampleIndex: i,
+                  prevAspectAngle: actualPrevAspectAngle,
+                });
+
                 detectedEvents.push(aspectEvent);
               }
 
@@ -437,7 +504,152 @@ export function CalendarProvider({
         (a, b) => a.utcDateTime.getTime() - b.utcDateTime.getTime()
       );
 
-      return detectedEvents;
+      // Return both events and refinement data
+      return { events: detectedEvents, refinementData: eventsWithRefinement, samples };
+    },
+    [currentChart]
+  );
+  
+  // NOTE: Timestamp refinement is now handled by the backend
+  // The following function is kept for reference but is no longer used
+  const _unused_refineEventTimestamps = useCallback(
+    async (
+      events: CalendarEvent[],
+      refinementData: EventWithRefinement[],
+      samples: any[]
+    ): Promise<CalendarEvent[]> => {
+      const location = currentChart?.location || {
+        latitude: 40.7128,
+        longitude: -74.006,
+      };
+      
+      const getTimezoneOffset = (date: Date): number => {
+        return -date.getTimezoneOffset() / 60;
+      };
+      
+      const refinedEvents = await Promise.all(
+        events.map(async (event) => {
+          const refinement = refinementData.find(
+            (r) => r.event.id === event.id
+          );
+          
+          if (!refinement || refinement.prevSampleIndex === undefined) {
+            return event; // No refinement data, return as-is
+          }
+          
+          const prevSample = refinement.prevSampleIndex !== undefined 
+            ? samples[refinement.prevSampleIndex] 
+            : null;
+          const currentSample = (refinement as any).currentSampleIndex !== undefined
+            ? samples[(refinement as any).currentSampleIndex]
+            : null;
+          
+          if (!prevSample || !currentSample) {
+            return event; // Can't find samples, return as-is
+          }
+          
+          const prevTime = prevSample.date || new Date(prevSample.timestamp);
+          const currentTime = currentSample.date || new Date(currentSample.timestamp);
+          
+          try {
+            let exactTime: Date;
+            
+            if (event.type === "ingress") {
+              const targetSign = event.toSign === "Aries" ? 0 :
+                                event.toSign === "Taurus" ? 1 :
+                                event.toSign === "Gemini" ? 2 :
+                                event.toSign === "Cancer" ? 3 :
+                                event.toSign === "Leo" ? 4 :
+                                event.toSign === "Virgo" ? 5 :
+                                event.toSign === "Libra" ? 6 :
+                                event.toSign === "Scorpio" ? 7 :
+                                event.toSign === "Sagittarius" ? 8 :
+                                event.toSign === "Capricorn" ? 9 :
+                                event.toSign === "Aquarius" ? 10 : 11;
+              
+              exactTime = await findExactIngressTime(
+                event.planet,
+                targetSign,
+                prevTime,
+                currentTime,
+                refinement.prevLongitude || 0,
+                currentSample.planets[event.planet]?.longitude || 0,
+                location.latitude,
+                location.longitude
+              );
+            } else if (event.type === "station") {
+              exactTime = await findExactStationTime(
+                event.planet,
+                prevTime,
+                currentTime,
+                refinement.prevSpeed || 0,
+                currentSample.planets[event.planet]?.speed || 0,
+                location.latitude,
+                location.longitude
+              );
+            } else if (event.type === "aspect") {
+              const aspectAngles: Record<string, number> = {
+                conjunct: 0,
+                sextile: 60,
+                square: 90,
+                trine: 120,
+                opposition: 180,
+              };
+              const aspectAngle = aspectAngles[event.aspectName] || 0;
+              
+              // Calculate angular distance (shortest distance on circle)
+              const getAngularDistance = (lon1: number, lon2: number): number => {
+                const diff = Math.abs(lon1 - lon2);
+                return Math.min(diff, 360 - diff);
+              };
+              
+              const prevPlanet1 = prevSample.planets[event.planet1];
+              const prevPlanet2 = prevSample.planets[event.planet2];
+              const prevAngle = prevPlanet1 && prevPlanet2 
+                ? getAngularDistance(prevPlanet1.longitude, prevPlanet2.longitude)
+                : refinement.prevAspectAngle || 0;
+              
+              const currPlanet1 = currentSample.planets[event.planet1];
+              const currPlanet2 = currentSample.planets[event.planet2];
+              const currAngle = currPlanet1 && currPlanet2
+                ? getAngularDistance(currPlanet1.longitude, currPlanet2.longitude)
+                : 0;
+              
+              exactTime = await findExactAspectTime(
+                event.planet1,
+                event.planet2,
+                aspectAngle,
+                prevTime,
+                currentTime,
+                prevAngle,
+                currAngle,
+                location.latitude,
+                location.longitude
+              );
+            } else {
+              return event; // Unknown event type
+            }
+            
+            // Update event with refined timestamp
+            const tzOffsetHours = getTimezoneOffset(exactTime);
+            const localDateTime = new Date(
+              exactTime.getTime() + tzOffsetHours * 60 * 60 * 1000
+            );
+            
+            return {
+              ...event,
+              utcDateTime: exactTime,
+              localDateTime,
+              date: localDateTime,
+            };
+          } catch (error) {
+            console.error(`Error refining timestamp for event ${event.id}:`, error);
+            return event; // Return original event if refinement fails
+          }
+        })
+      );
+      
+      return refinedEvents;
     },
     [currentChart]
   );
@@ -453,30 +665,72 @@ export function CalendarProvider({
         longitude: -74.006,
       };
 
-      // Fetch year ephemeris (sample every 12 hours for better station detection)
-      // Stations can be missed with daily sampling if speed crosses zero between samples
+      // Fetch year ephemeris - backend now returns events with exact timestamps
       const response = await apiService.getYearEphemeris(
         year,
         location.latitude,
         location.longitude,
-        12 // Sample every 12 hours for better accuracy
+        12 // Sample every 12 hours for better detection
       );
 
-      if (response.success && response.data?.samples) {
-        // Verify we have speed data
-        const firstSample = response.data.samples[0];
-        if (firstSample?.planets) {
-          const firstPlanet = Object.values(firstSample.planets)[0] as any;
-          console.log(
-            "First sample planet data check:",
-            firstPlanet?.speed !== undefined
-              ? `Speed: ${firstPlanet.speed}`
-              : "Speed missing!"
+      if (response.success && response.data?.events) {
+        // Backend now provides events with exact timestamps
+        const events = response.data.events.map((event: any) => {
+          const utcDateTime = new Date(event.utcDateTime);
+          const getTimezoneOffset = (date: Date): number => {
+            return -date.getTimezoneOffset() / 60;
+          };
+          const tzOffsetHours = getTimezoneOffset(utcDateTime);
+          const localDateTime = new Date(
+            utcDateTime.getTime() + tzOffsetHours * 60 * 60 * 1000
           );
-        }
 
-        const detectedEvents = processEphemerisData(response.data.samples);
-        const eventCounts = detectedEvents.reduce(
+          if (event.type === "ingress") {
+            return {
+              id: `ingress-${event.planet}-${event.utcDateTime}`,
+              type: "ingress" as const,
+              planet: event.planet,
+              fromSign: event.fromSign,
+              toSign: event.toSign,
+              date: localDateTime,
+              utcDateTime,
+              localDateTime,
+              degree: event.degree,
+              degreeFormatted: event.degreeFormatted,
+              isRetrograde: event.isRetrograde,
+            } as IngressEvent;
+          } else if (event.type === "station") {
+            return {
+              id: `station-${event.planet}-${event.utcDateTime}`,
+              type: "station" as const,
+              planet: event.planet,
+              stationType: event.stationType,
+              date: localDateTime,
+              utcDateTime,
+              localDateTime,
+              degree: event.degree,
+              degreeFormatted: event.degreeFormatted,
+              zodiacSignName: event.zodiacSignName,
+            } as StationEvent;
+          } else if (event.type === "aspect") {
+            return {
+              id: `aspect-${event.planet1}-${event.planet2}-${event.aspectName}-${event.utcDateTime}`,
+              type: "aspect" as const,
+              planet1: event.planet1,
+              planet2: event.planet2,
+              aspectName: event.aspectName,
+              date: localDateTime,
+              utcDateTime,
+              localDateTime,
+              orb: event.orb,
+              planet1Position: event.planet1Position,
+              planet2Position: event.planet2Position,
+            } as AspectEvent;
+          }
+          return null;
+        }).filter((event): event is CalendarEvent => event !== null);
+
+        const eventCounts = events.reduce(
           (acc, event) => {
             acc[event.type] = (acc[event.type] || 0) + 1;
             return acc;
@@ -484,10 +738,11 @@ export function CalendarProvider({
           {} as Record<string, number>
         );
         console.log(
-          `Calendar events detected: ${detectedEvents.length} total`,
+          `Calendar events received: ${events.length} total`,
           eventCounts
         );
-        setEvents(detectedEvents);
+        
+        setEvents(events);
       } else {
         setError("Failed to fetch ephemeris data");
         setEvents([]);
@@ -499,7 +754,7 @@ export function CalendarProvider({
     } finally {
       setLoading(false);
     }
-  }, [year, currentChart, processEphemerisData]);
+  }, [year, currentChart]);
 
   // Refresh calendar data
   const refreshCalendar = useCallback(async () => {
