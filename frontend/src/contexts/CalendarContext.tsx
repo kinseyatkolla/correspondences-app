@@ -5,6 +5,7 @@ import React, {
   useEffect,
   ReactNode,
   useCallback,
+  useRef,
 } from "react";
 import { useAstrology } from "./AstrologyContext";
 import { apiService, PlanetPosition } from "../services/api";
@@ -88,6 +89,18 @@ interface CalendarProviderProps {
 // ============================================================================
 // PROVIDER
 // ============================================================================
+// Cache for year-ephemeris data
+// Key format: "year-latitude-longitude"
+interface EphemerisCacheEntry {
+  events: CalendarEvent[];
+  timestamp: number; // When the data was cached
+}
+
+const ephemerisCache = new Map<string, EphemerisCacheEntry>();
+
+// Cache expiration time: 1 hour (in milliseconds)
+const CACHE_EXPIRATION_MS = 60 * 60 * 1000;
+
 export function CalendarProvider({
   children,
   year,
@@ -96,6 +109,9 @@ export function CalendarProvider({
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Track current cache key to detect changes
+  const currentCacheKeyRef = useRef<string | null>(null);
 
   // NOTE: Event detection and timestamp refinement is now handled by the backend
   // The following function is kept for reference but is no longer used
@@ -665,6 +681,23 @@ export function CalendarProvider({
         longitude: -74.006,
       };
 
+      // Create cache key based on year and location
+      const cacheKey = `${year}-${location.latitude}-${location.longitude}`;
+      currentCacheKeyRef.current = cacheKey;
+
+      // Check cache first
+      const cachedData = ephemerisCache.get(cacheKey);
+      const now = Date.now();
+      
+      if (cachedData && (now - cachedData.timestamp) < CACHE_EXPIRATION_MS) {
+        console.log(`📦 Using cached year-ephemeris data for ${year}`);
+        setEvents(cachedData.events);
+        setLoading(false);
+        return;
+      }
+
+      console.log(`🌐 Fetching year-ephemeris data for ${year} (cache miss or expired)`);
+
       // Fetch year ephemeris - backend now returns events with exact timestamps
       const response = await apiService.getYearEphemeris(
         year,
@@ -742,6 +775,23 @@ export function CalendarProvider({
           eventCounts
         );
         
+        // Store in cache
+        ephemerisCache.set(cacheKey, {
+          events,
+          timestamp: now,
+        });
+        
+        // Clean up old cache entries (keep only last 5 years worth)
+        if (ephemerisCache.size > 5) {
+          const entriesToDelete: string[] = [];
+          ephemerisCache.forEach((value, key) => {
+            if ((now - value.timestamp) > CACHE_EXPIRATION_MS) {
+              entriesToDelete.push(key);
+            }
+          });
+          entriesToDelete.forEach((key) => ephemerisCache.delete(key));
+        }
+        
         setEvents(events);
       } else {
         setError("Failed to fetch ephemeris data");
@@ -756,10 +806,19 @@ export function CalendarProvider({
     }
   }, [year, currentChart]);
 
-  // Refresh calendar data
+  // Refresh calendar data (bypasses cache)
   const refreshCalendar = useCallback(async () => {
+    const location = currentChart?.location || {
+      latitude: 40.7128,
+      longitude: -74.006,
+    };
+    const cacheKey = `${year}-${location.latitude}-${location.longitude}`;
+    
+    // Clear cache for this key to force refresh
+    ephemerisCache.delete(cacheKey);
+    
     await fetchYearEphemeris();
-  }, [fetchYearEphemeris]);
+  }, [fetchYearEphemeris, year, currentChart]);
 
   // Fetch data on mount and when year or location changes
   useEffect(() => {

@@ -1,6 +1,75 @@
 // API configuration
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || "http://192.168.0.103:3000/api";
+import Constants from "expo-constants";
+
+// Helper function to extract IP from various Expo Constants sources
+function extractIpFromHost(host: string | undefined | null): string | null {
+  if (!host) return null;
+  
+  // Remove protocol if present (exp://, http://, https://, etc.)
+  const cleanHost = host.replace(/^[^:]+:\/\//, "");
+  // Extract IP (everything before the port)
+  const ip = cleanHost.split(":")[0];
+  
+  // Validate it's a proper IP address
+  if (ip && ip !== "localhost" && ip !== "127.0.0.1" && ip.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+    return ip;
+  }
+  return null;
+}
+
+// Helper function to get the local IP address from Expo
+function getLocalApiUrl(): string {
+  // If environment variable is set, use it
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    console.log(`📍 Using API URL from environment: ${process.env.EXPO_PUBLIC_API_URL}`);
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  // Try multiple methods to get the IP address
+  const possibleHosts = [
+    Constants.expoConfig?.hostUri,
+    Constants.manifest?.hostUri,
+    Constants.manifest2?.extra?.expoGo?.debuggerHost,
+    // @ts-ignore - debuggerHost might exist
+    Constants.debuggerHost,
+  ];
+
+  for (const host of possibleHosts) {
+    const ip = extractIpFromHost(host);
+    if (ip) {
+      console.log(`📍 Detected local IP: ${ip} (from ${host})`);
+      return `http://${ip}:3000/api`;
+    }
+  }
+
+  // Debug: Log what Constants contains (for troubleshooting)
+  if (__DEV__) {
+    console.log("🔍 Constants debug info:", {
+      hasExpoConfig: !!Constants.expoConfig,
+      hasManifest: !!Constants.manifest,
+      hasManifest2: !!Constants.manifest2,
+      expoConfigHostUri: Constants.expoConfig?.hostUri,
+      manifestHostUri: Constants.manifest?.hostUri,
+    });
+  }
+
+  // Last resort fallback (will need to be updated manually if this is used)
+  console.warn(
+    "⚠️ Could not detect local IP. Using fallback. " +
+    "To fix this:\n" +
+    "1. Find your computer's IP address (run: ifconfig on Mac/Linux or ipconfig on Windows)\n" +
+    "2. Set EXPO_PUBLIC_API_URL environment variable: EXPO_PUBLIC_API_URL=http://YOUR_IP:3000/api\n" +
+    "3. Or update the fallback IP in src/services/api.ts"
+  );
+  return "http://192.168.0.103:3000/api";
+}
+
+const API_BASE_URL = getLocalApiUrl();
+
+// Log the API URL being used (only in development)
+if (__DEV__) {
+  console.log(`🌐 API Base URL: ${API_BASE_URL}`);
+}
 
 // Types for our API responses
 export interface Correspondence {
@@ -213,8 +282,13 @@ class ApiService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
     try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      if (__DEV__) {
+        console.log(`📡 API Request: ${options.method || "GET"} ${url}`);
+      }
+      
+      const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
           ...options.headers,
@@ -228,7 +302,16 @@ class ApiService {
 
       return await response.json();
     } catch (error) {
-      console.error("API Error:", error);
+      console.error(`❌ API Error for ${url}:`, error);
+      if (error instanceof TypeError && error.message === "Network request failed") {
+        console.error(
+          `💡 Network request failed. Make sure:\n` +
+          `   1. Your backend server is running on port 3000\n` +
+          `   2. Your device is on the same WiFi network as your computer\n` +
+          `   3. The API URL is correct: ${this.baseUrl}\n` +
+          `   4. Your firewall allows connections on port 3000`
+        );
+      }
       throw error;
     }
   }
