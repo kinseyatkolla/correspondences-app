@@ -54,7 +54,7 @@ import {
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function AstrologyScreen({ navigation }: any) {
+export default function AstrologyScreen({ navigation, route }: any) {
   const {
     currentChart,
     loading: ephemerisLoading,
@@ -63,8 +63,13 @@ export default function AstrologyScreen({ navigation }: any) {
   } = useAstrology();
   const { fontLoaded } = usePhysisFont();
 
+  // Get selected date from route params, default to today
+  const selectedDate = route?.params?.selectedDate
+    ? new Date(route.params.selectedDate)
+    : new Date();
+
   // State for the currently displayed date
-  const [displayDate, setDisplayDate] = useState(new Date());
+  const [displayDate, setDisplayDate] = useState(selectedDate);
 
   // State for the selected date's chart data
   const [selectedDateChart, setSelectedDateChart] = useState<BirthChart | null>(
@@ -210,13 +215,13 @@ export default function AstrologyScreen({ navigation }: any) {
         longitude: -74.006,
       };
 
-      // Convert local time to UTC for the backend
-      // This ensures consistency with how the backend handles current time
+      // Extract UTC components from the Date object for the backend
+      // Date objects store time internally as UTC, so we use UTC methods
       const customDate = {
-        year: date.getFullYear(),
-        month: date.getMonth() + 1, // JavaScript months are 0-based
-        day: date.getDate(),
-        hour: date.getUTCHours(), // Use UTC time to match backend's current time handling
+        year: date.getUTCFullYear(),
+        month: date.getUTCMonth() + 1, // JavaScript months are 0-based
+        day: date.getUTCDate(),
+        hour: date.getUTCHours(),
         minute: date.getUTCMinutes(),
       };
 
@@ -330,6 +335,34 @@ export default function AstrologyScreen({ navigation }: any) {
   // Use selected date chart if available, otherwise fall back to current chart
   const activeChart = selectedDateChart || currentChart;
 
+  // Handle route params for selectedDate (from calendar screen navigation)
+  useEffect(() => {
+    if (route?.params?.selectedDate) {
+      const dateFromRoute = new Date(route.params.selectedDate);
+      // Check if we need to update displayDate
+      const dateMatches = dateFromRoute.getTime() === displayDate.getTime();
+      if (!dateMatches) {
+        console.log(
+          "📅 Setting date from route params:",
+          dateFromRoute.toISOString()
+        );
+        setDisplayDate(dateFromRoute);
+      }
+    }
+  }, [route?.params?.selectedDate]);
+
+  // Fetch chart when currentChart is available and we have selectedDate from route
+  useEffect(() => {
+    if (route?.params?.selectedDate && currentChart) {
+      const dateFromRoute = new Date(route.params.selectedDate);
+      console.log(
+        "📅 Fetching chart for date from route params:",
+        dateFromRoute.toISOString()
+      );
+      fetchChartForDate(dateFromRoute);
+    }
+  }, [route?.params?.selectedDate, currentChart]);
+
   // Debug logging for activeChart
   useEffect(() => {
     console.log("🔄 ActiveChart updated:", {
@@ -422,6 +455,18 @@ export default function AstrologyScreen({ navigation }: any) {
     sourcePlanet: any,
     chart: BirthChart | any
   ) => {
+    // Return empty array if sourcePlanet or chart is invalid
+    if (
+      !sourcePlanet ||
+      typeof sourcePlanet.longitude !== "number" ||
+      sourcePlanet.error
+    ) {
+      return [];
+    }
+    if (!chart || !chart.planets) {
+      return [];
+    }
+
     // Define consistent planet order
     const planetOrder = [
       "sun",
@@ -441,7 +486,10 @@ export default function AstrologyScreen({ navigation }: any) {
     const otherPlanets = Object.entries(chart.planets)
       .filter(
         ([name, planet]: [string, any]) =>
-          name !== sourceName && planet && !planet.error
+          name !== sourceName &&
+          planet &&
+          !planet.error &&
+          typeof planet.longitude === "number"
       )
       .sort(([nameA], [nameB]) => {
         const indexA = planetOrder.indexOf(nameA);
@@ -470,6 +518,11 @@ export default function AstrologyScreen({ navigation }: any) {
     }> = [];
 
     otherPlanets.forEach(([planetName, planet]: [string, any]) => {
+      // Skip if planet doesn't have required fields
+      if (!planet || typeof planet.longitude !== "number") {
+        return;
+      }
+
       // Check aspects with 3-degree orb (using utility functions)
       // Only show aspects with 3-degree orb or less (no whole sign aspects)
       const aspectResults = checkAllAspects(sourcePlanet, planet, 3);
@@ -499,6 +552,131 @@ export default function AstrologyScreen({ navigation }: any) {
     });
 
     return aspects;
+  };
+
+  // Helper function to get whole sign aspects that aren't already in the main aspects list
+  const getWholeSignAspectsForCard = (
+    sourceName: string,
+    sourcePlanet: any,
+    chart: BirthChart | any,
+    mainAspects: Array<{ planetName: string; aspectName: string }>
+  ) => {
+    // Return empty array if sourcePlanet or chart is invalid
+    if (
+      !sourcePlanet ||
+      sourcePlanet.zodiacSignName === undefined ||
+      sourcePlanet.error
+    ) {
+      return [];
+    }
+    if (!chart || !chart.planets) {
+      return [];
+    }
+
+    // Define consistent planet order
+    const planetOrder = [
+      "sun",
+      "moon",
+      "mercury",
+      "venus",
+      "mars",
+      "jupiter",
+      "saturn",
+      "uranus",
+      "neptune",
+      "pluto",
+      "northNode",
+    ];
+
+    // Get all planets except the source planet for comparison
+    const otherPlanets = Object.entries(chart.planets)
+      .filter(
+        ([name, planet]: [string, any]) =>
+          name !== sourceName &&
+          planet &&
+          !planet.error &&
+          planet.zodiacSignName
+      )
+      .sort(([nameA], [nameB]) => {
+        const indexA = planetOrder.indexOf(nameA);
+        const indexB = planetOrder.indexOf(nameB);
+        const sortA = indexA === -1 ? 999 : indexA;
+        const sortB = indexB === -1 ? 999 : indexB;
+        return sortA - sortB;
+      });
+
+    // Add ascendant to other planets if source is not ascendant
+    if (sourceName !== "ascendant" && chart.houses) {
+      const ascendantPosition: any = {
+        longitude: chart.houses.ascendant,
+        zodiacSignName: chart.houses.ascendantSign,
+        degree: parseFloat(chart.houses.ascendantDegree) || 0,
+        degreeFormatted: chart.houses.ascendantDegree,
+      };
+      otherPlanets.push(["ascendant", ascendantPosition]);
+    }
+
+    const wholeSignAspects: Array<{
+      planetName: string;
+      displayName: string;
+      aspectName: string;
+    }> = [];
+
+    // Create a set of aspect keys from main aspects for quick lookup
+    // Check both the aspect name and "whole sign" prefixed version
+    const mainAspectKeys = new Set(
+      mainAspects.map((a) => {
+        const planetKey = a.planetName.toLowerCase();
+        const aspectKey = a.aspectName.toLowerCase();
+        // Remove "whole sign " prefix if present for comparison
+        const baseAspectKey = aspectKey.replace(/^whole sign /, "");
+        return `${planetKey}_${baseAspectKey}`;
+      })
+    );
+
+    otherPlanets.forEach(([planetName, planet]: [string, any]) => {
+      // Skip if planet doesn't have required fields
+      if (!planet || !planet.zodiacSignName) {
+        return;
+      }
+
+      // Use existing utility to check whole sign aspects
+      const wholeSignAspectResults = checkAllWholeSignAspects(
+        sourcePlanet,
+        planet
+      );
+
+      // Format planet display name
+      const capitalizedPlanetName =
+        planetName.charAt(0).toUpperCase() + planetName.slice(1);
+      const displayPlanetName =
+        planetName === "northNode"
+          ? "N. Node"
+          : planetName === "ascendant"
+          ? "Ascendant"
+          : capitalizedPlanetName;
+
+      // Check each whole sign aspect - show all that aren't already in main list
+      Object.entries(wholeSignAspectResults).forEach(([aspectName, result]) => {
+        if (result.hasAspect) {
+          // Check if this aspect is already in the main list
+          // Check both the base aspect name (without "whole sign" prefix)
+          const aspectKey = `${displayPlanetName.toLowerCase()}_${aspectName.toLowerCase()}`;
+          const isAlreadyInMain = mainAspectKeys.has(aspectKey);
+
+          // Only include if not already in main list
+          if (!isAlreadyInMain) {
+            wholeSignAspects.push({
+              planetName: displayPlanetName,
+              displayName: displayPlanetName,
+              aspectName: `whole sign ${aspectName}`,
+            });
+          }
+        }
+      });
+    });
+
+    return wholeSignAspects;
   };
 
   // Helper function to render aspects for a planet or point
@@ -1015,26 +1193,79 @@ export default function AstrologyScreen({ navigation }: any) {
                                   planet.name
                                 );
 
+                              // Check if planet is retrograde - access directly from activeChart
+                              const planetForRetrogradeCheck =
+                                activeChart.planets[planet.name];
+                              // Match the chart component's test behavior for Pluto
+                              let isRetrograde =
+                                planet.name === "ascendant"
+                                  ? false // Ascendant doesn't go retrograde
+                                  : !!planetForRetrogradeCheck?.isRetrograde;
+
+                              // Temporary test: force Pluto to be retrograde for testing (matching chart component)
+                              if (planet.name === "pluto") {
+                                isRetrograde = true;
+                              }
+
+                              // Handle navigation for moon card
+                              const handleMoonCardPress = () => {
+                                if (planet.name === "moon" && navigation) {
+                                  (navigation as any).navigate("Moon", {
+                                    screen: "MoonMain",
+                                    params: {
+                                      selectedDate: displayDate.toISOString(),
+                                    },
+                                  });
+                                }
+                              };
+
+                              const CardWrapper =
+                                planet.name === "moon"
+                                  ? TouchableOpacity
+                                  : View;
+                              const cardWrapperProps =
+                                planet.name === "moon"
+                                  ? {
+                                      onPress: handleMoonCardPress,
+                                      activeOpacity: 0.8,
+                                    }
+                                  : {};
+
                               return (
-                                <View
+                                <CardWrapper
                                   key={planet.name}
+                                  {...cardWrapperProps}
                                   style={[
                                     styles.planetCard,
                                     { backgroundColor: zodiacColor },
                                   ]}
                                 >
                                   <View style={styles.planetCardTopHeader}>
-                                    <Text
-                                      style={[
-                                        getPhysisSymbolStyle(
-                                          fontLoaded,
-                                          "large"
-                                        ),
-                                        styles.planetCardTopHeaderSymbol,
-                                      ]}
+                                    <View
+                                      style={styles.planetCardTopHeaderLeft}
                                     >
-                                      {planet.data.symbol}
-                                    </Text>
+                                      <Text
+                                        style={[
+                                          getPhysisSymbolStyle(
+                                            fontLoaded,
+                                            "large"
+                                          ),
+                                          styles.planetCardTopHeaderSymbol,
+                                        ]}
+                                      >
+                                        {planet.data.symbol}
+                                      </Text>
+                                      {isRetrograde && (
+                                        <Text
+                                          style={[
+                                            styles.planetCardTopHeaderRetrograde,
+                                            { marginLeft: 4 },
+                                          ]}
+                                        >
+                                          Rx
+                                        </Text>
+                                      )}
+                                    </View>
                                     <Text
                                       style={styles.planetCardTopHeaderEmoji}
                                     >
@@ -1436,8 +1667,217 @@ export default function AstrologyScreen({ navigation }: any) {
                                         activeChart
                                       );
 
+                                      // Get whole sign aspects regardless of whether there are degree-based aspects
+                                      const wholeSignAspects =
+                                        getWholeSignAspectsForCard(
+                                          planet.name,
+                                          planetData,
+                                          activeChart,
+                                          aspects
+                                        );
+
                                       if (aspects.length === 0) {
                                         return (
+                                          <>
+                                            <View
+                                              style={
+                                                styles.planetCardContentRow
+                                              }
+                                            >
+                                              <View
+                                                style={
+                                                  styles.planetCardEmojiContainer
+                                                }
+                                              >
+                                                <Text
+                                                  style={[
+                                                    styles.planetCardTestText,
+                                                    {
+                                                      display:
+                                                        isRulerResult === true
+                                                          ? "flex"
+                                                          : "none",
+                                                    },
+                                                  ]}
+                                                >
+                                                  rshp:{" "}
+                                                  {isRulerResult === null
+                                                    ? "N/A"
+                                                    : isRulerResult
+                                                    ? "true"
+                                                    : "false"}
+                                                </Text>
+                                                <Text
+                                                  style={[
+                                                    styles.planetCardTestText,
+                                                    {
+                                                      display:
+                                                        isExaltationResult ===
+                                                        true
+                                                          ? "flex"
+                                                          : "none",
+                                                    },
+                                                  ]}
+                                                >
+                                                  xlt:{" "}
+                                                  {isExaltationResult === null
+                                                    ? "N/A"
+                                                    : isExaltationResult
+                                                    ? "true"
+                                                    : "false"}
+                                                </Text>
+                                                <Text
+                                                  style={[
+                                                    styles.planetCardTestText,
+                                                    {
+                                                      display:
+                                                        hasJupiterAspectResult ===
+                                                        true
+                                                          ? "flex"
+                                                          : "none",
+                                                    },
+                                                  ]}
+                                                >
+                                                  jptr:{" "}
+                                                  {hasJupiterAspectResult ===
+                                                  null
+                                                    ? "N/A"
+                                                    : hasJupiterAspectResult
+                                                    ? "true"
+                                                    : "false"}
+                                                </Text>
+                                                <Text
+                                                  style={[
+                                                    styles.planetCardTestText,
+                                                    {
+                                                      display:
+                                                        hasVenusAspectResult ===
+                                                        true
+                                                          ? "flex"
+                                                          : "none",
+                                                    },
+                                                  ]}
+                                                >
+                                                  vns:{" "}
+                                                  {hasVenusAspectResult === null
+                                                    ? "N/A"
+                                                    : hasVenusAspectResult
+                                                    ? "true"
+                                                    : "false"}
+                                                </Text>
+                                                <Text
+                                                  style={[
+                                                    styles.planetCardTestTextCons,
+                                                    {
+                                                      display:
+                                                        isFallResult === true
+                                                          ? "flex"
+                                                          : "none",
+                                                    },
+                                                  ]}
+                                                >
+                                                  fall:{" "}
+                                                  {isFallResult === null
+                                                    ? "N/A"
+                                                    : isFallResult
+                                                    ? "true"
+                                                    : "false"}
+                                                </Text>
+                                                <Text
+                                                  style={[
+                                                    styles.planetCardTestTextCons,
+                                                    {
+                                                      display:
+                                                        hasSaturnAspectResult ===
+                                                        true
+                                                          ? "flex"
+                                                          : "none",
+                                                    },
+                                                  ]}
+                                                >
+                                                  stn:{" "}
+                                                  {hasSaturnAspectResult ===
+                                                  null
+                                                    ? "N/A"
+                                                    : hasSaturnAspectResult
+                                                    ? "true"
+                                                    : "false"}
+                                                </Text>
+                                                <Text
+                                                  style={[
+                                                    styles.planetCardTestTextCons,
+                                                    {
+                                                      display:
+                                                        hasMarsAspectResult ===
+                                                        true
+                                                          ? "flex"
+                                                          : "none",
+                                                    },
+                                                  ]}
+                                                >
+                                                  mars:{" "}
+                                                  {hasMarsAspectResult === null
+                                                    ? "N/A"
+                                                    : hasMarsAspectResult
+                                                    ? "true"
+                                                    : "false"}
+                                                </Text>
+                                              </View>
+                                              <Text
+                                                style={
+                                                  styles.planetCardContentText
+                                                }
+                                              >
+                                                No aspects
+                                              </Text>
+                                            </View>
+                                            {/* Footer section with whole sign aspects */}
+                                            {wholeSignAspects.length > 0 && (
+                                              <>
+                                                <View
+                                                  style={
+                                                    styles.planetCardFooterDivider
+                                                  }
+                                                />
+                                                <View
+                                                  style={
+                                                    styles.planetCardFooter
+                                                  }
+                                                >
+                                                  <Text
+                                                    style={
+                                                      styles.planetCardFooterAspectText
+                                                    }
+                                                  >
+                                                    WHOLE SIGN ASPECTS
+                                                  </Text>
+                                                  <Text
+                                                    style={
+                                                      styles.planetCardFooterAspectText
+                                                    }
+                                                  >
+                                                    {wholeSignAspects
+                                                      .map((aspect) => {
+                                                        const aspectType =
+                                                          aspect.aspectName
+                                                            .replace(
+                                                              /^whole sign /i,
+                                                              ""
+                                                            )
+                                                            .toLowerCase();
+                                                        return `${aspectType} ${aspect.displayName}`;
+                                                      })
+                                                      .join(", ")}
+                                                  </Text>
+                                                </View>
+                                              </>
+                                            )}
+                                          </>
+                                        );
+                                      }
+
+                                      return (
+                                        <>
                                           <View
                                             style={styles.planetCardContentRow}
                                           >
@@ -1578,186 +2018,78 @@ export default function AstrologyScreen({ navigation }: any) {
                                                   : "false"}
                                               </Text>
                                             </View>
-                                            <Text
+                                            <View
                                               style={
-                                                styles.planetCardContentText
+                                                styles.planetCardAspectsList
                                               }
                                             >
-                                              No aspects
-                                            </Text>
+                                              {aspects.map((aspect, index) => (
+                                                <Text
+                                                  key={index}
+                                                  style={
+                                                    styles.planetCardAspectText
+                                                  }
+                                                >
+                                                  {aspect.aspectName}{" "}
+                                                  {aspect.displayName}
+                                                  {aspect.orb && (
+                                                    <Text
+                                                      style={
+                                                        styles.planetCardAspectOrb
+                                                      }
+                                                    >
+                                                      {" "}
+                                                      ({aspect.orb}°)
+                                                    </Text>
+                                                  )}
+                                                </Text>
+                                              ))}
+                                            </View>
                                           </View>
-                                        );
-                                      }
-
-                                      return (
-                                        <View
-                                          style={styles.planetCardContentRow}
-                                        >
-                                          <View
-                                            style={
-                                              styles.planetCardEmojiContainer
-                                            }
-                                          >
-                                            <Text
-                                              style={[
-                                                styles.planetCardTestText,
-                                                {
-                                                  display:
-                                                    isRulerResult === true
-                                                      ? "flex"
-                                                      : "none",
-                                                },
-                                              ]}
-                                            >
-                                              rshp:{" "}
-                                              {isRulerResult === null
-                                                ? "N/A"
-                                                : isRulerResult
-                                                ? "true"
-                                                : "false"}
-                                            </Text>
-                                            <Text
-                                              style={[
-                                                styles.planetCardTestText,
-                                                {
-                                                  display:
-                                                    isExaltationResult === true
-                                                      ? "flex"
-                                                      : "none",
-                                                },
-                                              ]}
-                                            >
-                                              xlt:{" "}
-                                              {isExaltationResult === null
-                                                ? "N/A"
-                                                : isExaltationResult
-                                                ? "true"
-                                                : "false"}
-                                            </Text>
-                                            <Text
-                                              style={[
-                                                styles.planetCardTestText,
-                                                {
-                                                  display:
-                                                    hasJupiterAspectResult ===
-                                                    true
-                                                      ? "flex"
-                                                      : "none",
-                                                },
-                                              ]}
-                                            >
-                                              jptr:{" "}
-                                              {hasJupiterAspectResult === null
-                                                ? "N/A"
-                                                : hasJupiterAspectResult
-                                                ? "true"
-                                                : "false"}
-                                            </Text>
-                                            <Text
-                                              style={[
-                                                styles.planetCardTestText,
-                                                {
-                                                  display:
-                                                    hasVenusAspectResult ===
-                                                    true
-                                                      ? "flex"
-                                                      : "none",
-                                                },
-                                              ]}
-                                            >
-                                              vns:{" "}
-                                              {hasVenusAspectResult === null
-                                                ? "N/A"
-                                                : hasVenusAspectResult
-                                                ? "true"
-                                                : "false"}
-                                            </Text>
-                                            <Text
-                                              style={[
-                                                styles.planetCardTestTextCons,
-                                                {
-                                                  display:
-                                                    isFallResult === true
-                                                      ? "flex"
-                                                      : "none",
-                                                },
-                                              ]}
-                                            >
-                                              fall:{" "}
-                                              {isFallResult === null
-                                                ? "N/A"
-                                                : isFallResult
-                                                ? "true"
-                                                : "false"}
-                                            </Text>
-                                            <Text
-                                              style={[
-                                                styles.planetCardTestTextCons,
-                                                {
-                                                  display:
-                                                    hasSaturnAspectResult ===
-                                                    true
-                                                      ? "flex"
-                                                      : "none",
-                                                },
-                                              ]}
-                                            >
-                                              stn:{" "}
-                                              {hasSaturnAspectResult === null
-                                                ? "N/A"
-                                                : hasSaturnAspectResult
-                                                ? "true"
-                                                : "false"}
-                                            </Text>
-                                            <Text
-                                              style={[
-                                                styles.planetCardTestTextCons,
-                                                {
-                                                  display:
-                                                    hasMarsAspectResult === true
-                                                      ? "flex"
-                                                      : "none",
-                                                },
-                                              ]}
-                                            >
-                                              mars:{" "}
-                                              {hasMarsAspectResult === null
-                                                ? "N/A"
-                                                : hasMarsAspectResult
-                                                ? "true"
-                                                : "false"}
-                                            </Text>
-                                          </View>
-                                          <View
-                                            style={styles.planetCardAspectsList}
-                                          >
-                                            {aspects.map((aspect, index) => (
-                                              <Text
-                                                key={index}
+                                          {/* Footer section with whole sign aspects */}
+                                          {wholeSignAspects.length > 0 && (
+                                            <>
+                                              <View
                                                 style={
-                                                  styles.planetCardAspectText
+                                                  styles.planetCardFooterDivider
                                                 }
+                                              />
+                                              <View
+                                                style={styles.planetCardFooter}
                                               >
-                                                {aspect.aspectName}{" "}
-                                                {aspect.displayName}
-                                                {aspect.orb && (
-                                                  <Text
-                                                    style={
-                                                      styles.planetCardAspectOrb
-                                                    }
-                                                  >
-                                                    {" "}
-                                                    ({aspect.orb}°)
-                                                  </Text>
-                                                )}
-                                              </Text>
-                                            ))}
-                                          </View>
-                                        </View>
+                                                <Text
+                                                  style={
+                                                    styles.planetCardFooterAspectText
+                                                  }
+                                                >
+                                                  WHOLE SIGN ASPECTS
+                                                </Text>
+                                                <Text
+                                                  style={
+                                                    styles.planetCardFooterAspectText
+                                                  }
+                                                >
+                                                  {wholeSignAspects
+                                                    .map((aspect) => {
+                                                      const aspectType =
+                                                        aspect.aspectName
+                                                          .replace(
+                                                            /^whole sign /i,
+                                                            ""
+                                                          )
+                                                          .toLowerCase();
+                                                      return `${aspectType} ${aspect.displayName}`;
+                                                    })
+                                                    .join(", ")}
+                                                </Text>
+                                              </View>
+                                            </>
+                                          )}
+                                        </>
                                       );
                                     })()}
                                   </View>
-                                </View>
+                                </CardWrapper>
                               );
                             })}
                           </View>
@@ -2177,23 +2509,32 @@ const styles = StyleSheet.create({
     minHeight: 100,
   },
   planetCardTopHeader: {
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: 2,
     paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.2)",
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+  },
+  planetCardTopHeaderLeft: {
+    flexDirection: "row",
     alignItems: "center",
   },
   planetCardTopHeaderSymbol: {
     fontSize: 28,
     color: "#ffffff",
   },
+  planetCardTopHeaderRetrograde: {
+    fontSize: 14,
+    color: "#000000",
+    fontWeight: "bold",
+  },
   planetCardTopHeaderEmoji: {
     fontSize: 36,
   },
   planetCardHeader: {
-    paddingVertical: 6,
+    paddingTop: 2,
+    paddingBottom: 6,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255, 255, 255, 0.2)",
@@ -2249,6 +2590,29 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   planetCardAspectOrb: {
+    fontSize: 10,
+    opacity: 0.7,
+    fontFamily: "monospace",
+  },
+  planetCardFooterDivider: {
+    height: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    marginTop: 8,
+    marginBottom: 8,
+    marginHorizontal: 12,
+  },
+  planetCardFooter: {
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  },
+  planetCardFooterAspectText: {
+    fontSize: 12,
+    color: "#ffffff",
+    marginBottom: 3,
+    lineHeight: 16,
+    opacity: 0.9,
+  },
+  planetCardFooterAspectOrb: {
     fontSize: 10,
     opacity: 0.7,
     fontFamily: "monospace",

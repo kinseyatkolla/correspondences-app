@@ -376,7 +376,7 @@ const getPaksha = (tithi: number): string => {
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function MoonScreen({ navigation }: any) {
+export default function MoonScreen({ navigation, route }: any) {
   const { currentChart, loading, error } = useAstrology();
   const { fontLoaded } = usePhysisFont();
 
@@ -386,8 +386,13 @@ export default function MoonScreen({ navigation }: any) {
   // Ref for the ScrollView to control scrolling
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Get selected date from route params, default to today
+  const selectedDate = route?.params?.selectedDate
+    ? new Date(route.params.selectedDate)
+    : new Date();
+
   // State for the currently displayed date
-  const [displayDate, setDisplayDate] = useState(new Date());
+  const [displayDate, setDisplayDate] = useState(selectedDate);
 
   // State for the selected date's chart data
   const [selectedDateChart, setSelectedDateChart] = useState<BirthChart | null>(
@@ -602,6 +607,35 @@ export default function MoonScreen({ navigation }: any) {
     setDisplayDate(now);
     fetchChartForDate(now);
   };
+
+  // Handle route params for selectedDate (from astrology screen navigation)
+  useEffect(() => {
+    if (route?.params?.selectedDate) {
+      const dateFromRoute = new Date(route.params.selectedDate);
+      // Check if we need to update displayDate
+      const dateMatches = dateFromRoute.getTime() === displayDate.getTime();
+      if (!dateMatches) {
+        console.log(
+          "📅 [MoonScreen] Setting date from route params:",
+          dateFromRoute.toISOString()
+        );
+        setDisplayDate(dateFromRoute);
+      }
+    }
+  }, [route?.params?.selectedDate]);
+
+  // Fetch chart when route params change and currentChart is available
+  useEffect(() => {
+    if (route?.params?.selectedDate && currentChart) {
+      const dateFromRoute = new Date(route.params.selectedDate);
+      console.log(
+        "📅 [MoonScreen] Fetching chart for date from route params:",
+        dateFromRoute.toISOString()
+      );
+      // Use UTC to ensure consistency with AstrologyScreen
+      fetchChartForDate(dateFromRoute, true);
+    }
+  }, [route?.params?.selectedDate, currentChart]);
 
   // Handler for clicking on a lunation item
   const handleLunationClick = (utcDate: Date, localDate: Date) => {

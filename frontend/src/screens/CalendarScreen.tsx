@@ -104,9 +104,23 @@ interface AspectEvent {
 type CalendarEvent = LunationEvent | IngressEvent | StationEvent | AspectEvent;
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+/**
+ * Extracts just the degree value from a formatted degree string
+ * e.g., "15°30'45"" -> "15°"
+ * The full degreeFormatted is preserved in the event data for future use
+ */
+function getDegreeOnly(degreeFormatted: string): string {
+  // Extract everything up to and including the degree symbol
+  const match = degreeFormatted.match(/^\d+°/);
+  return match ? match[0] : degreeFormatted.split("°")[0] + "°";
+}
+
+// ============================================================================
 // COMPONENT
 // ============================================================================
-export default function CalendarScreen() {
+export default function CalendarScreen({ navigation }: any) {
   const { currentChart } = useAstrology();
   const { fontLoaded } = usePhysisFont();
   const { year: selectedYear, setYear: setSelectedYear } = useYear();
@@ -251,20 +265,14 @@ export default function CalendarScreen() {
         longitude: -74.006,
       };
 
-      // Use device's actual timezone offset (accounts for DST and timezone boundaries)
-      const getTimezoneOffset = (date: Date): number => {
-        // Get timezone offset in minutes, convert to hours
-        return -date.getTimezoneOffset() / 60;
-      };
-
-      // Parse UTC times and store both UTC and local for display
+      // Parse UTC times - JavaScript Date objects handle timezone conversion automatically
+      // A Date object stores time in UTC internally and displays in local time automatically
       const phasesWithTimes = allPhases.map((phase) => {
-        const utcDateTime = new Date(`${phase.date}Z`);
-        // Use the actual timezone offset for this specific date (accounts for DST)
-        const tzOffsetHours = getTimezoneOffset(utcDateTime);
-        const localDateTime = new Date(
-          utcDateTime.getTime() + tzOffsetHours * 60 * 60 * 1000
-        );
+        // Ensure UTC string format (add 'Z' if not present)
+        const utcString = phase.date.endsWith('Z') ? phase.date : `${phase.date}Z`;
+        const utcDateTime = new Date(utcString);
+        // localDateTime is the same Date object - it will display in local time when using locale methods
+        const localDateTime = new Date(utcDateTime);
 
         return {
           ...phase,
@@ -575,6 +583,16 @@ export default function CalendarScreen() {
     );
   };
 
+  // Navigate to astrology screen with event date/time
+  const handleEventPress = (event: CalendarEvent) => {
+    if (navigation) {
+      (navigation as any).navigate("Astrology", {
+        screen: "AstrologyMain",
+        params: { selectedDate: event.localDateTime },
+      });
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Combined Header with Year and Filters */}
@@ -740,7 +758,7 @@ export default function CalendarScreen() {
               if (event.type === "lunation") {
                 const eventIsToday = isToday(event.localDateTime);
                 return (
-                  <View
+                  <TouchableOpacity
                     key={event.id}
                     ref={isTargetEvent ? todayItemRef : undefined}
                     onLayout={
@@ -752,6 +770,8 @@ export default function CalendarScreen() {
                       styles.eventItem,
                       eventIsToday && styles.eventItemToday,
                     ]}
+                    onPress={() => handleEventPress(event)}
+                    activeOpacity={0.7}
                   >
                     <View style={styles.eventLeftColumn}>
                       <Text style={styles.eventTitle}>
@@ -786,12 +806,12 @@ export default function CalendarScreen() {
                               ]
                             }
                           </Text>{" "}
-                          {event.moonPosition.degreeFormatted}{" "}
+                          {getDegreeOnly(event.moonPosition.degreeFormatted)}{" "}
                           {event.moonPosition.zodiacSignName}
                         </Text>
                       </View>
                     )}
-                  </View>
+                  </TouchableOpacity>
                 );
               }
 
@@ -814,12 +834,14 @@ export default function CalendarScreen() {
 
                 const eventIsToday = isToday(event.localDateTime);
                 return (
-                  <View
+                  <TouchableOpacity
                     key={event.id}
                     style={[
                       styles.eventItem,
                       eventIsToday && styles.eventItemToday,
                     ]}
+                    onPress={() => handleEventPress(event)}
+                    activeOpacity={0.7}
                   >
                     <View style={styles.eventLeftColumn}>
                       <Text style={styles.eventTitle}>
@@ -859,10 +881,10 @@ export default function CalendarScreen() {
                           {getZodiacKeysFromNames()[event.toSign]}
                         </Text>
                         {"  "}
-                        {event.degreeFormatted} {event.toSign}
+                        {getDegreeOnly(event.degreeFormatted)} {event.toSign}
                       </Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               }
 
@@ -888,7 +910,7 @@ export default function CalendarScreen() {
 
                 const eventIsToday = isToday(event.localDateTime);
                 return (
-                  <View
+                  <TouchableOpacity
                     key={event.id}
                     ref={isTargetEvent ? todayItemRef : undefined}
                     onLayout={
@@ -900,6 +922,8 @@ export default function CalendarScreen() {
                       styles.eventItem,
                       eventIsToday && styles.eventItemToday,
                     ]}
+                    onPress={() => handleEventPress(event)}
+                    activeOpacity={0.7}
                   >
                     <View style={styles.eventLeftColumn}>
                       <Text style={styles.eventTitle}>
@@ -944,11 +968,11 @@ export default function CalendarScreen() {
                         </Text>
                         {"  "}
                         <Text style={getZodiacColorStyle(event.zodiacSignName)}>
-                          {event.degreeFormatted} {event.zodiacSignName}
+                          {getDegreeOnly(event.degreeFormatted)} {event.zodiacSignName}
                         </Text>
                       </Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               }
 
@@ -980,7 +1004,7 @@ export default function CalendarScreen() {
 
                 const eventIsToday = isToday(event.localDateTime);
                 return (
-                  <View
+                  <TouchableOpacity
                     key={event.id}
                     ref={isTargetEvent ? todayItemRef : undefined}
                     onLayout={
@@ -992,6 +1016,8 @@ export default function CalendarScreen() {
                       styles.eventItem,
                       eventIsToday && styles.eventItemToday,
                     ]}
+                    onPress={() => handleEventPress(event)}
+                    activeOpacity={0.7}
                   >
                     <View style={styles.eventLeftColumn}>
                       <Text style={styles.eventTitle}>
@@ -1039,7 +1065,7 @@ export default function CalendarScreen() {
                             }
                           </Text>
                           {"  "}
-                          {event.planet1Position.degreeFormatted}{" "}
+                          {getDegreeOnly(event.planet1Position.degreeFormatted)}{" "}
                           {event.planet1Position.zodiacSignName}
                         </Text>
                       ) : (
@@ -1079,7 +1105,7 @@ export default function CalendarScreen() {
                               }
                             </Text>
                             {"  "}
-                            {event.planet1Position.degreeFormatted}{" "}
+                            {getDegreeOnly(event.planet1Position.degreeFormatted)}{" "}
                             {event.planet1Position.zodiacSignName}
                           </Text>
                           <Text
@@ -1117,13 +1143,13 @@ export default function CalendarScreen() {
                               }
                             </Text>
                             {"  "}
-                            {event.planet2Position.degreeFormatted}{" "}
+                            {getDegreeOnly(event.planet2Position.degreeFormatted)}{" "}
                             {event.planet2Position.zodiacSignName}
                           </Text>
                         </>
                       )}
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               }
 
@@ -1300,7 +1326,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   eventMoonPosition: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: "500",
   },
   emptyContainer: {

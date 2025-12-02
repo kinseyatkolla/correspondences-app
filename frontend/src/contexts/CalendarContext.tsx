@@ -709,14 +709,19 @@ export function CalendarProvider({
       if (response.success && response.data?.events) {
         // Backend now provides events with exact timestamps
         const events = response.data.events.map((event: any) => {
-          const utcDateTime = new Date(event.utcDateTime);
-          const getTimezoneOffset = (date: Date): number => {
-            return -date.getTimezoneOffset() / 60;
-          };
-          const tzOffsetHours = getTimezoneOffset(utcDateTime);
-          const localDateTime = new Date(
-            utcDateTime.getTime() + tzOffsetHours * 60 * 60 * 1000
-          );
+          // Parse UTC datetime - ensure it's treated as UTC
+          // If the string doesn't have 'Z' at the end, add it
+          const utcString = event.utcDateTime.endsWith('Z') 
+            ? event.utcDateTime 
+            : event.utcDateTime + 'Z';
+          const utcDateTime = new Date(utcString);
+          
+          // For display, we want the local time representation
+          // JavaScript Date objects store time in UTC internally
+          // When we create a Date from a UTC string, it's already correctly stored
+          // The localDateTime is the same Date object - it will display in local time automatically
+          // But we'll create it explicitly to be clear about the intent
+          const localDateTime = new Date(utcDateTime);
 
           if (event.type === "ingress") {
             return {
@@ -766,6 +771,10 @@ export function CalendarProvider({
         const eventCounts = events.reduce(
           (acc, event) => {
             acc[event.type] = (acc[event.type] || 0) + 1;
+            if (event.type === "station") {
+              acc[`station-${event.stationType}`] =
+                (acc[`station-${event.stationType}`] || 0) + 1;
+            }
             return acc;
           },
           {} as Record<string, number>
@@ -774,6 +783,16 @@ export function CalendarProvider({
           `Calendar events received: ${events.length} total`,
           eventCounts
         );
+        
+        // Debug: Log raw backend response to see if stations are in the response
+        const rawStationCount = response.data.events.filter(
+          (e: any) => e.type === "station"
+        ).length;
+        if (rawStationCount > 0) {
+          console.log(`✅ Backend returned ${rawStationCount} station events`);
+        } else {
+          console.warn(`⚠️ Backend returned 0 station events`);
+        }
         
         // Store in cache
         ephemerisCache.set(cacheKey, {
