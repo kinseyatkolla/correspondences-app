@@ -76,6 +76,7 @@ const ZODIAC_RADIUS = CHART_SIZE * 0.35;
 const ZODIAC_SYMBOLS_RADIUS = CHART_SIZE * 0.3; // Separate radius for zodiac symbols (smaller)
 const HOUSES_RADIUS = CHART_SIZE * 0.25;
 const PLANETS_RADIUS = CHART_SIZE * 0.35; // For aspect line connections (on zodiac circle)
+const ASPECT_LINES_RADIUS = PLANETS_RADIUS - 5; // For aspect line endpoints (5px inward from planet positions)
 const PLANET_LABELS_RADIUS = CHART_SIZE * 0.45; // For symbol/label display (outside)
 
 // Zodiac signs in order (starting from Aries at 0°)
@@ -217,7 +218,10 @@ const getPlanetPositions = (
 /**
  * Get aspect lines between planets
  */
-const getAspectLines = (planets: ChartPlanetPosition[]) => {
+const getAspectLines = (
+  planets: ChartPlanetPosition[],
+  ascendantSign?: string
+) => {
   const lines: Array<{
     x1: number;
     y1: number;
@@ -225,6 +229,7 @@ const getAspectLines = (planets: ChartPlanetPosition[]) => {
     y2: number;
     color: string;
     type: string;
+    strokeWidth: number;
   }> = [];
 
   for (let i = 0; i < planets.length; i++) {
@@ -232,77 +237,102 @@ const getAspectLines = (planets: ChartPlanetPosition[]) => {
       const planet1 = planets[i];
       const planet2 = planets[j];
 
-      // Check for aspects
+      // Check for aspects with 7-degree orb
       const conjunct = checkForConjunct(
         { longitude: planet1.degree, zodiacSignName: planet1.sign } as any,
         { longitude: planet2.degree, zodiacSignName: planet2.sign } as any,
-        5
+        7
       );
       const opposition = checkForOpposition(
         { longitude: planet1.degree, zodiacSignName: planet1.sign } as any,
         { longitude: planet2.degree, zodiacSignName: planet2.sign } as any,
-        5
+        7
       );
       const square = checkForSquare(
         { longitude: planet1.degree, zodiacSignName: planet1.sign } as any,
         { longitude: planet2.degree, zodiacSignName: planet2.sign } as any,
-        5
+        7
       );
       const trine = checkForTrine(
         { longitude: planet1.degree, zodiacSignName: planet1.sign } as any,
         { longitude: planet2.degree, zodiacSignName: planet2.sign } as any,
-        5
+        7
       );
       const sextile = checkForSextile(
         { longitude: planet1.degree, zodiacSignName: planet1.sign } as any,
         { longitude: planet2.degree, zodiacSignName: planet2.sign } as any,
-        5
+        7
+      );
+
+      // Helper function to determine stroke width based on orb
+      const getStrokeWidth = (orb: number | undefined): number => {
+        if (orb === undefined) return 1;
+        if (orb <= 0.5) return 10; // Extra bold for 0.5° or less
+        if (orb <= 3) return 5; // Bold for 3° or less
+        return 1; // Normal for 7° or less (but > 3°)
+      };
+
+      // Calculate aspect line positions using smaller radius (5px inward)
+      const planet1AspectPos = longitudeToPosition(
+        planet1.degree,
+        ASPECT_LINES_RADIUS,
+        ascendantSign
+      );
+      const planet2AspectPos = longitudeToPosition(
+        planet2.degree,
+        ASPECT_LINES_RADIUS,
+        ascendantSign
       );
 
       if (conjunct.hasAspect) {
         lines.push({
-          x1: planet1.x,
-          y1: planet1.y,
-          x2: planet2.x,
-          y2: planet2.y,
+          x1: planet1AspectPos.x,
+          y1: planet1AspectPos.y,
+          x2: planet2AspectPos.x,
+          y2: planet2AspectPos.y,
           color: "#FF0000", // Pure red
           type: "conjunct",
+          strokeWidth: getStrokeWidth(conjunct.orb),
         });
       } else if (opposition.hasAspect) {
         lines.push({
-          x1: planet1.x,
-          y1: planet1.y,
-          x2: planet2.x,
-          y2: planet2.y,
+          x1: planet1AspectPos.x,
+          y1: planet1AspectPos.y,
+          x2: planet2AspectPos.x,
+          y2: planet2AspectPos.y,
           color: "#FF0000", // Pure red
           type: "opposition",
+          strokeWidth: getStrokeWidth(opposition.orb),
         });
       } else if (square.hasAspect) {
         lines.push({
-          x1: planet1.x,
-          y1: planet1.y,
-          x2: planet2.x,
-          y2: planet2.y,
+          x1: planet1AspectPos.x,
+          y1: planet1AspectPos.y,
+          x2: planet2AspectPos.x,
+          y2: planet2AspectPos.y,
           color: "#FF0000", // Pure red
           type: "square",
+          strokeWidth: getStrokeWidth(square.orb),
         });
       } else if (trine.hasAspect) {
         lines.push({
-          x1: planet1.x,
-          y1: planet1.y,
-          x2: planet2.x,
-          y2: planet2.y,
+          x1: planet1AspectPos.x,
+          y1: planet1AspectPos.y,
+          x2: planet2AspectPos.x,
+          y2: planet2AspectPos.y,
           color: "#00FF00", // Pure green
           type: "trine",
+          strokeWidth: getStrokeWidth(trine.orb),
         });
       } else if (sextile.hasAspect) {
         lines.push({
-          x1: planet1.x,
-          y1: planet1.y,
-          x2: planet2.x,
-          y2: planet2.y,
+          x1: planet1AspectPos.x,
+          y1: planet1AspectPos.y,
+          x2: planet2AspectPos.x,
+          y2: planet2AspectPos.y,
           color: "#0000FF", // Pure blue
           type: "sextile",
+          strokeWidth: getStrokeWidth(sextile.orb),
         });
       }
     }
@@ -362,7 +392,7 @@ export default function AstrologyChart({
     fontLoaded,
     ascendantSign
   );
-  const aspectLines = getAspectLines(planetPositions);
+  const aspectLines = getAspectLines(planetPositions, ascendantSign);
 
   // Temporary test: force Pluto to be retrograde for testing
   const testPlanetPositions = planetPositions.map((planet) => {
@@ -466,7 +496,7 @@ export default function AstrologyChart({
             x2={line.x2}
             y2={line.y2}
             stroke={line.color}
-            strokeWidth="1"
+            strokeWidth={line.strokeWidth.toString()}
             opacity={0.7}
           />
         ))}

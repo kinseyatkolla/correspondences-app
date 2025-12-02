@@ -45,6 +45,32 @@ const PLANET_RULERSHIPS: Record<string, string[]> = {
   pluto: ["Scorpio"],
 };
 
+/**
+ * Get the traditional ruler of a zodiac sign (ignoring outer planets)
+ * Returns the planet name (e.g., "sun", "moon") or null if no ruler found
+ */
+export function getSignRuler(signName: string): string | null {
+  // Ignore uranus, neptune, and pluto for traditional rulerships
+  const traditionalRulers = [
+    "sun",
+    "moon",
+    "mercury",
+    "venus",
+    "mars",
+    "jupiter",
+    "saturn",
+  ];
+
+  for (const planet of traditionalRulers) {
+    const ruledSigns = PLANET_RULERSHIPS[planet];
+    if (ruledSigns && ruledSigns.includes(signName)) {
+      return planet;
+    }
+  }
+
+  return null;
+}
+
 // ============================================================================
 // PLANET EXALTATIONS
 // ============================================================================

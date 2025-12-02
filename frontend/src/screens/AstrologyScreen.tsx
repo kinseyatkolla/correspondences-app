@@ -49,6 +49,7 @@ import {
   isPlanetaryFall,
   hasHardAspectWithSaturn,
   hasHardAspectWithMars,
+  getSignRuler,
 } from "../utils/planetHappinessUtils";
 
 // ============================================================================
@@ -976,7 +977,8 @@ export default function AstrologyScreen({ navigation, route }: any) {
               {activeChart && !ephemerisLoading && !selectedDateLoading && (
                 <View style={styles.planetCardsContainer}>
                   {(() => {
-                    const planetPairs = [
+                    // Build the base planet pairs in their original order
+                    const basePlanetPairs = [
                       [
                         {
                           name: "ascendant",
@@ -1146,6 +1148,53 @@ export default function AstrologyScreen({ navigation, route }: any) {
                         },
                       ],
                     ];
+
+                    // Flatten the pairs to get all planets in order
+                    const allPlanets = basePlanetPairs.flat();
+
+                    // Get the ascendant ruler
+                    const ascendantSign = activeChart.houses?.ascendantSign;
+                    const ascendantRuler = ascendantSign
+                      ? getSignRuler(ascendantSign)
+                      : null;
+
+                    // Reorder planets: ascendant first, ruler second, then all others in existing order
+                    let reorderedPlanets: typeof allPlanets = [];
+
+                    if (ascendantRuler) {
+                      // Find ascendant and ruler planets
+                      const ascendantPlanet = allPlanets.find(
+                        (p) => p.name === "ascendant"
+                      );
+                      const rulerPlanet = allPlanets.find(
+                        (p) => p.name === ascendantRuler
+                      );
+                      const otherPlanets = allPlanets.filter(
+                        (p) =>
+                          p.name !== "ascendant" && p.name !== ascendantRuler
+                      );
+
+                      // Build reordered array: ascendant, ruler, then all others
+                      if (ascendantPlanet) {
+                        reorderedPlanets.push(ascendantPlanet);
+                      }
+                      if (rulerPlanet) {
+                        reorderedPlanets.push(rulerPlanet);
+                      }
+                      reorderedPlanets.push(...otherPlanets);
+                    } else {
+                      // No ruler found, keep original order
+                      reorderedPlanets = allPlanets;
+                    }
+
+                    // Re-pair the planets into pairs of 2
+                    const planetPairs: typeof basePlanetPairs = [];
+                    for (let i = 0; i < reorderedPlanets.length; i += 2) {
+                      const pair = reorderedPlanets.slice(i, i + 2);
+                      if (pair.length > 0) {
+                        planetPairs.push(pair as any);
+                      }
+                    }
 
                     return (
                       <View style={styles.planetCardsGrid}>
@@ -2507,6 +2556,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: "hidden",
     minHeight: 100,
+  },
+  planetCardAscendantRuler: {
+    borderColor: "#e6e6fa",
+    borderWidth: 2,
   },
   planetCardTopHeader: {
     paddingTop: 8,
