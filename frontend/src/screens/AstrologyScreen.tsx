@@ -982,18 +982,32 @@ export default function AstrologyScreen({ navigation, route }: any) {
                   {/* Minimize/Expand Buttons */}
                   <View style={styles.planetCardsControls}>
                     <TouchableOpacity
-                      style={styles.planetCardsControlButton}
+                      style={[
+                        styles.planetCardsControlButton,
+                        !planetCardsExpanded &&
+                          styles.planetCardsControlButtonActive,
+                      ]}
                       onPress={() => setPlanetCardsExpanded(false)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.planetCardsControlButtonText}>−</Text>
+                      {/* Collapse: 3 short rectangles */}
+                      <View style={styles.collapseIcon}>
+                        <View style={styles.collapseRectangle} />
+                        <View style={styles.collapseRectangle} />
+                        <View style={styles.collapseRectangle} />
+                      </View>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={styles.planetCardsControlButton}
+                      style={[
+                        styles.planetCardsControlButton,
+                        planetCardsExpanded &&
+                          styles.planetCardsControlButtonActive,
+                      ]}
                       onPress={() => setPlanetCardsExpanded(true)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.planetCardsControlButtonText}>+</Text>
+                      {/* Expand: 1 tall rectangle */}
+                      <View style={styles.expandRectangle} />
                     </TouchableOpacity>
                   </View>
                   {(() => {
@@ -2597,18 +2611,29 @@ const styles = StyleSheet.create({
   planetCardsControlButton: {
     width: 32,
     height: 32,
-    borderRadius: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
+    opacity: 0.5,
   },
-  planetCardsControlButtonText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#ffffff",
-    lineHeight: 24,
+  planetCardsControlButtonActive: {
+    opacity: 1.0,
+  },
+  collapseIcon: {
+    flexDirection: "column",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: 20,
+    height: 20,
+  },
+  collapseRectangle: {
+    width: 20,
+    height: 4,
+    backgroundColor: "#ffffff",
+  },
+  expandRectangle: {
+    width: 19,
+    height: 23,
+    backgroundColor: "#ffffff",
   },
   planetCardsGrid: {
     width: "100%",
@@ -2630,7 +2655,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   planetCardTopHeader: {
-    paddingTop: 2,
+    paddingTop: 3,
     paddingBottom: 0,
     paddingHorizontal: 10,
     flexDirection: "row",
@@ -2658,7 +2683,7 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.2)",
+    borderBottomColor: "hsla(0, 0.00%, 100.00%, 0.20)",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",

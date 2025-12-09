@@ -1,7 +1,7 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
-import React, { useState } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -42,11 +42,32 @@ export default function DateTimePickerDrawer({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const drawerAnimation = useState(new Animated.Value(0))[0];
+  const prevVisibleRef = useRef(visible);
+  const initialDateRef = useRef(initialDate);
+  const timePickerKeyRef = useRef(0);
 
-  // Update tempDate when initialDate changes
+  // Update initialDateRef when initialDate changes (but don't reset tempDate)
   React.useEffect(() => {
-    setTempDate(initialDate);
+    initialDateRef.current = initialDate;
   }, [initialDate]);
+
+  // Update tempDate only when drawer opens (when visible changes from false to true)
+  // This ensures we start with the current displayDate when opening the drawer
+  // but don't reset it while the drawer is open and user is making changes
+  React.useEffect(() => {
+    const wasVisible = prevVisibleRef.current;
+    prevVisibleRef.current = visible;
+
+    // Only reset tempDate when drawer opens (transitions from closed to open)
+    if (visible && !wasVisible) {
+      // Use a fresh copy of the initialDate to avoid reference issues
+      const freshDate = new Date(initialDateRef.current);
+      setTempDate(freshDate);
+      // Reset picker visibility when drawer opens
+      setShowDatePicker(false);
+      setShowTimePicker(false);
+    }
+  }, [visible]);
 
   // Animate drawer when visibility changes
   React.useEffect(() => {
@@ -88,21 +109,51 @@ export default function DateTimePickerDrawer({
   const onDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === "android") {
       setShowDatePicker(false);
-    }
-    if (selectedDate) {
-      setTempDate(selectedDate);
+      // On Android, only update if user confirmed (not cancelled)
+      if (event.type === "set" && selectedDate) {
+        // Preserve the time from tempDate when changing date
+        const newDate = new Date(selectedDate);
+        newDate.setHours(tempDate.getHours());
+        newDate.setMinutes(tempDate.getMinutes());
+        newDate.setSeconds(tempDate.getSeconds());
+        setTempDate(newDate);
+      }
+    } else {
+      // On iOS, preserve the time from tempDate when changing date
+      if (selectedDate) {
+        const newDate = new Date(selectedDate);
+        newDate.setHours(tempDate.getHours());
+        newDate.setMinutes(tempDate.getMinutes());
+        newDate.setSeconds(tempDate.getSeconds());
+        setTempDate(newDate);
+      }
     }
   };
 
   const onTimeChange = (event: any, selectedTime?: Date) => {
     if (Platform.OS === "android") {
       setShowTimePicker(false);
-    }
-    if (selectedTime) {
-      const newDate = new Date(tempDate);
-      newDate.setHours(selectedTime.getHours());
-      newDate.setMinutes(selectedTime.getMinutes());
-      setTempDate(newDate);
+      // On Android, only update if user confirmed (not cancelled)
+      if (event.type === "set" && selectedTime) {
+        const newDate = new Date(tempDate);
+        newDate.setHours(selectedTime.getHours());
+        newDate.setMinutes(selectedTime.getMinutes());
+        newDate.setSeconds(selectedTime.getSeconds());
+        setTempDate(newDate);
+      }
+    } else {
+      // On iOS spinner mode, onChange fires continuously as user scrolls
+      // We need to update tempDate immediately with the selected time
+      if (selectedTime) {
+        // Create a completely new Date object to avoid reference issues
+        // Preserve the date portion from tempDate and update only the time
+        const newDate = new Date(tempDate);
+        newDate.setHours(selectedTime.getHours());
+        newDate.setMinutes(selectedTime.getMinutes());
+        newDate.setSeconds(selectedTime.getSeconds());
+        newDate.setMilliseconds(0);
+        setTempDate(newDate);
+      }
     }
   };
 
@@ -137,7 +188,7 @@ export default function DateTimePickerDrawer({
             },
           ]}
         >
-          <TouchableOpacity activeOpacity={1}>
+          <View>
             <View style={styles.drawerHeader}>
               <Text style={styles.drawerTitle}>{title}</Text>
               <TouchableOpacity onPress={handleClose}>
@@ -198,6 +249,8 @@ export default function DateTimePickerDrawer({
                 <TouchableOpacity
                   style={styles.pickerButton}
                   onPress={() => {
+                    // Increment key when opening time picker to ensure fresh render
+                    timePickerKeyRef.current += 1;
                     setShowTimePicker(true);
                     setShowDatePicker(false);
                   }}
@@ -216,6 +269,7 @@ export default function DateTimePickerDrawer({
                 {showTimePicker && (
                   <View style={styles.inlinePickerContainer}>
                     <DateTimePicker
+                      key={`time-picker-${timePickerKeyRef.current}`}
                       value={tempDate}
                       mode="time"
                       display={Platform.OS === "ios" ? "spinner" : "default"}
@@ -247,7 +301,7 @@ export default function DateTimePickerDrawer({
                 </TouchableOpacity>
               </View>
             </ScrollView>
-          </TouchableOpacity>
+          </View>
         </Animated.View>
       </TouchableOpacity>
     </Modal>

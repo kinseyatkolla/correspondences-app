@@ -605,7 +605,9 @@ export default function MoonScreen({ navigation, route }: any) {
   const followCurrentTime = () => {
     const now = new Date();
     setDisplayDate(now);
-    fetchChartForDate(now);
+    // Clear selectedDateChart so we fall back to currentChart from context
+    // This ensures we get the same current time handling as the initial load
+    setSelectedDateChart(null);
   };
 
   // Handle route params for selectedDate (from astrology screen navigation)
