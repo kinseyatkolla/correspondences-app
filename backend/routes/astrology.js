@@ -1251,7 +1251,7 @@ router.post("/year-ephemeris", (req, res) => {
     // Set topocentric location
     sweph.set_topo(longitude, latitude, 0);
 
-    // Planet IDs to track (including Sun for ingresses, excluding Moon)
+    // Planet IDs to track (including Sun for ingresses, excluding Moon, including North Node)
     const planetIds = [
       { name: "sun", id: 0, symbol: "☉" },
       { name: "mercury", id: 2, symbol: "☿" },
@@ -1262,6 +1262,7 @@ router.post("/year-ephemeris", (req, res) => {
       { name: "uranus", id: 7, symbol: "♅" },
       { name: "neptune", id: 8, symbol: "♆" },
       { name: "pluto", id: 9, symbol: "♇" },
+      { name: "northNode", id: 11, symbol: "☊" }, // True Node (North Node)
     ];
 
     // Sample data points throughout the year

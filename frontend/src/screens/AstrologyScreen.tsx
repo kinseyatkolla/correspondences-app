@@ -2235,9 +2235,30 @@ export default function AstrologyScreen({ navigation, route }: any) {
                         const planet = activeChart.planets[config.name];
                         if (!planet || planet.error) return null;
 
+                        const zodiacSymbol = planet.zodiacSignName
+                          ? getZodiacKeysFromNames()[planet.zodiacSignName]
+                          : null;
+
                         return (
                           <View key={config.name} style={styles.cardContainer}>
                             <Text style={styles.cardTitle}>
+                              {zodiacSymbol && planet.zodiacSignName && (
+                                <Text
+                                  style={[
+                                    getPhysisSymbolStyle(fontLoaded, "medium"),
+                                    getZodiacColorStyle(planet.zodiacSignName),
+                                  ]}
+                                >
+                                  {zodiacSymbol}
+                                </Text>
+                              )}{" "}
+                              {planet.degreeFormatted && planet.zodiacSignName && (
+                                <Text
+                                  style={getZodiacColorStyle(planet.zodiacSignName)}
+                                >
+                                  {planet.degreeFormatted}{" "}
+                                </Text>
+                              )}
                               {config.emoji} {config.displayName} Aspects
                             </Text>
                             {renderAspectsSection(
@@ -2257,7 +2278,37 @@ export default function AstrologyScreen({ navigation, route }: any) {
                         activeChart.houses.ascendantSign && (
                           <View style={styles.cardContainer}>
                             <Text style={styles.cardTitle}>
-                              ! Ascendant Aspects
+                              <Text
+                                style={getPhysisSymbolStyle(fontLoaded, "medium")}
+                              >
+                                !
+                              </Text>{" "}
+                              {activeChart.houses.ascendantSign && (
+                                <>
+                                  <Text
+                                    style={[
+                                      getPhysisSymbolStyle(fontLoaded, "medium"),
+                                      getZodiacColorStyle(
+                                        activeChart.houses.ascendantSign
+                                      ),
+                                    ]}
+                                  >
+                                    {getZodiacKeysFromNames()[
+                                      activeChart.houses.ascendantSign
+                                    ]}
+                                  </Text>{" "}
+                                  {activeChart.houses.ascendantDegree && (
+                                    <Text
+                                      style={getZodiacColorStyle(
+                                        activeChart.houses.ascendantSign
+                                      )}
+                                    >
+                                      {activeChart.houses.ascendantDegree}{" "}
+                                    </Text>
+                                  )}
+                                </>
+                              )}
+                              Ascendant Aspects
                             </Text>
                             {renderAspectsSection(
                               "ascendant",
