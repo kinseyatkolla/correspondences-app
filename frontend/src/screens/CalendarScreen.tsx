@@ -1,7 +1,13 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -328,6 +334,7 @@ export default function CalendarScreen({ navigation }: any) {
   const [linesData, setLinesData] = useState<any>(null);
   const [linesLoading, setLinesLoading] = useState(false);
   const [linesError, setLinesError] = useState<string | null>(null);
+  const linesDataYear = useRef<number | null>(null); // Track which year linesData is for
 
   const scrollViewRef = useRef<ScrollView>(null);
   const hasScrolledToToday = useRef(false);
@@ -345,9 +352,33 @@ export default function CalendarScreen({ navigation }: any) {
   // Fetch lines data when in LINES view and year changes
   useEffect(() => {
     if (viewMode === "LINES") {
-      fetchLinesData();
+      // Only fetch if we don't already have data for this year
+      // Check if linesData exists and matches the selected year
+      if (
+        !linesData ||
+        linesDataYear.current !== selectedYear ||
+        (!linesLoading && linesDataYear.current !== selectedYear)
+      ) {
+        fetchLinesData();
+      }
     }
   }, [selectedYear, viewMode]);
+
+  // Memoize allEvents to prevent recalculation on every render
+  const allEvents: CalendarEvent[] = useMemo(() => {
+    const events: CalendarEvent[] = [
+      ...(lunationEvents || []),
+      ...(calendarEvents || []),
+    ];
+    // Sort chronologically
+    events.sort((a, b) => a.utcDateTime.getTime() - b.utcDateTime.getTime());
+    return events;
+  }, [lunationEvents, calendarEvents]);
+
+  // Memoize filteredEvents to prevent recalculation on every render
+  const filteredEvents = useMemo(() => {
+    return (allEvents || []).filter((event) => filterStates[event.type]);
+  }, [allEvents, filterStates]);
 
   // Maximum number of years to cache (excluding current year which is always kept)
   const MAX_CACHED_YEARS = 10;
@@ -701,6 +732,7 @@ export default function CalendarScreen({ navigation }: any) {
 
       if (cachedData) {
         setLinesData(cachedData);
+        linesDataYear.current = selectedYear;
         setLinesLoading(false);
         return;
       }
@@ -717,6 +749,7 @@ export default function CalendarScreen({ navigation }: any) {
         // Process samples into chart-ready format
         const chartData = processEphemerisData(response.data.samples);
         setLinesData(chartData);
+        linesDataYear.current = selectedYear;
 
         // Save to cache for future use
         await saveEphemerisToCache(
@@ -729,11 +762,13 @@ export default function CalendarScreen({ navigation }: any) {
       } else {
         setLinesError("Failed to fetch ephemeris data");
         setLinesData(null);
+        linesDataYear.current = null;
       }
     } catch (error: any) {
       console.error("Error fetching lines data:", error);
       setLinesError(error.message || "Failed to fetch ephemeris data");
       setLinesData(null);
+      linesDataYear.current = null;
     } finally {
       setLinesLoading(false);
     }
@@ -1318,27 +1353,13 @@ export default function CalendarScreen({ navigation }: any) {
     }
   };
 
-  // Toggle filter
-  const toggleFilter = (type: CalendarEventType) => {
+  // Toggle filter - memoized to prevent recreation
+  const toggleFilter = useCallback((type: CalendarEventType) => {
     setFilterStates((prev) => ({
       ...prev,
       [type]: !prev[type],
     }));
-  };
-
-  // Combine all events
-  const allEvents: CalendarEvent[] = [
-    ...(lunationEvents || []),
-    ...(calendarEvents || []),
-  ];
-
-  // Sort chronologically
-  allEvents.sort((a, b) => a.utcDateTime.getTime() - b.utcDateTime.getTime());
-
-  // Filter events based on active filters
-  const filteredEvents = (allEvents || []).filter(
-    (event) => filterStates[event.type]
-  );
+  }, []);
 
   // Debug logging
   React.useEffect(() => {
@@ -1537,10 +1558,78 @@ export default function CalendarScreen({ navigation }: any) {
     if (navigation) {
       (navigation as any).navigate("Astrology", {
         screen: "AstrologyMain",
-        params: { selectedDate: event.localDateTime },
+        params: { selectedDate: event.localDateTime.toISOString() },
       });
     }
   };
+
+  // Memoize lunations array for LinesChart to prevent unnecessary re-renders
+  const memoizedLunations = useMemo(() => {
+    return lunationEvents
+      .filter(
+        (event) => event.title === "New Moon" || event.title === "Full Moon"
+      )
+      .map((event) => {
+        if (!event.moonPosition) return null;
+
+        // Convert zodiac sign + degree to 0-360 longitude
+        const zodiacSigns = [
+          "Aries",
+          "Taurus",
+          "Gemini",
+          "Cancer",
+          "Leo",
+          "Virgo",
+          "Libra",
+          "Scorpio",
+          "Sagittarius",
+          "Capricorn",
+          "Aquarius",
+          "Pisces",
+        ];
+        const signIndex = zodiacSigns.indexOf(
+          event.moonPosition.zodiacSignName
+        );
+
+        // Parse degree from degreeFormatted (e.g., "12°30'45"" -> 12.5125)
+        // degreeFormatted format is like "12°30'45"" or "12°"
+        // Extract degrees, minutes, and seconds if present
+        const degreeStr = event.moonPosition.degreeFormatted;
+        const degMatch = degreeStr.match(/^(\d+)°/);
+        const minMatch = degreeStr.match(/(\d+)'/);
+        const secMatch = degreeStr.match(/(\d+)"/);
+
+        const degrees = degMatch ? parseFloat(degMatch[1]) : 0;
+        const minutes = minMatch ? parseFloat(minMatch[1]) : 0;
+        const seconds = secMatch ? parseFloat(secMatch[1]) : 0;
+
+        // Convert to decimal degrees
+        const degreesWithinSign = degrees + minutes / 60 + seconds / 3600;
+
+        // Calculate full longitude: sign offset (30° per sign) + degree within sign
+        const longitude =
+          signIndex >= 0 ? signIndex * 30 + degreesWithinSign : 0;
+
+        return {
+          date: event.localDateTime,
+          longitude,
+          phase: event.title as "New Moon" | "Full Moon",
+          isEclipse: event.isEclipse || false,
+          eclipseType: event.eclipseType,
+        };
+      })
+      .filter(
+        (
+          l
+        ): l is {
+          date: Date;
+          longitude: number;
+          phase: "New Moon" | "Full Moon";
+          isEclipse: boolean;
+          eclipseType: "lunar" | "solar" | undefined;
+        } => l !== null && l.longitude >= 0 && l.longitude <= 360
+      );
+  }, [lunationEvents]);
 
   return (
     <View style={styles.container}>
@@ -1632,72 +1721,7 @@ export default function CalendarScreen({ navigation }: any) {
             <LinesChart
               data={linesData}
               showHeader={false}
-              lunations={lunationEvents
-                .filter(
-                  (event) =>
-                    event.title === "New Moon" || event.title === "Full Moon"
-                )
-                .map((event) => {
-                  if (!event.moonPosition) return null;
-
-                  // Convert zodiac sign + degree to 0-360 longitude
-                  const zodiacSigns = [
-                    "Aries",
-                    "Taurus",
-                    "Gemini",
-                    "Cancer",
-                    "Leo",
-                    "Virgo",
-                    "Libra",
-                    "Scorpio",
-                    "Sagittarius",
-                    "Capricorn",
-                    "Aquarius",
-                    "Pisces",
-                  ];
-                  const signIndex = zodiacSigns.indexOf(
-                    event.moonPosition.zodiacSignName
-                  );
-
-                  // Parse degree from degreeFormatted (e.g., "12°30'45"" -> 12.5125)
-                  // degreeFormatted format is like "12°30'45"" or "12°"
-                  // Extract degrees, minutes, and seconds if present
-                  const degreeStr = event.moonPosition.degreeFormatted;
-                  const degMatch = degreeStr.match(/^(\d+)°/);
-                  const minMatch = degreeStr.match(/(\d+)'/);
-                  const secMatch = degreeStr.match(/(\d+)"/);
-
-                  const degrees = degMatch ? parseFloat(degMatch[1]) : 0;
-                  const minutes = minMatch ? parseFloat(minMatch[1]) : 0;
-                  const seconds = secMatch ? parseFloat(secMatch[1]) : 0;
-
-                  // Convert to decimal degrees
-                  const degreesWithinSign =
-                    degrees + minutes / 60 + seconds / 3600;
-
-                  // Calculate full longitude: sign offset (30° per sign) + degree within sign
-                  const longitude =
-                    signIndex >= 0 ? signIndex * 30 + degreesWithinSign : 0;
-
-                  return {
-                    date: event.localDateTime,
-                    longitude,
-                    phase: event.title as "New Moon" | "Full Moon",
-                    isEclipse: event.isEclipse || false,
-                    eclipseType: event.eclipseType,
-                  };
-                })
-                .filter(
-                  (
-                    l
-                  ): l is {
-                    date: Date;
-                    longitude: number;
-                    phase: "New Moon" | "Full Moon";
-                    isEclipse: boolean;
-                    eclipseType: "lunar" | "solar" | undefined;
-                  } => l !== null && l.longitude >= 0 && l.longitude <= 360
-                )}
+              lunations={memoizedLunations}
             />
           ) : (
             <View style={styles.emptyContainer}>

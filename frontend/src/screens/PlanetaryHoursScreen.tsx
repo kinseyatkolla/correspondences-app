@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -39,60 +45,119 @@ export default function PlanetaryHoursScreen({
   const planetKeys = getPlanetKeysFromNames();
 
   // Get selected date from route params, default to today
-  const selectedDate = route?.params?.selectedDate || new Date();
+  // Convert from ISO string to Date object if it's a string
+  const selectedDateParam = route?.params?.selectedDate;
+  const selectedDate = useMemo(() => {
+    if (selectedDateParam instanceof Date) {
+      return selectedDateParam;
+    } else if (selectedDateParam) {
+      return new Date(selectedDateParam);
+    }
+    return new Date();
+  }, [selectedDateParam]);
+
+  // Create a stable string key for the date to use as dependency
+  const selectedDateKey = useMemo(() => {
+    return selectedDate.toISOString().split("T")[0]; // YYYY-MM-DD format
+  }, [selectedDate]);
+
+  // Extract location values in a stable way
+  const locationLat = currentChart?.location?.latitude ?? 40.7128;
+  const locationLng = currentChart?.location?.longitude ?? -74.006;
 
   // State for planetary hours data
   const [planetaryHoursData, setPlanetaryHoursData] =
     useState<PlanetaryHoursData | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Function to calculate planetary hours for current date and location
-  const calculatePlanetaryHoursForDate = async (date: Date) => {
-    setLoading(true);
-    try {
-      // Use current chart location or default location
-      const location = currentChart?.location || {
-        latitude: 40.7128,
-        longitude: -74.006,
-      };
+  // Track last calculated date/location to prevent unnecessary recalculations
+  const lastCalculationRef = useRef<{
+    dateKey: string;
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
-      const planetaryData = await calculatePlanetaryHours(
-        date,
-        location.latitude,
-        location.longitude
-      );
-
-      setPlanetaryHoursData(planetaryData);
-    } catch (error) {
-      console.error("Error calculating planetary hours:", error);
-      setPlanetaryHoursData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Calculate planetary hours on mount and when current chart changes
+  // Calculate planetary hours on mount and when current chart or date changes
   useEffect(() => {
+    // Only recalculate if date or location actually changed
+    const shouldRecalculate =
+      !lastCalculationRef.current ||
+      lastCalculationRef.current.dateKey !== selectedDateKey ||
+      lastCalculationRef.current.latitude !== locationLat ||
+      lastCalculationRef.current.longitude !== locationLng;
+
+    if (!shouldRecalculate) {
+      return;
+    }
+
+    // Perform the calculation
+    const calculatePlanetaryHoursForDate = async (date: Date) => {
+      setLoading(true);
+      try {
+        const planetaryData = await calculatePlanetaryHours(
+          date,
+          locationLat,
+          locationLng
+        );
+
+        setPlanetaryHoursData(planetaryData);
+        lastCalculationRef.current = {
+          dateKey: selectedDateKey,
+          latitude: locationLat,
+          longitude: locationLng,
+        };
+      } catch (error) {
+        console.error("Error calculating planetary hours:", error);
+        setPlanetaryHoursData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     calculatePlanetaryHoursForDate(selectedDate);
-  }, [currentChart, selectedDate]);
+  }, [locationLat, locationLng, selectedDateKey, selectedDate]);
 
   // Helper function to check if selected date is today
   const isToday = () => {
     const today = new Date();
     const selected = new Date(selectedDate);
-    console.log("PlanetaryHoursScreen - Today:", today.toDateString());
-    console.log("PlanetaryHoursScreen - Selected:", selected.toDateString());
-    console.log(
-      "PlanetaryHoursScreen - Is Today:",
-      selected.getDate() === today.getDate() &&
-        selected.getMonth() === today.getMonth() &&
-        selected.getFullYear() === today.getFullYear()
-    );
     return (
       selected.getDate() === today.getDate() &&
       selected.getMonth() === today.getMonth() &&
       selected.getFullYear() === today.getFullYear()
     );
+  };
+
+  // Helper to convert color to rgba with opacity
+  const colorToRgba = (color: string, opacity: number): string => {
+    // If already rgba, extract rgb and apply new opacity
+    if (color.startsWith("rgba")) {
+      const rgb = color.match(/\d+/g);
+      if (rgb && rgb.length >= 3) {
+        return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${opacity})`;
+      }
+    }
+    // If hex color
+    if (color.startsWith("#")) {
+      const hex = color.slice(1);
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+    // For named colors, use a simple mapping (fallback to original color)
+    const namedColors: Record<string, string> = {
+      orange: `rgba(255, 165, 0, ${opacity})`,
+      cornflowerblue: `rgba(100, 149, 237, ${opacity})`,
+      forestgreen: `rgba(34, 139, 34, ${opacity})`,
+      violet: `rgba(238, 130, 238, ${opacity})`,
+      red: `rgba(255, 0, 0, ${opacity})`,
+      gold: `rgba(255, 215, 0, ${opacity})`,
+      steelblue: `rgba(70, 130, 180, ${opacity})`,
+      indigo: `rgba(75, 0, 130, ${opacity})`,
+      saddlebrown: `rgba(139, 69, 19, ${opacity})`,
+    };
+    return namedColors[color.toLowerCase()] || color;
   };
 
   // Get background timing info
@@ -177,53 +242,58 @@ export default function PlanetaryHoursScreen({
     return "night"; // 20:00 - 4:59
   };
 
-  // Function to update gradient opacities based on time of day
-  const updateGradientOpacities = (timeOfDay: string) => {
-    const duration = 1000; // Smooth 1-second transition
-
-    // Reset all opacities to their target values
-    const opacityValues = {
-      night: timeOfDay === "night" ? 1 : 0,
-      day: timeOfDay === "day" ? 1 : 0,
-      dusk: timeOfDay === "dusk" ? 1 : 0,
-      dawn: timeOfDay === "dawn" ? 1 : 0,
-    };
-
-    // Animate all layers simultaneously
-    Animated.parallel([
-      Animated.timing(nightOpacity, {
-        toValue: opacityValues.night,
-        duration,
-        useNativeDriver: true,
-      }),
-      Animated.timing(dayOpacity, {
-        toValue: opacityValues.day,
-        duration,
-        useNativeDriver: true,
-      }),
-      Animated.timing(duskOpacity, {
-        toValue: opacityValues.dusk,
-        duration,
-        useNativeDriver: true,
-      }),
-      Animated.timing(dawnOpacity, {
-        toValue: opacityValues.dawn,
-        duration,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
   // State for layered background transitions
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState(() =>
     getTimeOfDayForDate(selectedDate)
   );
+  const previousTimeOfDayRef = useRef<string | null>(null);
 
-  // Opacity animations for each gradient layer
+  // Opacity animations for each gradient layer (must be declared before updateGradientOpacities)
   const nightOpacity = useState(new Animated.Value(1))[0];
   const dayOpacity = useState(new Animated.Value(0))[0];
   const duskOpacity = useState(new Animated.Value(0))[0];
   const dawnOpacity = useState(new Animated.Value(0))[0];
+
+  // Function to update gradient opacities based on time of day
+  // Memoize to prevent recreation on every render
+  const updateGradientOpacities = useCallback(
+    (timeOfDay: string) => {
+      const duration = 1000; // Smooth 1-second transition
+
+      // Reset all opacities to their target values
+      const opacityValues = {
+        night: timeOfDay === "night" ? 1 : 0,
+        day: timeOfDay === "day" ? 1 : 0,
+        dusk: timeOfDay === "dusk" ? 1 : 0,
+        dawn: timeOfDay === "dawn" ? 1 : 0,
+      };
+
+      // Animate all layers simultaneously
+      Animated.parallel([
+        Animated.timing(nightOpacity, {
+          toValue: opacityValues.night,
+          duration,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dayOpacity, {
+          toValue: opacityValues.day,
+          duration,
+          useNativeDriver: true,
+        }),
+        Animated.timing(duskOpacity, {
+          toValue: opacityValues.dusk,
+          duration,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dawnOpacity, {
+          toValue: opacityValues.dawn,
+          duration,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    },
+    [nightOpacity, dayOpacity, duskOpacity, dawnOpacity]
+  );
 
   // ===== DYNAMIC BACKGROUND CALCULATION =====
   const backgroundImages = useMemo(
@@ -242,26 +312,39 @@ export default function PlanetaryHoursScreen({
   }, []);
 
   // Handle background transitions when selectedDate changes
+  // Use specific sunrise/sunset values instead of the whole object to prevent loops
+  const sunriseTime = useMemo(
+    () => planetaryHoursData?.sunrise?.getTime(),
+    [planetaryHoursData?.sunrise?.getTime()]
+  );
+  const sunsetTime = useMemo(
+    () => planetaryHoursData?.sunset?.getTime(),
+    [planetaryHoursData?.sunset?.getTime()]
+  );
+  const selectedDateTime = useMemo(
+    () => selectedDate.getTime(),
+    [selectedDateKey]
+  );
+
   useEffect(() => {
+    // Skip if we don't have sunrise/sunset data yet
+    if (!planetaryHoursData?.sunrise || !planetaryHoursData?.sunset) {
+      return;
+    }
+
     const newTimeOfDay = getTimeOfDayForDate(
       selectedDate,
-      planetaryHoursData?.sunrise,
-      planetaryHoursData?.sunset
+      planetaryHoursData.sunrise,
+      planetaryHoursData.sunset
     );
 
-    if (newTimeOfDay !== currentTimeOfDay) {
-      console.log(
-        `🌅 Background transition: ${currentTimeOfDay} → ${newTimeOfDay}`,
-        {
-          displayTime: selectedDate.toLocaleTimeString(),
-          sunrise: planetaryHoursData?.sunrise?.toLocaleTimeString(),
-          sunset: planetaryHoursData?.sunset?.toLocaleTimeString(),
-        }
-      );
+    // Only update if time of day actually changed from the previous value
+    if (newTimeOfDay !== previousTimeOfDayRef.current) {
+      previousTimeOfDayRef.current = newTimeOfDay;
       setCurrentTimeOfDay(newTimeOfDay);
       updateGradientOpacities(newTimeOfDay);
     }
-  }, [selectedDate, currentTimeOfDay, planetaryHoursData]);
+  }, [selectedDateTime, sunriseTime, sunsetTime, updateGradientOpacities]);
 
   // Loading state
   if (loading) {
@@ -418,13 +501,17 @@ export default function PlanetaryHoursScreen({
                 currentHourPlanet.toLowerCase()
               );
 
-              // Use greyish-blue text color (#6b6b8a) when background is yellow/gold (Jupiter)
+              // Use greyish-blue text color (#6b6b8a) when background is yellow/gold (Jupiter or Sun)
               // This matches the color used on the astrology chart's zodiac ring for yellow signs
               const isDayRulerJupiter = dayRuler.toLowerCase() === "jupiter";
+              const isDayRulerSun = dayRuler.toLowerCase() === "sun";
               const isHourPlanetJupiter =
                 currentHourPlanet.toLowerCase() === "jupiter";
-              const dayTextColor = isDayRulerJupiter ? "#6b6b8a" : "#e6e6fa";
-              const hourTextColor = isHourPlanetJupiter ? "#6b6b8a" : "#e6e6fa";
+              const isHourPlanetSun = currentHourPlanet.toLowerCase() === "sun";
+              const dayTextColor =
+                isDayRulerJupiter || isDayRulerSun ? "#6b6b8a" : "#e6e6fa";
+              const hourTextColor =
+                isHourPlanetJupiter || isHourPlanetSun ? "#6b6b8a" : "#e6e6fa";
 
               return (
                 <View style={styles.dayHourCardsRow}>
@@ -501,53 +588,351 @@ export default function PlanetaryHoursScreen({
               );
             })()}
 
-          {/* Debug Information */}
-          {planetaryHoursData && (
-            <View style={styles.cardContainer}>
-              <Text style={styles.cardTitle}>Location & Timing Info</Text>
-              <Text style={styles.infoText}>
-                🌅 Sunrise: {formatTime(planetaryHoursData.sunrise)}
-              </Text>
-              <Text style={styles.infoText}>
-                🌇 Sunset: {formatTime(planetaryHoursData.sunset)}
-              </Text>
-              <Text style={styles.infoText}>
-                ☀️ Day Length:{" "}
-                {Math.round(
-                  (planetaryHoursData.sunset.getTime() -
-                    planetaryHoursData.sunrise.getTime()) /
-                    (1000 * 60 * 60 * 60 * 100)
-                ) / 100}
-                h
-              </Text>
-              <Text style={styles.infoText}>
-                🌙 Night Length:{" "}
-                {Math.round(
-                  (24 * 60 * 60 * 1000 -
-                    (planetaryHoursData.sunset.getTime() -
-                      planetaryHoursData.sunrise.getTime())) /
-                    (1000 * 60 * 60 * 60 * 100)
-                ) / 100}
-                h
-              </Text>
-              {currentChart?.location && (
-                <Text style={styles.infoText}>
-                  📍 Location: {currentChart.location.latitude.toFixed(4)}°,{" "}
-                  {currentChart.location.longitude.toFixed(4)}°
-                </Text>
-              )}
-              {backgroundTimingInfo && (
-                <>
-                  <Text style={styles.infoText}>
-                    🌅 Dawn Window: {backgroundTimingInfo.dawnWindow}
+          {/* Bar Chart */}
+          {isToday() &&
+            planetaryHoursData?.dayHours &&
+            planetaryHoursData?.nightHours &&
+            (() => {
+              const dayOfWeek = selectedDate.getDay();
+              const dayRuler = getDayRuler(dayOfWeek);
+              const dayRulerColor = getPlanetColor(dayRuler.toLowerCase());
+              const currentHourPlanet = planetaryHoursData.currentHour?.planet;
+              const currentHourPlanetColor = currentHourPlanet
+                ? getPlanetColor(currentHourPlanet.toLowerCase())
+                : null;
+              const currentHourNumber = planetaryHoursData.currentHour?.hour;
+              const isCurrentHourDay =
+                planetaryHoursData.currentHour?.isDayHour;
+
+              // Pre-calculated smooth curve values (using smooth interpolation: 6t⁵ - 15t⁴ + 10t³)
+              // Day hours: 2, 4, 6, 8, 10, 12, 12, 10, 8, 6, 4, 0.5
+              // Night hours: -0.5, -3, -5, -7, -9, -11, -12, -10, -8, -6, -4, -2
+              const smoothInterpolate = (t: number): number => {
+                t = Math.max(0, Math.min(1, t));
+                return t * t * t * (t * (t * 6 - 15) + 10);
+              };
+
+              // Pre-calculate day pattern values
+              const dayPatternValues: number[] = [];
+              for (let i = 1; i <= 12; i++) {
+                if (i <= 6) {
+                  const t = (i - 1) / 5;
+                  const smoothT = smoothInterpolate(t);
+                  dayPatternValues[i - 1] = 2 + smoothT * 10; // 2 to 12
+                } else {
+                  const t = (i - 6) / 6;
+                  const smoothT = smoothInterpolate(t);
+                  dayPatternValues[i - 1] = 12 - smoothT * 11.5; // 12 to 0.5
+                }
+              }
+
+              // Pre-calculate night pattern values
+              const nightPatternValues: number[] = [];
+              for (let i = 1; i <= 12; i++) {
+                if (i <= 7) {
+                  const t = (i - 1) / 6;
+                  const smoothT = smoothInterpolate(t);
+                  nightPatternValues[i - 1] = -0.5 - smoothT * 11.5; // -0.5 to -12
+                } else {
+                  const t = (i - 7) / 5;
+                  const smoothT = smoothInterpolate(t);
+                  nightPatternValues[i - 1] = -12 + smoothT * 10; // -12 to -2
+                }
+              }
+
+              // Simple lookup function
+              const getHourHeight = (
+                hourNum: number,
+                maxHeight: number,
+                minHeight: number,
+                isDay: boolean
+              ) => {
+                const patternValue = isDay
+                  ? dayPatternValues[hourNum - 1]
+                  : nightPatternValues[hourNum - 1];
+
+                if (isDay) {
+                  // Map 0.5-12 to minHeight-maxHeight
+                  const normalized = (patternValue - 0.5) / 11.5;
+                  return minHeight + (maxHeight - minHeight) * normalized;
+                } else {
+                  // Map -0.5 to -12 to minHeight-maxHeight (will be positioned downward)
+                  const normalized = (-patternValue - 0.5) / 11.5;
+                  return minHeight + (maxHeight - minHeight) * normalized;
+                }
+              };
+
+              const maxBarHeight = 40;
+              const minBarHeight = 8;
+              const barWidth = 12;
+              const barGap = 2;
+              const axisY = 50; // Center of container (100px height / 2)
+
+              // Combine all hours in sequence: day hours (1-12) then night hours (13-24)
+              const allHours = [
+                ...planetaryHoursData.dayHours.map((h, i) => ({
+                  ...h,
+                  position: i + 1,
+                  isDay: true,
+                })),
+                ...planetaryHoursData.nightHours.map((h, i) => ({
+                  ...h,
+                  position: i + 13,
+                  isDay: false,
+                })),
+              ];
+
+              return (
+                <View style={styles.barChartContainer}>
+                  {/* X-axis line (invisible) */}
+                  <View style={[styles.barChartAxis, { top: axisY }]} />
+
+                  {/* All Bars in sequence - single row */}
+                  <View style={styles.barChartRow}>
+                    {allHours.map((hour, index) => {
+                      const hourNum = hour.hour;
+                      let height = getHourHeight(
+                        hourNum,
+                        maxBarHeight,
+                        minBarHeight,
+                        hour.isDay
+                      );
+                      // Reduce height for indexes 12 and 13 to half
+                      if (index === 12 || index === 13) {
+                        height = 0.2;
+                      }
+                      const isDayRulerHour = hour.planet === dayRuler;
+                      const isCurrentHour =
+                        currentHourNumber === hourNum &&
+                        ((hour.isDay && isCurrentHourDay) ||
+                          (!hour.isDay && !isCurrentHourDay));
+
+                      // Determine bar color
+                      let barColor = hour.isDay ? "#ffffff" : "#000000"; // default white for day, black for night
+                      if (isCurrentHour && currentHourPlanetColor) {
+                        barColor = currentHourPlanetColor;
+                      } else if (isDayRulerHour) {
+                        barColor = dayRulerColor;
+                      }
+
+                      // Day hours: bottom edge at axis, extend upward
+                      // Night hours: top edge at axis, extend downward
+                      return (
+                        <View
+                          key={`bar-${hour.position}`}
+                          style={[
+                            {
+                              width: barWidth,
+                              height: 100,
+                              marginRight: index < 23 ? barGap : 0,
+                              position: "relative",
+                            },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.barChartBar,
+                              {
+                                width: barWidth,
+                                height: height,
+                                backgroundColor: barColor,
+                                position: "absolute",
+                                bottom: hour.isDay ? axisY : undefined,
+                                top: hour.isDay ? undefined : axisY,
+                              },
+                            ]}
+                          />
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              );
+            })()}
+
+          {/* Day Hours */}
+          {isToday() &&
+            planetaryHoursData?.dayHours &&
+            (() => {
+              const dayOfWeek = selectedDate.getDay();
+              const dayRuler = getDayRuler(dayOfWeek);
+              const dayRulerColor = getPlanetColor(dayRuler.toLowerCase());
+              const currentHourPlanet = planetaryHoursData.currentHour?.planet;
+              const currentHourPlanetColor = currentHourPlanet
+                ? getPlanetColor(currentHourPlanet.toLowerCase())
+                : null;
+
+              return (
+                <View
+                  style={[
+                    styles.cardContainer,
+                    { backgroundColor: "rgba(255, 255, 255, 0.75)" },
+                  ]}
+                >
+                  <Text style={[styles.cardTitle, { color: "#000000" }]}>
+                    Day Hours (Sunrise to Sunset)
                   </Text>
-                  <Text style={styles.infoText}>
-                    🌇 Dusk Window: {backgroundTimingInfo.duskWindow}
+                  {planetaryHoursData.dayHours.map((hour, index) => {
+                    const isDayRulerHour = hour.planet === dayRuler;
+                    const isCurrentHour =
+                      planetaryHoursData.currentHour?.hour === hour.hour &&
+                      planetaryHoursData.currentHour?.isDayHour;
+
+                    // Determine background color: current hour uses planet color, day ruler uses day ruler color
+                    let backgroundColorStyle = {};
+                    if (isCurrentHour && currentHourPlanetColor) {
+                      backgroundColorStyle = {
+                        backgroundColor: currentHourPlanetColor,
+                      };
+                    } else if (isDayRulerHour) {
+                      backgroundColorStyle = {
+                        backgroundColor: colorToRgba(
+                          dayRulerColor,
+                          isCurrentHour ? 1.0 : 0.5
+                        ),
+                      };
+                    }
+
+                    // Use greyish-blue text color (#6b6b8a) when background is yellow/gold (Jupiter or Sun)
+                    const isJupiterOrSunBackground =
+                      (isCurrentHour &&
+                        (currentHourPlanet?.toLowerCase() === "jupiter" ||
+                          currentHourPlanet?.toLowerCase() === "sun")) ||
+                      (isDayRulerHour &&
+                        (dayRuler.toLowerCase() === "jupiter" ||
+                          dayRuler.toLowerCase() === "sun"));
+                    const textColor = isJupiterOrSunBackground
+                      ? "#6b6b8a"
+                      : "#ffffff";
+
+                    return (
+                      <View
+                        key={`day-${index}`}
+                        style={[
+                          styles.hourRow,
+                          isCurrentHour &&
+                            !currentHourPlanetColor &&
+                            styles.highlightedHourRow,
+                          backgroundColorStyle,
+                        ]}
+                      >
+                        <Text style={[styles.hourNumber, { color: textColor }]}>
+                          {hour.hour}
+                        </Text>
+                        <Text
+                          style={[styles.planetSymbol, { color: textColor }]}
+                        >
+                          <Text
+                            style={getPhysisSymbolStyle(fontLoaded, "medium")}
+                          >
+                            {planetKeys[hour.planet] || "?"}
+                          </Text>
+                        </Text>
+                        <Text style={[styles.planetName, { color: textColor }]}>
+                          {hour.planet}
+                        </Text>
+                        <Text style={[styles.timeRange, { color: textColor }]}>
+                          {formatTime(hour.startTime)} -{" "}
+                          {formatTime(hour.endTime)}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })()}
+
+          {/* Night Hours */}
+          {isToday() &&
+            planetaryHoursData?.nightHours &&
+            (() => {
+              const dayOfWeek = selectedDate.getDay();
+              const dayRuler = getDayRuler(dayOfWeek);
+              const dayRulerColor = getPlanetColor(dayRuler.toLowerCase());
+              const currentHourPlanet = planetaryHoursData.currentHour?.planet;
+              const currentHourPlanetColor = currentHourPlanet
+                ? getPlanetColor(currentHourPlanet.toLowerCase())
+                : null;
+
+              return (
+                <View
+                  style={[
+                    styles.cardContainer,
+                    { backgroundColor: "rgba(0, 0, 0, 0.75)" },
+                  ]}
+                >
+                  <Text style={[styles.cardTitle, { color: "#ffffff" }]}>
+                    Night Hours (Sunset to Sunrise)
                   </Text>
-                </>
-              )}
-            </View>
-          )}
+                  {planetaryHoursData.nightHours.map((hour, index) => {
+                    const isDayRulerHour = hour.planet === dayRuler;
+                    const isCurrentHour =
+                      planetaryHoursData.currentHour?.hour === hour.hour &&
+                      !planetaryHoursData.currentHour?.isDayHour;
+
+                    // Determine background color: current hour uses planet color, day ruler uses day ruler color
+                    let backgroundColorStyle = {};
+                    if (isCurrentHour && currentHourPlanetColor) {
+                      backgroundColorStyle = {
+                        backgroundColor: currentHourPlanetColor,
+                      };
+                    } else if (isDayRulerHour) {
+                      backgroundColorStyle = {
+                        backgroundColor: colorToRgba(
+                          dayRulerColor,
+                          isCurrentHour ? 1.0 : 0.5
+                        ),
+                      };
+                    }
+
+                    // Use greyish-blue text color (#6b6b8a) when background is yellow/gold (Jupiter or Sun)
+                    const isJupiterOrSunBackground =
+                      (isCurrentHour &&
+                        (currentHourPlanet?.toLowerCase() === "jupiter" ||
+                          currentHourPlanet?.toLowerCase() === "sun")) ||
+                      (isDayRulerHour &&
+                        (dayRuler.toLowerCase() === "jupiter" ||
+                          dayRuler.toLowerCase() === "sun"));
+                    const textColor = isJupiterOrSunBackground
+                      ? "#6b6b8a"
+                      : "#ffffff";
+
+                    return (
+                      <View
+                        key={`night-${index}`}
+                        style={[
+                          styles.hourRow,
+                          isCurrentHour &&
+                            !currentHourPlanetColor &&
+                            styles.highlightedHourRow,
+                          backgroundColorStyle,
+                        ]}
+                      >
+                        <Text style={[styles.hourNumber, { color: textColor }]}>
+                          {hour.hour}
+                        </Text>
+                        <Text
+                          style={[styles.planetSymbol, { color: textColor }]}
+                        >
+                          <Text
+                            style={getPhysisSymbolStyle(fontLoaded, "medium")}
+                          >
+                            {planetKeys[hour.planet] || "?"}
+                          </Text>
+                        </Text>
+                        <Text style={[styles.planetName, { color: textColor }]}>
+                          {hour.planet}
+                        </Text>
+                        <Text style={[styles.timeRange, { color: textColor }]}>
+                          {formatTime(hour.startTime)} -{" "}
+                          {formatTime(hour.endTime)}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })()}
 
           {/* Explanation */}
           <View style={styles.cardContainer}>
@@ -564,68 +949,6 @@ export default function PlanetaryHoursScreen({
               creating a perfect cycle that aligns with the 7-day week.
             </Text>
           </View>
-
-          {/* Day Hours */}
-          {isToday() && planetaryHoursData?.dayHours && (
-            <View style={styles.cardContainer}>
-              <Text style={styles.cardTitle}>
-                Day Hours (Sunrise to Sunset)
-              </Text>
-              {planetaryHoursData.dayHours.map((hour, index) => (
-                <View
-                  key={`day-${index}`}
-                  style={[
-                    styles.hourRow,
-                    planetaryHoursData.currentHour?.hour === hour.hour &&
-                      planetaryHoursData.currentHour?.isDayHour &&
-                      styles.highlightedHourRow,
-                  ]}
-                >
-                  <Text style={styles.hourNumber}>{hour.hour}</Text>
-                  <Text style={styles.planetSymbol}>
-                    <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
-                      {planetKeys[hour.planet] || "?"}
-                    </Text>
-                  </Text>
-                  <Text style={styles.planetName}>{hour.planet}</Text>
-                  <Text style={styles.timeRange}>
-                    {formatTime(hour.startTime)} - {formatTime(hour.endTime)}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Night Hours */}
-          {isToday() && planetaryHoursData?.nightHours && (
-            <View style={styles.cardContainer}>
-              <Text style={styles.cardTitle}>
-                Night Hours (Sunset to Sunrise)
-              </Text>
-              {planetaryHoursData.nightHours.map((hour, index) => (
-                <View
-                  key={`night-${index}`}
-                  style={[
-                    styles.hourRow,
-                    planetaryHoursData.currentHour?.hour === hour.hour &&
-                      !planetaryHoursData.currentHour?.isDayHour &&
-                      styles.highlightedHourRow,
-                  ]}
-                >
-                  <Text style={styles.hourNumber}>{hour.hour}</Text>
-                  <Text style={styles.planetSymbol}>
-                    <Text style={getPhysisSymbolStyle(fontLoaded, "medium")}>
-                      {planetKeys[hour.planet] || "?"}
-                    </Text>
-                  </Text>
-                  <Text style={styles.planetName}>{hour.planet}</Text>
-                  <Text style={styles.timeRange}>
-                    {formatTime(hour.startTime)} - {formatTime(hour.endTime)}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
         </ScrollView>
       </View>
     </View>
@@ -722,7 +1045,7 @@ const styles = StyleSheet.create({
   },
   timeRange: {
     fontSize: 12,
-    color: "#6f7782",
+    color: "#ffffff",
   },
   infoText: {
     fontSize: 14,
@@ -741,13 +1064,13 @@ const styles = StyleSheet.create({
   },
   hourNumber: {
     fontSize: 12,
-    color: "#8a8a8a",
+    color: "#ffffff",
     width: 25,
     textAlign: "center",
   },
   planetName: {
     fontSize: 14,
-    color: "#e6e6fa",
+    color: "#ffffff",
     flex: 1,
     marginLeft: 10,
   },
@@ -809,5 +1132,34 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#e6e6fa",
     textAlign: "left",
+  },
+  barChartContainer: {
+    marginBottom: 20,
+    marginTop: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    height: 100,
+    position: "relative",
+  },
+  barChartAxis: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: "transparent", // Invisible x-axis
+    top: 50, // Center vertically
+  },
+  barChartRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 100,
+    top: 0,
+    alignItems: "center",
+  },
+  barChartBar: {
+    borderRadius: 1,
   },
 });

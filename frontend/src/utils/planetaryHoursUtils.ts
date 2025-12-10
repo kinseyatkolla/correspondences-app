@@ -54,6 +54,12 @@ const PLANET_SYMBOLS = {
   Moon: "☽",
 };
 
+// Cache for sun times to prevent repeated API calls
+const sunTimesCache = new Map<string, { sunrise: Date; sunset: Date }>();
+const RATE_LIMIT_COOLDOWN = 60000; // 60 seconds cooldown after 429 error
+let lastRateLimitError: number = 0;
+let rateLimitActive: boolean = false;
+
 /**
  * Get the ruling planet for a given day of the week
  */
@@ -88,12 +94,50 @@ export async function fetchSunTimes(
   latitude: number,
   longitude: number
 ): Promise<{ sunrise: Date; sunset: Date }> {
+  // Create cache key
+  const dateString = date.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+  const cacheKey = `${dateString}-${latitude}-${longitude}`;
+
+  // Check cache first
+  const cached = sunTimesCache.get(cacheKey);
+  if (cached) {
+    // Return new Date objects to avoid mutation issues
+    return {
+      sunrise: new Date(cached.sunrise),
+      sunset: new Date(cached.sunset),
+    };
+  }
+
+  // Check if we're in rate limit cooldown period
+  const now = Date.now();
+  if (rateLimitActive && now - lastRateLimitError < RATE_LIMIT_COOLDOWN) {
+    // Use fallback during cooldown to avoid more 429 errors
+    const fallback = calculateSunTimesFallback(date, latitude, longitude);
+    // Cache the fallback result
+    sunTimesCache.set(cacheKey, {
+      sunrise: new Date(fallback.sunrise),
+      sunset: new Date(fallback.sunset),
+    });
+    return fallback;
+  }
+
   try {
-    const dateString = date.toISOString().split("T")[0]; // Format: YYYY-MM-DD
     const url = `https://api.sunrisesunset.io/json?lat=${latitude}&lng=${longitude}&date=${dateString}&formatted=0`;
 
     const response = await fetch(url);
     if (!response.ok) {
+      // Handle 429 rate limit errors specially
+      if (response.status === 429) {
+        rateLimitActive = true;
+        lastRateLimitError = now;
+        // Use fallback and don't log error (we'll use fallback during cooldown)
+        const fallback = calculateSunTimesFallback(date, latitude, longitude);
+        sunTimesCache.set(cacheKey, {
+          sunrise: new Date(fallback.sunrise),
+          sunset: new Date(fallback.sunset),
+        });
+        return fallback;
+      }
       throw new Error(`API request failed: ${response.status}`);
     }
 
@@ -106,11 +150,39 @@ export async function fetchSunTimes(
     const sunrise = parseApiTime(data.results.sunrise, date);
     const sunset = parseApiTime(data.results.sunset, date);
 
+    // Reset rate limit flag on successful request
+    rateLimitActive = false;
+
+    // Cache the result
+    sunTimesCache.set(cacheKey, {
+      sunrise: new Date(sunrise),
+      sunset: new Date(sunset),
+    });
+
     return { sunrise, sunset };
-  } catch (error) {
-    console.error("Error fetching sun times from API:", error);
+  } catch (error: any) {
+    // Only log non-429 errors (429 errors are handled silently above)
+    // Check both the error message and status code
+    const is429Error =
+      error.message?.includes("429") ||
+      error.message?.includes("rate limit") ||
+      (error.status && error.status === 429);
+
+    if (!is429Error) {
+      console.error("Error fetching sun times from API:", error);
+    } else {
+      // Set rate limit flag if we hit a 429
+      rateLimitActive = true;
+      lastRateLimitError = now;
+    }
     // Fallback to calculated times if API fails
-    return calculateSunTimesFallback(date, latitude, longitude);
+    const fallback = calculateSunTimesFallback(date, latitude, longitude);
+    // Cache the fallback result
+    sunTimesCache.set(cacheKey, {
+      sunrise: new Date(fallback.sunrise),
+      sunset: new Date(fallback.sunset),
+    });
+    return fallback;
   }
 }
 

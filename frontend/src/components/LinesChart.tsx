@@ -4,7 +4,7 @@
 // Displays planet positions throughout a year as line charts (360-degree zodiac)
 // Rotated 90° clockwise: dates on left (Y-axis), degrees on bottom (X-axis)
 
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet, Dimensions, ScrollView } from "react-native";
 import Svg, { Circle, Line, Text as SvgText, G, Rect } from "react-native-svg";
 import { LinesChartData, PlanetDataset } from "../utils/ephemerisChartData";
@@ -157,7 +157,7 @@ function getZodiacSignColor(signName: string): string {
 // COMPONENT
 // ============================================================================
 
-export default function LinesChart({
+function LinesChart({
   data,
   width,
   height,
@@ -183,244 +183,270 @@ export default function LinesChart({
   const chartHeight = height || calculatedHeight;
   const padding = CHART_PADDING;
 
-  // Generate X-axis grid lines (every 30 degrees = one zodiac sign) - now horizontal
-  const xAxisTicks = Array.from({ length: 13 }, (_, i) => i * 30); // 0, 30, 60, ..., 360
+  // Memoize expensive calculations
+  const signSectionWidth = useMemo(
+    () => (chartWidth - padding.left - padding.right) / 12,
+    [chartWidth, padding.left, padding.right]
+  );
 
-  // Generate zodiac header row (above chart)
-  // Calculate the width of each sign section
-  const signSectionWidth = (chartWidth - padding.left - padding.right) / 12;
-
-  const zodiacHeaderItems = ZODIAC_SIGNS.map((sign, index) => {
-    const signKey = getZodiacKeysFromNames()[sign];
-    const signColor = getZodiacSignColor(sign);
-    const leftPosition = padding.left + index * signSectionWidth;
-
-    return (
-      <View
-        key={`header-${sign}`}
-        style={[
-          styles.zodiacHeaderItem,
-          {
-            left: leftPosition,
-            width: signSectionWidth,
-            backgroundColor: signColor,
-          },
-        ]}
-      >
-        <Text
-          style={[
-            getPhysisSymbolStyle(fontLoaded, "medium"),
-            styles.zodiacSymbol,
-          ]}
-        >
-          {signKey}
-        </Text>
-      </View>
-    );
-  });
-
-  // Generate background rectangles for each zodiac sign (now horizontal)
-  const zodiacRects = ZODIAC_SIGNS.map((sign, index) => {
-    const startDegree = index * 30;
-    const endDegree = (index + 1) * 30;
-    const x1 = degreeToX(startDegree, chartWidth, padding);
-
-    // For the last sign (Pisces, 330-360°), ensure it extends to the right edge
-    let x2;
-    if (index === ZODIAC_SIGNS.length - 1) {
-      // Last sign: extend to the right edge of the chart
-      x2 = chartWidth - padding.right;
-    } else {
-      x2 = degreeToX(endDegree, chartWidth, padding);
-    }
-
-    const color = getZodiacSignColor(sign);
-    const opacity = 0.15; // Subtle background
-
-    return (
-      <Rect
-        key={sign}
-        x={x1}
-        y={padding.top}
-        width={x2 - x1}
-        height={chartHeight - padding.top - padding.bottom}
-        fill={color}
-        opacity={opacity}
-      />
-    );
-  });
-
-  // Generate planet dots (one for each daily entry, no connecting lines)
-  const planetDots = planets.flatMap((planetDataset) => {
-    return planetDataset.data.map((point, index) => {
-      const x = degreeToX(point.longitude, chartWidth, padding);
-      const y = dateIndexToY(index, dates.length, chartHeight, padding);
+  // Memoize zodiac header items
+  const zodiacHeaderItems = useMemo(() => {
+    return ZODIAC_SIGNS.map((sign, index) => {
+      const signKey = getZodiacKeysFromNames()[sign];
+      const signColor = getZodiacSignColor(sign);
+      const leftPosition = padding.left + index * signSectionWidth;
 
       return (
-        <Circle
-          key={`${planetDataset.planet}-${index}`}
-          cx={x}
-          cy={y}
-          r={3}
-          fill={planetDataset.color}
-          opacity={0.9}
+        <View
+          key={`header-${sign}`}
+          style={[
+            styles.zodiacHeaderItem,
+            {
+              left: leftPosition,
+              width: signSectionWidth,
+              backgroundColor: signColor,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              getPhysisSymbolStyle(fontLoaded, "medium"),
+              styles.zodiacSymbol,
+            ]}
+          >
+            {signKey}
+          </Text>
+        </View>
+      );
+    });
+  }, [fontLoaded, signSectionWidth, padding.left]);
+
+  // Memoize background rectangles
+  const zodiacRects = useMemo(() => {
+    return ZODIAC_SIGNS.map((sign, index) => {
+      const startDegree = index * 30;
+      const endDegree = (index + 1) * 30;
+      const x1 = degreeToX(startDegree, chartWidth, padding);
+
+      // For the last sign (Pisces, 330-360°), ensure it extends to the right edge
+      let x2;
+      if (index === ZODIAC_SIGNS.length - 1) {
+        // Last sign: extend to the right edge of the chart
+        x2 = chartWidth - padding.right;
+      } else {
+        x2 = degreeToX(endDegree, chartWidth, padding);
+      }
+
+      const color = getZodiacSignColor(sign);
+      const opacity = 0.15; // Subtle background
+
+      return (
+        <Rect
+          key={sign}
+          x={x1}
+          y={padding.top}
+          width={x2 - x1}
+          height={chartHeight - padding.top - padding.bottom}
+          fill={color}
+          opacity={opacity}
         />
       );
     });
-  });
+  }, [chartWidth, chartHeight, padding]);
 
-  // Generate lunation markers (larger dots for New and Full Moons)
-  const lunationDots = lunations
-    .map((lunation) => {
-      // Determine if this is a full moon (declared once at the start)
-      const isFullMoon = lunation.phase === "Full Moon";
-      const isEclipse = lunation.isEclipse || false;
-      const eclipseType = lunation.eclipseType;
+  // Memoize planet dots
+  const planetDots = useMemo(() => {
+    return planets.flatMap((planetDataset) => {
+      return planetDataset.data.map((point, index) => {
+        const x = degreeToX(point.longitude, chartWidth, padding);
+        const y = dateIndexToY(index, dates.length, chartHeight, padding);
 
-      // Find the closest date index for this lunation
-      const lunationDate = new Date(lunation.date);
-      const dateIndex = dates.findIndex((date) => {
-        // Compare year, month, and day (ignore time for matching)
         return (
-          date.getFullYear() === lunationDate.getFullYear() &&
-          date.getMonth() === lunationDate.getMonth() &&
-          date.getDate() === lunationDate.getDate()
+          <Circle
+            key={`${planetDataset.planet}-${index}`}
+            cx={x}
+            cy={y}
+            r={3}
+            fill={planetDataset.color}
+            opacity={0.9}
+          />
         );
       });
+    });
+  }, [planets, dates.length, chartWidth, chartHeight, padding]);
 
-      let targetDateIndex: number;
+  // Memoize lunation markers
+  const lunationDots = useMemo(() => {
+    return lunations
+      .map((lunation) => {
+        // Determine if this is a full moon (declared once at the start)
+        const isFullMoon = lunation.phase === "Full Moon";
+        const isEclipse = lunation.isEclipse || false;
+        const eclipseType = lunation.eclipseType;
 
-      // If we can't find an exact match, try to find the closest date
-      if (dateIndex < 0) {
-        // Find closest date by time difference
-        let closestIndex = 0;
-        let minDiff = Infinity;
-        dates.forEach((date, index) => {
-          const diff = Math.abs(date.getTime() - lunationDate.getTime());
-          if (diff < minDiff) {
-            minDiff = diff;
-            closestIndex = index;
-          }
+        // Find the closest date index for this lunation
+        const lunationDate = new Date(lunation.date);
+        const dateIndex = dates.findIndex((date) => {
+          // Compare year, month, and day (ignore time for matching)
+          return (
+            date.getFullYear() === lunationDate.getFullYear() &&
+            date.getMonth() === lunationDate.getMonth() &&
+            date.getDate() === lunationDate.getDate()
+          );
         });
-        // Only use if within 24 hours
-        if (minDiff >= 24 * 60 * 60 * 1000) {
-          return null;
+
+        let targetDateIndex: number;
+
+        // If we can't find an exact match, try to find the closest date
+        if (dateIndex < 0) {
+          // Find closest date by time difference
+          let closestIndex = 0;
+          let minDiff = Infinity;
+          dates.forEach((date, index) => {
+            const diff = Math.abs(date.getTime() - lunationDate.getTime());
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestIndex = index;
+            }
+          });
+          // Only use if within 24 hours
+          if (minDiff >= 24 * 60 * 60 * 1000) {
+            return null;
+          }
+          targetDateIndex = closestIndex;
+        } else {
+          targetDateIndex = dateIndex;
         }
-        targetDateIndex = closestIndex;
-      } else {
-        targetDateIndex = dateIndex;
-      }
 
-      const x = degreeToX(lunation.longitude, chartWidth, padding);
-      const y = dateIndexToY(
-        targetDateIndex,
-        dates.length,
-        chartHeight,
-        padding
-      );
+        const x = degreeToX(lunation.longitude, chartWidth, padding);
+        const y = dateIndexToY(
+          targetDateIndex,
+          dates.length,
+          chartHeight,
+          padding
+        );
 
-      // Eclipse markers: red fill for eclipses
-      if (isEclipse) {
+        // Eclipse markers: red fill for eclipses
+        if (isEclipse) {
+          return (
+            <Circle
+              key={`lunation-${lunation.date.getTime()}`}
+              cx={x}
+              cy={y}
+              r={6} // Same size as regular lunations
+              fill="#FF6B6B" // Red for eclipses
+              opacity={0.95}
+            />
+          );
+        }
+
+        // Regular lunation markers
         return (
           <Circle
             key={`lunation-${lunation.date.getTime()}`}
             cx={x}
             cy={y}
-            r={6} // Same size as regular lunations
-            fill="#FF6B6B" // Red for eclipses
+            r={6} // Same size for both new and full moon
+            fill={isFullMoon ? "#EEEEEE" : "#222222"} // Light gray for full moon, dark gray for new
             opacity={0.95}
           />
         );
+      })
+      .filter((dot): dot is React.ReactElement => dot !== null);
+  }, [lunations, dates, chartWidth, chartHeight, padding]);
+
+  // Memoize Y-axis date labels
+  const yAxisLabels = useMemo(() => {
+    const labels: React.ReactElement[] = [];
+    dates.forEach((date, index) => {
+      // Only show labels for the first day of each month (day === 1)
+      if (date.getDate() === 1) {
+        const y = dateIndexToY(index, dates.length, chartHeight, padding);
+        // Left side labels only - positioned at edge with small padding
+        labels.push(
+          <SvgText
+            key={`left-${index}`}
+            x={padding.left + 2}
+            y={y + 8}
+            fontSize="9"
+            fill="#8a8a8a"
+            textAnchor="start"
+          >
+            {formatDateLabel(date)}
+          </SvgText>
+        );
       }
+    });
+    return labels;
+  }, [dates, chartHeight, padding]);
 
-      // Regular lunation markers
+  // Memoize month-end lines
+  const monthEndLines = useMemo(() => {
+    const lines: React.ReactElement[] = [];
+    dates.forEach((date, index) => {
+      // Only show lines for the first day of each month (day === 1)
+      if (date.getDate() === 1) {
+        const y = dateIndexToY(index, dates.length, chartHeight, padding);
+        // Use negative offset to position at end of previous month
+        const offsetY = y - 1;
+        lines.push(
+          <Line
+            key={`month-end-${index}`}
+            x1={padding.left}
+            y1={offsetY}
+            x2={chartWidth - padding.right}
+            y2={offsetY}
+            stroke="#000000"
+            strokeWidth={1}
+            opacity={1}
+          />
+        );
+      }
+    });
+    return lines;
+  }, [dates, chartHeight, chartWidth, padding]);
+
+  // Memoize today's line
+  const todayLine = useMemo(() => {
+    const today = new Date();
+    const todayIndex = dates.findIndex((date) => {
       return (
-        <Circle
-          key={`lunation-${lunation.date.getTime()}`}
-          cx={x}
-          cy={y}
-          r={6} // Same size for both new and full moon
-          fill={isFullMoon ? "#EEEEEE" : "#222222"} // Light gray for full moon, dark gray for new
-          opacity={0.95}
-        />
+        date.getFullYear() === today.getFullYear() &&
+        date.getMonth() === today.getMonth() &&
+        date.getDate() === today.getDate()
       );
-    })
-    .filter((dot): dot is React.ReactElement => dot !== null);
+    });
 
-  // Generate Y-axis date labels - only show first day of each month
-  const yAxisLabels: React.ReactElement[] = [];
-  dates.forEach((date, index) => {
-    // Only show labels for the first day of each month (day === 1)
-    if (date.getDate() === 1) {
-      const y = dateIndexToY(index, dates.length, chartHeight, padding);
-      // Left side labels only - positioned at edge with small padding
-      yAxisLabels.push(
-        <SvgText
-          key={`left-${index}`}
-          x={padding.left + 2}
-          y={y + 8}
-          fontSize="9"
-          fill="#8a8a8a"
-          textAnchor="start"
-        >
-          {formatDateLabel(date)}
-        </SvgText>
+    // Only create the line if today's date exists in the data
+    // If viewing a different year, todayIndex will be -1 and no line will be drawn
+    if (todayIndex >= 0 && todayIndex < dates.length) {
+      const todayY = dateIndexToY(
+        todayIndex,
+        dates.length,
+        chartHeight,
+        padding
       );
-    }
-  });
-
-  // Generate month-end lines - black horizontal lines at the first day of each month (1/1, 2/1, etc.) with negative offset
-  const monthEndLines: React.ReactElement[] = [];
-  dates.forEach((date, index) => {
-    // Only show lines for the first day of each month (day === 1)
-    if (date.getDate() === 1) {
-      const y = dateIndexToY(index, dates.length, chartHeight, padding);
-      // Use negative offset to position at end of previous month
-      const offsetY = y - 1;
-      monthEndLines.push(
+      return (
         <Line
-          key={`month-end-${index}`}
+          key="today-line"
           x1={padding.left}
-          y1={offsetY}
+          y1={todayY}
           x2={chartWidth - padding.right}
-          y2={offsetY}
-          stroke="#000000"
-          strokeWidth={1}
-          opacity={1}
+          y2={todayY}
+          stroke="#FFFFFF"
+          strokeWidth={2}
+          opacity={0.8}
         />
       );
     }
-  });
+    return null;
+  }, [dates, chartHeight, chartWidth, padding]);
 
-  // Find today's date and draw a horizontal line (only if viewing current year)
-  // Gracefully handles case where today's date is not in the data (different year)
-  const today = new Date();
-  const todayIndex = dates.findIndex((date) => {
-    return (
-      date.getFullYear() === today.getFullYear() &&
-      date.getMonth() === today.getMonth() &&
-      date.getDate() === today.getDate()
-    );
-  });
-
-  // Only create the line if today's date exists in the data
-  // If viewing a different year, todayIndex will be -1 and no line will be drawn
-  let todayLine: React.ReactElement | null = null;
-  if (todayIndex >= 0 && todayIndex < dates.length) {
-    const todayY = dateIndexToY(todayIndex, dates.length, chartHeight, padding);
-    todayLine = (
-      <Line
-        key="today-line"
-        x1={padding.left}
-        y1={todayY}
-        x2={chartWidth - padding.right}
-        y2={todayY}
-        stroke="#FFFFFF"
-        strokeWidth={2}
-        opacity={0.8}
-      />
-    );
-  }
+  // Generate X-axis grid lines (every 30 degrees = one zodiac sign) - now horizontal
+  const xAxisTicks = useMemo(
+    () => Array.from({ length: 13 }, (_, i) => i * 30), // 0, 30, 60, ..., 360
+    []
+  );
 
   // X-axis labels removed per user request
 
@@ -508,6 +534,9 @@ export default function LinesChart({
     </View>
   );
 }
+
+// Memoize component to prevent unnecessary re-renders
+export default React.memo(LinesChart);
 
 // ============================================================================
 // STYLES

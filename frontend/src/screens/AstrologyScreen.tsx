@@ -933,7 +933,7 @@ export default function AstrologyScreen({ navigation, route }: any) {
                   loading={planetaryHoursLoading}
                   onPress={() =>
                     navigation.navigate("PlanetaryHours", {
-                      selectedDate: displayDate,
+                      selectedDate: displayDate.toISOString(),
                     })
                   }
                 />
@@ -2252,13 +2252,16 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                   {zodiacSymbol}
                                 </Text>
                               )}{" "}
-                              {planet.degreeFormatted && planet.zodiacSignName && (
-                                <Text
-                                  style={getZodiacColorStyle(planet.zodiacSignName)}
-                                >
-                                  {planet.degreeFormatted}{" "}
-                                </Text>
-                              )}
+                              {planet.degreeFormatted &&
+                                planet.zodiacSignName && (
+                                  <Text
+                                    style={getZodiacColorStyle(
+                                      planet.zodiacSignName
+                                    )}
+                                  >
+                                    {planet.degreeFormatted}{" "}
+                                  </Text>
+                                )}
                               {config.emoji} {config.displayName} Aspects
                             </Text>
                             {renderAspectsSection(
@@ -2279,7 +2282,10 @@ export default function AstrologyScreen({ navigation, route }: any) {
                           <View style={styles.cardContainer}>
                             <Text style={styles.cardTitle}>
                               <Text
-                                style={getPhysisSymbolStyle(fontLoaded, "medium")}
+                                style={getPhysisSymbolStyle(
+                                  fontLoaded,
+                                  "medium"
+                                )}
                               >
                                 !
                               </Text>{" "}
@@ -2287,15 +2293,20 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                 <>
                                   <Text
                                     style={[
-                                      getPhysisSymbolStyle(fontLoaded, "medium"),
+                                      getPhysisSymbolStyle(
+                                        fontLoaded,
+                                        "medium"
+                                      ),
                                       getZodiacColorStyle(
                                         activeChart.houses.ascendantSign
                                       ),
                                     ]}
                                   >
-                                    {getZodiacKeysFromNames()[
-                                      activeChart.houses.ascendantSign
-                                    ]}
+                                    {
+                                      getZodiacKeysFromNames()[
+                                        activeChart.houses.ascendantSign
+                                      ]
+                                    }
                                   </Text>{" "}
                                   {activeChart.houses.ascendantDegree && (
                                     <Text
