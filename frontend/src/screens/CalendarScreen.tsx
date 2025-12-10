@@ -129,6 +129,17 @@ function getDegreeOnly(degreeFormatted: string): string {
 }
 
 /**
+ * Formats planet name for display
+ * Converts "northNode" to "N. Node", other planets get capitalized first letter
+ */
+function formatPlanetNameForDisplay(planetName: string): string {
+  if (planetName.toLowerCase() === "northnode") {
+    return "N. Node";
+  }
+  return planetName.charAt(0).toUpperCase() + planetName.slice(1);
+}
+
+/**
  * Zodiac Header Row Component - Fixed header showing zodiac signs
  */
 function ZodiacHeaderRow() {
@@ -351,6 +362,15 @@ export default function CalendarScreen({ navigation }: any) {
     return `ephemeris-${year}-${latitude}-${longitude}-${sampleInterval}`;
   };
 
+  // Helper function to create cache key for lunations data
+  const getLunationsCacheKey = (
+    year: number,
+    latitude: number,
+    longitude: number
+  ): string => {
+    return `lunations-${year}-${latitude}-${longitude}`;
+  };
+
   // Get all cached ephemeris keys for the current location
   const getAllCachedEphemerisKeys = async (
     latitude: number,
@@ -460,6 +480,59 @@ export default function CalendarScreen({ navigation }: any) {
     }
 
     return data;
+  };
+
+  // Helper function to restore lunation events from cache (convert date strings to Date objects)
+  const restoreLunationsFromCache = (lunations: any[]): LunationEvent[] => {
+    return lunations.map((lunation) => ({
+      ...lunation,
+      date: new Date(lunation.date),
+      utcDateTime: new Date(lunation.utcDateTime),
+      localDateTime: new Date(lunation.localDateTime),
+    }));
+  };
+
+  // Load lunations data from cache
+  const loadLunationsFromCache = async (
+    year: number,
+    latitude: number,
+    longitude: number
+  ): Promise<LunationEvent[] | null> => {
+    try {
+      const cacheKey = getLunationsCacheKey(year, latitude, longitude);
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (cached) {
+        const parsedCache = JSON.parse(cached);
+        // Lunations data never expires since it never changes for a given year
+        console.log(`📦 Loading lunations data from cache for year ${year}`);
+        const restoredLunations = restoreLunationsFromCache(parsedCache.data);
+        return restoredLunations;
+      }
+    } catch (err) {
+      console.error("Error loading lunations from cache:", err);
+    }
+    return null;
+  };
+
+  // Save lunations data to cache
+  const saveLunationsToCache = async (
+    year: number,
+    latitude: number,
+    longitude: number,
+    lunations: LunationEvent[]
+  ) => {
+    try {
+      const cacheKey = getLunationsCacheKey(year, latitude, longitude);
+      const cacheData = {
+        data: lunations,
+        timestamp: Date.now(),
+        year,
+      };
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      console.log(`💾 Saved lunations data to cache for year ${year}`);
+    } catch (err) {
+      console.error("Error saving lunations to cache:", err);
+    }
   };
 
   // Load ephemeris data from cache
@@ -783,6 +856,27 @@ export default function CalendarScreen({ navigation }: any) {
     try {
       setLunationsLoading(true);
       const year = selectedYear;
+
+      // Get location from context or use default
+      const location = currentChart?.location || {
+        latitude: 40.7128,
+        longitude: -74.006,
+      };
+
+      // Check cache first
+      const cachedLunations = await loadLunationsFromCache(
+        year,
+        location.latitude,
+        location.longitude
+      );
+
+      if (cachedLunations) {
+        setLunationEvents(cachedLunations);
+        setLunationsLoading(false);
+        return;
+      }
+
+      console.log(`🌐 Fetching lunations data for year ${year} (cache miss)`);
       const allPhases: LunarPhase[] = [];
 
       // Fetch all 12 months
@@ -984,12 +1078,6 @@ export default function CalendarScreen({ navigation }: any) {
         `📊 Total eclipse map size: ${eclipseMap.size} (${processedLunarEclipses} lunar + ${processedSolarEclipses} solar)`
       );
 
-      // Get location from context or use default
-      const location = currentChart?.location || {
-        latitude: 40.7128,
-        longitude: -74.006,
-      };
-
       // Parse UTC times - JavaScript Date objects handle timezone conversion automatically
       // A Date object stores time in UTC internally and displays in local time automatically
       const phasesWithTimes = allPhases.map((phase) => {
@@ -1056,17 +1144,31 @@ export default function CalendarScreen({ navigation }: any) {
           const phaseName = phase.moonPhase.replace(/([A-Z])/g, " $1").trim();
 
           // Check if this lunation is an eclipse
-          // Match eclipses within 48 hours of the lunation (eclipses can occur slightly before/after exact phase)
+          // Match eclipses within 24 hours of the lunation (eclipses occur at the exact phase)
+          // Reduced from 48 hours to be more strict and avoid false matches
           const lunationTime = phase.utcDateTime!.getTime();
           let eclipseInfo: { type: "lunar" | "solar"; date: Date } | undefined;
           let closestTimeDiff = Infinity;
 
-          // Find closest eclipse within 48 hours
+          // Verify phase type first to narrow down which eclipse types to consider
+          const isNewMoon = phaseName === "New Moon";
+          const isFullMoon = phaseName === "Full Moon";
+
+          // Find closest eclipse within 24 hours, but only consider matching types
+          // Solar eclipses occur at New Moon, Lunar eclipses at Full Moon
           for (const [eclipseTime, info] of eclipseMap.entries()) {
+            // Only consider eclipses that match the phase type
+            const typeMatches =
+              (info.type === "solar" && isNewMoon) ||
+              (info.type === "lunar" && isFullMoon);
+
+            if (!typeMatches) continue;
+
             const timeDiff = Math.abs(lunationTime - eclipseTime);
-            // Expand window to 48 hours to account for timezone differences and slight timing variations
-            if (timeDiff < 48 * 60 * 60 * 1000 && timeDiff < closestTimeDiff) {
-              // Within 48 hours and closer than previous match
+            // Use 24-hour window (reduced from 48) to be more strict
+            // Eclipses occur at the exact moment of New/Full Moon, so they should be very close
+            if (timeDiff < 24 * 60 * 60 * 1000 && timeDiff < closestTimeDiff) {
+              // Within 24 hours, type matches, and closer than previous match
               eclipseInfo = info;
               closestTimeDiff = timeDiff;
             }
@@ -1074,28 +1176,27 @@ export default function CalendarScreen({ navigation }: any) {
 
           // Debug: Log if we're close to an eclipse but not matching
           if (eclipseMap.size > 0 && !eclipseInfo) {
-            // Check if we're very close (within 48 hours) but not matching phase
+            // Check if we're very close (within 24 hours) but not matching phase
             for (const [eclipseTime, info] of eclipseMap.entries()) {
               const timeDiff = Math.abs(lunationTime - eclipseTime);
-              if (timeDiff < 48 * 60 * 60 * 1000) {
+              if (timeDiff < 24 * 60 * 60 * 1000) {
                 const hoursDiff = (timeDiff / (60 * 60 * 1000)).toFixed(1);
+                const expectedType = isNewMoon
+                  ? "solar"
+                  : isFullMoon
+                  ? "lunar"
+                  : "none";
                 console.log(
                   `⚠️ Lunation ${phaseName} at ${phase.utcDateTime!.toISOString()} is ${hoursDiff}h from ${
                     info.type
-                  } eclipse at ${info.date.toISOString()} but phase doesn't match`
+                  } eclipse at ${info.date.toISOString()} but expected ${expectedType}`
                 );
               }
             }
           }
 
-          // Verify eclipse type matches phase:
-          // Solar eclipses occur at New Moon, Lunar eclipses at Full Moon
-          const isNewMoon = phaseName === "New Moon";
-          const isFullMoon = phaseName === "Full Moon";
-          const isEclipse =
-            eclipseInfo &&
-            ((eclipseInfo.type === "solar" && isNewMoon) ||
-              (eclipseInfo.type === "lunar" && isFullMoon));
+          // Mark as eclipse if we found a matching eclipse
+          const isEclipse = eclipseInfo !== undefined;
 
           return {
             id: `lunation-${index}-${phase.date}`,
@@ -1151,6 +1252,14 @@ export default function CalendarScreen({ navigation }: any) {
           );
         });
       }
+
+      // Save to cache for future use
+      await saveLunationsToCache(
+        year,
+        location.latitude,
+        location.longitude,
+        lunations
+      );
 
       setLunationEvents(lunations);
     } catch (error) {
@@ -1419,7 +1528,7 @@ export default function CalendarScreen({ navigation }: any) {
             activeOpacity={0.7}
           >
             <Text style={styles.viewModeToggleButtonText}>
-              {viewMode === "LIST" ? "LIST" : "LINES"}
+              {viewMode === "LIST" ? "LINES" : "LIST"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1717,9 +1826,7 @@ export default function CalendarScreen({ navigation }: any) {
                       pluto: "♇",
                     };
 
-                    const planetName =
-                      event.planet.charAt(0).toUpperCase() +
-                      event.planet.slice(1);
+                    const planetName = formatPlanetNameForDisplay(event.planet);
 
                     const eventIsToday = isToday(event.localDateTime);
                     return (
@@ -1792,9 +1899,7 @@ export default function CalendarScreen({ navigation }: any) {
                       pluto: "♇",
                     };
 
-                    const planetName =
-                      event.planet.charAt(0).toUpperCase() +
-                      event.planet.slice(1);
+                    const planetName = formatPlanetNameForDisplay(event.planet);
                     const stationLabel =
                       event.stationType === "retrograde"
                         ? "stations retrograde"
@@ -1885,12 +1990,12 @@ export default function CalendarScreen({ navigation }: any) {
                       pluto: "♇",
                     };
 
-                    const planet1Name =
-                      event.planet1.charAt(0).toUpperCase() +
-                      event.planet1.slice(1);
-                    const planet2Name =
-                      event.planet2.charAt(0).toUpperCase() +
-                      event.planet2.slice(1);
+                    const planet1Name = formatPlanetNameForDisplay(
+                      event.planet1
+                    );
+                    const planet2Name = formatPlanetNameForDisplay(
+                      event.planet2
+                    );
 
                     // Format aspect name (capitalize first letter)
                     const aspectName =

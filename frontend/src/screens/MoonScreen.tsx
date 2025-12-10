@@ -18,6 +18,7 @@ import {
   GestureDetector,
 } from "react-native-gesture-handler";
 import * as Font from "expo-font";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import MoonSvgImporter from "../components/MoonSvgImporter";
 import DateTimePickerDrawer from "../components/DateTimePickerDrawer";
 import { useAstrology } from "../contexts/AstrologyContext";
@@ -77,6 +78,22 @@ interface LunarPhase {
     degreeFormatted: string;
     zodiacSignName: string;
   };
+}
+
+interface LunationEvent {
+  id: string;
+  type: "lunation";
+  date: Date;
+  utcDateTime: Date;
+  localDateTime: Date;
+  title: string;
+  moonPosition?: {
+    degree: number;
+    degreeFormatted: string;
+    zodiacSignName: string;
+  };
+  isEclipse?: boolean;
+  eclipseType?: "lunar" | "solar";
 }
 
 // ============================================================================
@@ -402,75 +419,313 @@ export default function MoonScreen({ navigation, route }: any) {
   // State for the date/time picker drawer
   const [drawerVisible, setDrawerVisible] = useState(false);
 
-  // State for lunar phases
-  const [lunarPhases, setLunarPhases] = useState<LunarPhase[]>([]);
+  // State for lunar phases (now using LunationEvent type from cache)
+  const [lunarPhases, setLunarPhases] = useState<LunationEvent[]>([]);
   const [lunarPhasesLoading, setLunarPhasesLoading] = useState(false);
 
-  // Function to fetch lunar phases for the current and next month
+  // State for current date eclipse info
+  const [currentDateEclipse, setCurrentDateEclipse] = useState<{
+    isEclipse: boolean;
+    eclipseType?: "lunar" | "solar";
+  } | null>(null);
+
+  // Helper function to create cache key for lunations data
+  const getLunationsCacheKey = (
+    year: number,
+    latitude: number,
+    longitude: number
+  ): string => {
+    return `lunations-${year}-${latitude}-${longitude}`;
+  };
+
+  // Helper function to restore lunation events from cache (convert date strings to Date objects)
+  const restoreLunationsFromCache = (lunations: any[]): LunationEvent[] => {
+    return lunations.map((lunation) => ({
+      ...lunation,
+      date: new Date(lunation.date),
+      utcDateTime: new Date(lunation.utcDateTime),
+      localDateTime: new Date(lunation.localDateTime),
+    }));
+  };
+
+  // Load lunations data from cache
+  const loadLunationsFromCache = async (
+    year: number,
+    latitude: number,
+    longitude: number
+  ): Promise<LunationEvent[] | null> => {
+    try {
+      const cacheKey = getLunationsCacheKey(year, latitude, longitude);
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (cached) {
+        const parsedCache = JSON.parse(cached);
+        // Lunations data never expires since it never changes for a given year
+        console.log(`📦 Loading lunations data from cache for year ${year}`);
+        const restoredLunations = restoreLunationsFromCache(parsedCache.data);
+        return restoredLunations;
+      }
+    } catch (err) {
+      console.error("Error loading lunations from cache:", err);
+    }
+    return null;
+  };
+
+  // Function to fetch upcoming lunations from cache (current year and next year)
+  // If cache is empty, fetches and caches the data
   const fetchLunarPhases = async (date: Date) => {
     try {
       setLunarPhasesLoading(true);
-      const currentMonth = date.getMonth() + 1; // JavaScript months are 0-based
       const currentYear = date.getFullYear();
+      const nextYear = currentYear + 1;
 
-      // Get lunar phases for current month
-      const currentMonthData = await apiService.getLunarPhases(
-        currentYear,
-        currentMonth
-      );
-
-      console.log("Current month data:", currentMonthData);
-
-      // Get lunar phases for next month to ensure we have future dates
-      const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-      const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
-      const nextMonthData = await apiService.getLunarPhases(
-        nextYear,
-        nextMonth
-      );
-
-      console.log("Next month data:", nextMonthData);
-
-      // Check if we have valid data
-      if (!currentMonthData?.response?.data || !nextMonthData?.response?.data) {
-        console.error("No data received from OPALE API");
-        setLunarPhases([]);
-        return;
-      }
-
-      // Extract the data arrays from the response objects
-      const currentPhases = currentMonthData.response.data;
-      const nextPhases = nextMonthData.response.data;
-
-      // Combine both months
-      const allPhases = [...currentPhases, ...nextPhases];
-
-      if (allPhases.length === 0) {
-        console.warn("No lunar phases found in API response");
-        setLunarPhases([]);
-        return;
-      }
-
-      // Get timezone offset from location for display purposes only
       const location = currentChart?.location || {
         latitude: 40.7128,
         longitude: -74.006,
       };
 
-      // Calculate timezone offset based on longitude (rough approximation)
-      const timezoneOffsetHours = Math.round(location.longitude / 15);
+      // Load lunations for current year and next year from cache
+      let currentYearLunations = await loadLunationsFromCache(
+        currentYear,
+        location.latitude,
+        location.longitude
+      );
+      let nextYearLunations = await loadLunationsFromCache(
+        nextYear,
+        location.latitude,
+        location.longitude
+      );
 
-      // Parse UTC times and store both UTC and local for display
-      const phasesWithTimes = allPhases.map((phase) => {
-        // Parse the UTC date and time from OPALE API (format: "2022-01-02T18:33:31")
-        // The API returns UTC times without the Z suffix
-        const utcDateTime = new Date(`${phase.date}Z`);
-
-        // Calculate local time ONLY for display purposes
-        const localDateTime = new Date(
-          utcDateTime.getTime() + timezoneOffsetHours * 60 * 60 * 1000
+      // If cache is empty, fetch the data (same logic as CalendarScreen)
+      if (!currentYearLunations) {
+        console.log(
+          `🌐 Cache miss for year ${currentYear}, fetching lunations data...`
         );
+        currentYearLunations = await fetchAndCacheLunationsForYear(
+          currentYear,
+          location.latitude,
+          location.longitude
+        );
+      }
 
+      if (!nextYearLunations) {
+        console.log(
+          `🌐 Cache miss for year ${nextYear}, fetching lunations data...`
+        );
+        nextYearLunations = await fetchAndCacheLunationsForYear(
+          nextYear,
+          location.latitude,
+          location.longitude
+        );
+      }
+
+      // Combine both years
+      const allLunations: LunationEvent[] = [
+        ...(currentYearLunations || []),
+        ...(nextYearLunations || []),
+      ];
+
+      // Filter for upcoming lunations (from the selected date onwards, not today)
+      const selectedDate = new Date(date);
+      selectedDate.setHours(0, 0, 0, 0); // Set to start of day for comparison
+
+      const upcomingLunations = allLunations.filter((lunation) => {
+        const lunationDate = new Date(lunation.localDateTime);
+        lunationDate.setHours(0, 0, 0, 0);
+        return lunationDate >= selectedDate;
+      });
+
+      // Sort chronologically
+      upcomingLunations.sort(
+        (a, b) => a.localDateTime.getTime() - b.localDateTime.getTime()
+      );
+
+      // Limit to next 12 lunations (approximately 1 year)
+      setLunarPhases(upcomingLunations.slice(0, 12));
+
+      // Check if current displayDate is an eclipse day
+      checkEclipseForDate(date);
+    } catch (error) {
+      console.error("Error fetching lunar phases from cache:", error);
+      setLunarPhases([]);
+    } finally {
+      setLunarPhasesLoading(false);
+    }
+  };
+
+  // Check if a specific date is an eclipse day
+  const checkEclipseForDate = async (date: Date) => {
+    try {
+      const year = date.getFullYear();
+      const location = currentChart?.location || {
+        latitude: 40.7128,
+        longitude: -74.006,
+      };
+
+      // Load all lunations for the year to check for eclipse
+      const allLunations = await loadLunationsFromCache(
+        year,
+        location.latitude,
+        location.longitude
+      );
+
+      if (!allLunations || allLunations.length === 0) {
+        setCurrentDateEclipse(null);
+        return;
+      }
+
+      const dateStart = new Date(date);
+      dateStart.setHours(0, 0, 0, 0);
+      const dateEnd = new Date(date);
+      dateEnd.setHours(23, 59, 59, 999);
+
+      // Find lunation events that fall on this date
+      const eclipseOnDate = allLunations.find((lunation) => {
+        const lunationDate = new Date(lunation.localDateTime);
+        return (
+          lunationDate >= dateStart &&
+          lunationDate <= dateEnd &&
+          lunation.isEclipse &&
+          (lunation.title === "New Moon" || lunation.title === "Full Moon")
+        );
+      });
+
+      if (eclipseOnDate) {
+        setCurrentDateEclipse({
+          isEclipse: true,
+          eclipseType: eclipseOnDate.eclipseType,
+        });
+      } else {
+        setCurrentDateEclipse(null);
+      }
+    } catch (error) {
+      console.error("Error checking eclipse for date:", error);
+      setCurrentDateEclipse(null);
+    }
+  };
+
+  // Fetch and cache lunations for a specific year (same logic as CalendarScreen)
+  const fetchAndCacheLunationsForYear = async (
+    year: number,
+    latitude: number,
+    longitude: number
+  ): Promise<LunationEvent[] | null> => {
+    try {
+      const allPhases: Array<{ moonPhase: string; date: string }> = [];
+
+      // Fetch all 12 months
+      for (let month = 1; month <= 12; month++) {
+        try {
+          const monthData = await apiService.getLunarPhases(year, month);
+          if (monthData?.response?.data) {
+            const phases = monthData.response.data.map((phase) => ({
+              moonPhase: phase.moonPhase,
+              date: phase.date,
+            }));
+            allPhases.push(...phases);
+          }
+        } catch (error) {
+          console.error(`Error fetching month ${month}:`, error);
+        }
+      }
+
+      if (allPhases.length === 0) {
+        console.warn(`No lunar phases found for year ${year}`);
+        return null;
+      }
+
+      // Fetch eclipse data for the year
+      let lunarEclipses: Array<{ date?: string; [key: string]: any }> = [];
+      let solarEclipses: Array<{ date?: string; [key: string]: any }> = [];
+
+      try {
+        const lunarEclipseData = await apiService.getEclipses(year, "lunar");
+        if (lunarEclipseData?.response?.data) {
+          lunarEclipses = lunarEclipseData.response.data;
+        }
+      } catch (error) {
+        console.error("Error fetching lunar eclipses:", error);
+      }
+
+      try {
+        const solarEclipseData = await apiService.getEclipses(year, "solar");
+        if (solarEclipseData?.response?.data) {
+          solarEclipses = solarEclipseData.response.data;
+        }
+      } catch (error) {
+        console.error("Error fetching solar eclipses:", error);
+      }
+
+      // Create eclipse map (same logic as CalendarScreen)
+      const eclipseMap = new Map<
+        number,
+        { type: "lunar" | "solar"; date: Date }
+      >();
+
+      // Process lunar eclipses
+      lunarEclipses.forEach((eclipse) => {
+        const dateValue =
+          eclipse.events?.greatest?.date ||
+          eclipse.events?.greatest?.Date ||
+          eclipse.calendarDate ||
+          eclipse.date ||
+          eclipse.Date ||
+          eclipse.datetime ||
+          eclipse.Datetime ||
+          eclipse.time ||
+          eclipse.dateTime;
+        if (dateValue && typeof dateValue === "string") {
+          let eclipseDate = dateValue.trim();
+          const hasTimezone =
+            /[Z+-]\d{2}:?\d{2}$/.test(eclipseDate) || eclipseDate.endsWith("Z");
+          if (!hasTimezone) {
+            eclipseDate = `${eclipseDate}Z`;
+          }
+          const eclipseDateTime = new Date(eclipseDate);
+          if (!isNaN(eclipseDateTime.getTime())) {
+            eclipseMap.set(eclipseDateTime.getTime(), {
+              type: "lunar",
+              date: eclipseDateTime,
+            });
+          }
+        }
+      });
+
+      // Process solar eclipses
+      solarEclipses.forEach((eclipse) => {
+        const dateValue =
+          eclipse.events?.greatest?.date ||
+          eclipse.events?.greatest?.Date ||
+          eclipse.calendarDate ||
+          eclipse.date ||
+          eclipse.Date ||
+          eclipse.datetime ||
+          eclipse.Datetime ||
+          eclipse.time ||
+          eclipse.dateTime;
+        if (dateValue && typeof dateValue === "string") {
+          let eclipseDate = dateValue.trim();
+          const hasTimezone =
+            /[Z+-]\d{2}:?\d{2}$/.test(eclipseDate) || eclipseDate.endsWith("Z");
+          if (!hasTimezone) {
+            eclipseDate = `${eclipseDate}Z`;
+          }
+          const eclipseDateTime = new Date(eclipseDate);
+          if (!isNaN(eclipseDateTime.getTime())) {
+            eclipseMap.set(eclipseDateTime.getTime(), {
+              type: "solar",
+              date: eclipseDateTime,
+            });
+          }
+        }
+      });
+
+      // Parse UTC times
+      const phasesWithTimes = allPhases.map((phase) => {
+        const utcString = phase.date.endsWith("Z")
+          ? phase.date
+          : `${phase.date}Z`;
+        const utcDateTime = new Date(utcString);
+        const localDateTime = new Date(utcDateTime);
         return {
           ...phase,
           utcDateTime,
@@ -478,30 +733,20 @@ export default function MoonScreen({ navigation, route }: any) {
         };
       });
 
-      // Filter to only show phases after yesterday (compare UTC times)
-      const yesterday = new Date(date);
-      yesterday.setDate(yesterday.getDate() - 1);
-      yesterday.setHours(0, 0, 0, 0);
-
-      const upcomingPhases = phasesWithTimes.filter(
-        (phase) => phase.utcDateTime && phase.utcDateTime > yesterday
-      );
-
-      // Fetch moon positions for each lunation using UTC times
+      // Fetch moon positions for each lunation
       const phasesWithMoonPositions = await Promise.all(
-        upcomingPhases.map(async (phase) => {
+        phasesWithTimes.map(async (phase) => {
           if (!phase.utcDateTime) return phase;
 
           try {
-            // Use UTC time for ephemeris query
             const birthData: BirthData = {
               year: phase.utcDateTime.getUTCFullYear(),
               month: phase.utcDateTime.getUTCMonth() + 1,
               day: phase.utcDateTime.getUTCDate(),
               hour: phase.utcDateTime.getUTCHours(),
               minute: phase.utcDateTime.getUTCMinutes(),
-              latitude: location.latitude,
-              longitude: location.longitude,
+              latitude: latitude,
+              longitude: longitude,
             };
 
             const chartResponse = await apiService.getBirthChart(birthData);
@@ -528,12 +773,67 @@ export default function MoonScreen({ navigation, route }: any) {
         })
       );
 
-      setLunarPhases(phasesWithMoonPositions);
+      // Convert to LunationEvent format and mark eclipses (same logic as CalendarScreen)
+      const lunations: LunationEvent[] = phasesWithMoonPositions
+        .filter((phase) => phase.utcDateTime && phase.localDateTime)
+        .map((phase, index) => {
+          const phaseName = phase.moonPhase.replace(/([A-Z])/g, " $1").trim();
+          const lunationTime = phase.utcDateTime!.getTime();
+          let eclipseInfo: { type: "lunar" | "solar"; date: Date } | undefined;
+          let closestTimeDiff = Infinity;
+
+          const isNewMoon = phaseName === "New Moon";
+          const isFullMoon = phaseName === "Full Moon";
+
+          // Find closest eclipse within 24 hours, matching type
+          for (const [eclipseTime, info] of eclipseMap.entries()) {
+            const typeMatches =
+              (info.type === "solar" && isNewMoon) ||
+              (info.type === "lunar" && isFullMoon);
+
+            if (!typeMatches) continue;
+
+            const timeDiff = Math.abs(lunationTime - eclipseTime);
+            if (timeDiff < 24 * 60 * 60 * 1000 && timeDiff < closestTimeDiff) {
+              eclipseInfo = info;
+              closestTimeDiff = timeDiff;
+            }
+          }
+
+          const isEclipse = eclipseInfo !== undefined;
+
+          return {
+            id: `lunation-${index}-${phase.date}`,
+            type: "lunation" as const,
+            date: phase.localDateTime!,
+            utcDateTime: phase.utcDateTime!,
+            localDateTime: phase.localDateTime!,
+            title: phaseName,
+            moonPosition: phase.moonPosition,
+            isEclipse: isEclipse || false,
+            eclipseType: isEclipse ? eclipseInfo!.type : undefined,
+          };
+        });
+
+      // Sort chronologically
+      lunations.sort(
+        (a, b) => a.utcDateTime.getTime() - b.utcDateTime.getTime()
+      );
+
+      // Save to cache
+      const cacheKey = getLunationsCacheKey(year, latitude, longitude);
+      const cacheData = {
+        data: lunations,
+        timestamp: Date.now(),
+        year,
+      };
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      console.log(`💾 Saved lunations data to cache for year ${year}`);
+
+      return lunations;
     } catch (error) {
-      console.error("Error fetching lunar phases:", error);
-      setLunarPhases([]);
-    } finally {
-      setLunarPhasesLoading(false);
+      console.error(`Error fetching lunations for year ${year}:`, error);
+      return null;
     }
   };
 
@@ -715,8 +1015,15 @@ export default function MoonScreen({ navigation, route }: any) {
         fetchChartForDate(displayDate);
       }
 
-      // Fetch lunar phases
+      // Fetch lunar phases (this will also check for eclipse)
       fetchLunarPhases(displayDate);
+    }
+  }, [displayDate, currentChart]);
+
+  // Check for eclipse when displayDate changes
+  useEffect(() => {
+    if (displayDate && currentChart) {
+      checkEclipseForDate(displayDate);
     }
   }, [displayDate, currentChart]);
 
@@ -792,12 +1099,17 @@ export default function MoonScreen({ navigation, route }: any) {
                   </View>
                 )}
 
-              <MoonSvgImporter
-                svgName={currentMoonPhase.toString()}
-                width={240}
-                height={240}
-                style={styles.moonPhaseSvg}
-              />
+              <View style={styles.moonSvgContainer}>
+                <MoonSvgImporter
+                  svgName={currentMoonPhase.toString()}
+                  width={240}
+                  height={240}
+                  style={styles.moonPhaseSvg}
+                />
+                {currentDateEclipse?.isEclipse && (
+                  <View style={styles.eclipseOverlay} />
+                )}
+              </View>
 
               {activeChart && (
                 <>
@@ -828,6 +1140,17 @@ export default function MoonScreen({ navigation, route }: any) {
                     })()}
                     {activeChart.planets.moon?.zodiacSignName} Moon
                   </Text>
+
+                  {/* Eclipse label */}
+                  {currentDateEclipse?.isEclipse && (
+                    <Text style={styles.eclipseLabel}>
+                      🔴 (
+                      {currentDateEclipse.eclipseType === "solar"
+                        ? "Solar"
+                        : "Lunar"}{" "}
+                      Eclipse)
+                    </Text>
+                  )}
 
                   {/* Moon degree and zodiac sign */}
                   {currentTithi && (
@@ -1160,42 +1483,56 @@ export default function MoonScreen({ navigation, route }: any) {
                       <ActivityIndicator size="small" color="#111111" />
                     ) : lunarPhases.length > 0 ? (
                       <View style={styles.lunarPhasesList}>
-                        {lunarPhases.map((phase, index) => {
-                          if (!phase.localDateTime) return null;
+                        {lunarPhases.map((lunation, index) => {
+                          if (!lunation.localDateTime) return null;
 
-                          // Format the phase name (convert from camelCase to spaced words)
-                          // e.g., "NewMoon" -> "New Moon"
-                          const phaseName = phase.moonPhase
-                            .replace(/([A-Z])/g, " $1")
-                            .trim();
+                          // Get emoji for moon phase (same logic as CalendarScreen)
+                          const getPhaseEmoji = (
+                            phaseName: string,
+                            isEclipse?: boolean,
+                            eclipseType?: "lunar" | "solar"
+                          ): string => {
+                            if (isEclipse) {
+                              return eclipseType === "solar" ? "🌑" : "🌕"; // Solar eclipse at New Moon, Lunar at Full Moon
+                            }
+                            switch (phaseName) {
+                              case "New Moon":
+                                return "🌑";
+                              case "First Quarter":
+                                return "🌓";
+                              case "Full Moon":
+                                return "🌕";
+                              case "Last Quarter":
+                                return "🌗";
+                              default:
+                                return "🌙";
+                            }
+                          };
 
-                          // Get the corresponding emoji for each moon phase
-                          let emoji = "🌙";
-                          switch (phase.moonPhase) {
-                            case "NewMoon":
-                              emoji = "🌑";
-                              break;
-                            case "FirstQuarter":
-                              emoji = "🌓";
-                              break;
-                            case "FullMoon":
-                              emoji = "🌕";
-                              break;
-                            case "LastQuarter":
-                              emoji = "🌗";
-                              break;
-                          }
+                          const phaseName = lunation.title;
+                          const emoji = getPhaseEmoji(
+                            phaseName,
+                            lunation.isEclipse,
+                            lunation.eclipseType
+                          );
+                          const eclipseLabel = lunation.isEclipse
+                            ? ` 🔴 (${
+                                lunation.eclipseType === "solar"
+                                  ? "Solar"
+                                  : "Lunar"
+                              } Eclipse)`
+                            : "";
 
                           // Format the date and time
                           const dateString =
-                            phase.localDateTime.toLocaleDateString("en-US", {
+                            lunation.localDateTime.toLocaleDateString("en-US", {
                               weekday: "short",
                               month: "short",
                               day: "numeric",
                             });
 
                           const timeString =
-                            phase.localDateTime.toLocaleTimeString("en-US", {
+                            lunation.localDateTime.toLocaleTimeString("en-US", {
                               hour: "numeric",
                               minute: "2-digit",
                               hour12: true,
@@ -1203,14 +1540,14 @@ export default function MoonScreen({ navigation, route }: any) {
 
                           return (
                             <TouchableOpacity
-                              key={index}
+                              key={lunation.id || index}
                               style={styles.lunarPhaseRow}
                               onPress={() =>
-                                phase.utcDateTime &&
-                                phase.localDateTime &&
+                                lunation.utcDateTime &&
+                                lunation.localDateTime &&
                                 handleLunationClick(
-                                  phase.utcDateTime,
-                                  phase.localDateTime
+                                  lunation.utcDateTime,
+                                  lunation.localDateTime
                                 )
                               }
                               activeOpacity={0.7}
@@ -1218,18 +1555,19 @@ export default function MoonScreen({ navigation, route }: any) {
                               <View style={styles.lunarPhaseLeftColumn}>
                                 <Text style={styles.lunarPhaseNameText}>
                                   {emoji} {phaseName}
+                                  {eclipseLabel}
                                 </Text>
                                 <Text style={styles.lunarPhaseDateText}>
                                   {dateString} at {timeString}
                                 </Text>
                               </View>
-                              {phase.moonPosition && (
+                              {lunation.moonPosition && (
                                 <View style={styles.lunarPhaseRightColumn}>
                                   <Text
                                     style={[
                                       styles.lunarPhaseMoonPosition,
                                       getZodiacColorStyle(
-                                        phase.moonPosition.zodiacSignName
+                                        lunation.moonPosition.zodiacSignName
                                       ),
                                     ]}
                                   >
@@ -1240,18 +1578,18 @@ export default function MoonScreen({ navigation, route }: any) {
                                           "medium"
                                         ),
                                         getZodiacColorStyle(
-                                          phase.moonPosition.zodiacSignName
+                                          lunation.moonPosition.zodiacSignName
                                         ),
                                       ]}
                                     >
                                       {
                                         getZodiacKeysFromNames()[
-                                          phase.moonPosition.zodiacSignName
+                                          lunation.moonPosition.zodiacSignName
                                         ]
                                       }
                                     </Text>{" "}
-                                    {phase.moonPosition.degreeFormatted}{" "}
-                                    {phase.moonPosition.zodiacSignName}
+                                    {lunation.moonPosition.degreeFormatted}{" "}
+                                    {lunation.moonPosition.zodiacSignName}
                                   </Text>
                                 </View>
                               )}
@@ -1325,9 +1663,25 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
-  moonPhaseSvg: {
+  moonSvgContainer: {
+    position: "relative",
     marginTop: 115,
     marginBottom: 20,
+  },
+  moonPhaseSvg: {
+    // SVG styles handled by component
+  },
+  eclipseOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    borderWidth: 4,
+    borderColor: "#FF6B6B",
+    backgroundColor: "transparent",
+    pointerEvents: "none",
   },
   title: {
     fontSize: 32,
@@ -1344,6 +1698,16 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     // Color will be set dynamically based on tithi color
+  },
+  eclipseLabel: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 8,
+    color: "#FF6B6B",
+    textAlign: "center",
+    textShadowColor: "rgba(255, 107, 107, 0.6)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   subtitle: {
     fontSize: 18,

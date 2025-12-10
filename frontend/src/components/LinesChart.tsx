@@ -34,6 +34,21 @@ interface LinesChartProps {
 }
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Formats planet name for display
+ * Converts "northNode" to "N. Node", other planets get capitalized first letter
+ */
+function formatPlanetNameForDisplay(planetName: string): string {
+  if (planetName.toLowerCase() === "northnode") {
+    return "N. Node";
+  }
+  return planetName.charAt(0).toUpperCase() + planetName.slice(1);
+}
+
+// ============================================================================
 // CONSTANTS
 // ============================================================================
 
@@ -457,8 +472,7 @@ export default function LinesChart({
                   ]}
                 />
                 <Text style={styles.legendText}>
-                  {planet.planet.charAt(0).toUpperCase() +
-                    planet.planet.slice(1)}
+                  {formatPlanetNameForDisplay(planet.planet)}
                 </Text>
               </View>
             ))}
