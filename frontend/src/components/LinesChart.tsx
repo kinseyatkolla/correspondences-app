@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
   legend: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginTop: 20,
+    marginTop: 0,
     paddingHorizontal: 10,
     gap: 12,
   },

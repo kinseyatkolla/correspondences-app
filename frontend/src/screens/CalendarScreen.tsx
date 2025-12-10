@@ -145,7 +145,7 @@ function formatPlanetNameForDisplay(planetName: string): string {
 function ZodiacHeaderRow() {
   const { fontLoaded } = usePhysisFont();
   const SCREEN_WIDTH = Dimensions.get("window").width;
-  const HEADER_HEIGHT = 35; // Reduced height
+  const HEADER_HEIGHT = 40;
   const CHART_PADDING_LEFT = 0;
   const CHART_PADDING_RIGHT = 0;
   const chartWidth = SCREEN_WIDTH;
@@ -745,11 +745,19 @@ export default function CalendarScreen({ navigation }: any) {
     const todayYear = today.getFullYear();
 
     // Only auto-scroll if we just switched to the current year and data has loaded
+    const currentLoading = lunationsLoading || calendarLoading;
+    const currentAllEvents: CalendarEvent[] = [
+      ...(lunationEvents || []),
+      ...(calendarEvents || []),
+    ];
+    const currentFilteredEvents = currentAllEvents.filter(
+      (event) => filterStates[event.type]
+    );
     if (
       selectedYear === todayYear &&
-      !loading &&
-      filteredEvents &&
-      filteredEvents.length > 0 &&
+      !currentLoading &&
+      currentFilteredEvents &&
+      currentFilteredEvents.length > 0 &&
       !hasScrolledToToday.current &&
       scrollViewRef.current
     ) {
@@ -757,7 +765,7 @@ export default function CalendarScreen({ navigation }: any) {
       const timeoutId = setTimeout(() => {
         if (!hasScrolledToToday.current) {
           // Call the scroll logic directly here to avoid dependency issues
-          const safeAllEvents = allEvents || [];
+          const safeAllEvents = currentAllEvents;
           const currentFilteredEvents = safeAllEvents.filter(
             (event) => filterStates[event.type]
           );
@@ -817,21 +825,30 @@ export default function CalendarScreen({ navigation }: any) {
     }
   }, [
     selectedYear,
-    loading,
-    filteredEvents?.length,
-    allEvents?.length,
+    lunationsLoading,
+    calendarLoading,
+    lunationEvents?.length,
+    calendarEvents?.length,
     filterStates,
   ]);
 
   // Auto-scroll to today when switching from LINES back to LIST view
   useEffect(() => {
     // Check if we just switched from LINES to LIST
+    const currentLoading = lunationsLoading || calendarLoading;
+    const currentAllEvents: CalendarEvent[] = [
+      ...(lunationEvents || []),
+      ...(calendarEvents || []),
+    ];
+    const currentFilteredEvents = currentAllEvents.filter(
+      (event) => filterStates[event.type]
+    );
     if (
       previousViewMode.current === "LINES" &&
       viewMode === "LIST" &&
-      !loading &&
-      filteredEvents &&
-      filteredEvents.length > 0
+      !currentLoading &&
+      currentFilteredEvents &&
+      currentFilteredEvents.length > 0
     ) {
       const today = new Date();
       const todayYear = today.getFullYear();
@@ -850,7 +867,15 @@ export default function CalendarScreen({ navigation }: any) {
 
     // Update previous view mode for next comparison
     previousViewMode.current = viewMode;
-  }, [viewMode, loading, filteredEvents?.length, selectedYear]);
+  }, [
+    viewMode,
+    lunationsLoading,
+    calendarLoading,
+    lunationEvents?.length,
+    calendarEvents?.length,
+    filterStates,
+    selectedYear,
+  ]);
 
   const fetchAllLunations = async () => {
     try {
@@ -1669,8 +1694,8 @@ export default function CalendarScreen({ navigation }: any) {
                     date: Date;
                     longitude: number;
                     phase: "New Moon" | "Full Moon";
-                    isEclipse?: boolean;
-                    eclipseType?: "lunar" | "solar";
+                    isEclipse: boolean;
+                    eclipseType: "lunar" | "solar" | undefined;
                   } => l !== null && l.longitude >= 0 && l.longitude <= 360
                 )}
             />
@@ -2189,24 +2214,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0, // No horizontal padding
   },
   zodiacHeaderFixed: {
-    height: 35, // Reduced height
+    height: 25,
     flexDirection: "row",
     position: "relative",
     backgroundColor: "#111",
     width: "100%",
     marginHorizontal: 0,
     paddingHorizontal: 0,
-    paddingVertical: 0, // No vertical padding
+    paddingVertical: 0,
   },
   zodiacHeaderItem: {
-    height: 35, // Reduced height
+    height: 25,
     justifyContent: "center",
     alignItems: "center",
     position: "absolute",
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    margin: 0,
   },
   zodiacSymbol: {
     color: "#FFFFFF",
-    fontSize: 18, // Reduced to fit smaller header
+    fontSize: 32,
+    margin: 0,
+    padding: 0,
+    lineHeight: 32,
   },
   filterRowFixed: {
     height: 35, // Match zodiac header height
@@ -2349,6 +2380,18 @@ const styles = StyleSheet.create({
     color: "#e6e6fa",
     marginTop: 15,
     fontSize: 14,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+  },
+  errorText: {
+    color: "#ff6b6b",
+    marginTop: 15,
+    fontSize: 14,
+    textAlign: "center",
   },
   eventItem: {
     flexDirection: "row",
