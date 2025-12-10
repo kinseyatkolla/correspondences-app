@@ -59,6 +59,8 @@ interface LunationEvent {
     degreeFormatted: string;
     zodiacSignName: string;
   };
+  isEclipse?: boolean;
+  eclipseType?: "lunar" | "solar";
 }
 
 interface IngressEvent {
@@ -425,6 +427,41 @@ export default function CalendarScreen({ navigation }: any) {
     }
   };
 
+  // Helper function to convert date strings back to Date objects
+  const restoreDatesFromCache = (data: any): any => {
+    if (!data) return data;
+
+    // Convert dates array
+    if (data.dates && Array.isArray(data.dates)) {
+      data.dates = data.dates.map((date: any) => {
+        if (typeof date === "string") {
+          return new Date(date);
+        }
+        return date;
+      });
+    }
+
+    // Convert dates in planet datasets
+    if (data.planets && Array.isArray(data.planets)) {
+      data.planets = data.planets.map((planet: any) => {
+        if (planet.data && Array.isArray(planet.data)) {
+          planet.data = planet.data.map((point: any) => {
+            if (point.date && typeof point.date === "string") {
+              return {
+                ...point,
+                date: new Date(point.date),
+              };
+            }
+            return point;
+          });
+        }
+        return planet;
+      });
+    }
+
+    return data;
+  };
+
   // Load ephemeris data from cache
   const loadEphemerisFromCache = async (
     year: number,
@@ -445,7 +482,9 @@ export default function CalendarScreen({ navigation }: any) {
         // For current year, cache is permanent (no expiration check)
         // For other years, also cache permanently since ephemeris data doesn't change
         console.log(`📦 Loading ephemeris data from cache for year ${year}`);
-        return parsedCache.data;
+        // Convert date strings back to Date objects
+        const restoredData = restoreDatesFromCache(parsedCache.data);
+        return restoredData;
       }
     } catch (err) {
       console.error("Error loading ephemeris from cache:", err);
@@ -769,6 +808,182 @@ export default function CalendarScreen({ navigation }: any) {
         return;
       }
 
+      console.log(
+        `✅ Found ${allPhases.length} lunar phases, now fetching eclipses...`
+      );
+
+      // Fetch eclipse data for the year
+      console.log(`🔍 Starting eclipse fetch for year ${year}...`);
+      let lunarEclipses: Array<{ date?: string; [key: string]: any }> = [];
+      let solarEclipses: Array<{ date?: string; [key: string]: any }> = [];
+
+      try {
+        console.log(`🌑 Fetching lunar eclipses for ${year}...`);
+        const lunarEclipseData = await apiService.getEclipses(year, "lunar");
+        console.log("Lunar eclipse API response:", lunarEclipseData);
+        if (lunarEclipseData?.response?.data) {
+          lunarEclipses = lunarEclipseData.response.data;
+          console.log(
+            `🌑 Fetched ${lunarEclipses.length} lunar eclipses for ${year}`
+          );
+          if (lunarEclipses.length > 0) {
+            console.log("Lunar eclipses data sample:", lunarEclipses[0]);
+          } else {
+            console.warn(`⚠️ No lunar eclipse data in response for ${year}`);
+          }
+        } else {
+          console.warn(
+            `⚠️ Lunar eclipse API response missing data field:`,
+            lunarEclipseData
+          );
+        }
+      } catch (error) {
+        console.error("❌ Error fetching lunar eclipses:", error);
+        if (error instanceof Error) {
+          console.error("Error message:", error.message);
+          console.error("Error stack:", error.stack);
+        }
+      }
+
+      try {
+        console.log(`☀️ Fetching solar eclipses for ${year}...`);
+        const solarEclipseData = await apiService.getEclipses(year, "solar");
+        console.log("Solar eclipse API response:", solarEclipseData);
+        if (solarEclipseData?.response?.data) {
+          solarEclipses = solarEclipseData.response.data;
+          console.log(
+            `☀️ Fetched ${solarEclipses.length} solar eclipses for ${year}`
+          );
+          if (solarEclipses.length > 0) {
+            console.log("Solar eclipses data sample:", solarEclipses[0]);
+          } else {
+            console.warn(`⚠️ No solar eclipse data in response for ${year}`);
+          }
+        } else {
+          console.warn(
+            `⚠️ Solar eclipse API response missing data field:`,
+            solarEclipseData
+          );
+        }
+      } catch (error) {
+        console.error("❌ Error fetching solar eclipses:", error);
+        if (error instanceof Error) {
+          console.error("Error message:", error.message);
+          console.error("Error stack:", error.stack);
+        }
+      }
+
+      console.log(
+        `📊 Eclipse fetch complete: ${lunarEclipses.length} lunar, ${solarEclipses.length} solar`
+      );
+
+      // Create a map of eclipse dates for quick lookup
+      // Eclipses occur at New Moon (solar) or Full Moon (lunar)
+      // Use a more precise matching: store eclipse timestamps and match within 24 hours
+      const eclipseMap = new Map<
+        number,
+        { type: "lunar" | "solar"; date: Date }
+      >();
+
+      // Process lunar eclipses (occur at Full Moon)
+      let processedLunarEclipses = 0;
+      lunarEclipses.forEach((eclipse) => {
+        // OPALE API structure: date is in events.greatest.date or calendarDate
+        // Try multiple possible date field names
+        const dateValue =
+          eclipse.events?.greatest?.date ||
+          eclipse.events?.greatest?.Date ||
+          eclipse.calendarDate ||
+          eclipse.date ||
+          eclipse.Date ||
+          eclipse.datetime ||
+          eclipse.Datetime ||
+          eclipse.time ||
+          eclipse.dateTime;
+        if (!dateValue || typeof dateValue !== "string") {
+          console.warn(
+            "Lunar eclipse missing date field. Eclipse structure:",
+            eclipse
+          );
+          return;
+        }
+        // Handle ISO 8601 format (may or may not have Z, may have milliseconds)
+        // Format from API is typically "YYYY-MM-DDTHH:MM:SS" or "YYYY-MM-DDTHH:MM:SS.000"
+        let eclipseDate = dateValue.trim();
+        // Check if it already has a timezone indicator (Z, +, or - after the time part)
+        const hasTimezone =
+          /[Z+-]\d{2}:?\d{2}$/.test(eclipseDate) || eclipseDate.endsWith("Z");
+        if (!hasTimezone) {
+          // If no timezone indicator, assume UTC
+          eclipseDate = `${eclipseDate}Z`;
+        }
+        const eclipseDateTime = new Date(eclipseDate);
+        // Only add if date is valid
+        if (!isNaN(eclipseDateTime.getTime())) {
+          eclipseMap.set(eclipseDateTime.getTime(), {
+            type: "lunar",
+            date: eclipseDateTime,
+          });
+          processedLunarEclipses++;
+        } else {
+          console.warn("Invalid date for lunar eclipse:", dateValue);
+        }
+      });
+      console.log(
+        `🌑 Processed ${processedLunarEclipses} valid lunar eclipse dates`
+      );
+
+      // Process solar eclipses (occur at New Moon)
+      let processedSolarEclipses = 0;
+      solarEclipses.forEach((eclipse) => {
+        // OPALE API structure: date is in events.greatest.date or calendarDate
+        // Try multiple possible date field names
+        const dateValue =
+          eclipse.events?.greatest?.date ||
+          eclipse.events?.greatest?.Date ||
+          eclipse.calendarDate ||
+          eclipse.date ||
+          eclipse.Date ||
+          eclipse.datetime ||
+          eclipse.Datetime ||
+          eclipse.time ||
+          eclipse.dateTime;
+        if (!dateValue || typeof dateValue !== "string") {
+          console.warn(
+            "Solar eclipse missing date field. Eclipse structure:",
+            eclipse
+          );
+          return;
+        }
+        // Handle ISO 8601 format (may or may not have Z, may have milliseconds)
+        // Format from API is typically "YYYY-MM-DDTHH:MM:SS" or "YYYY-MM-DDTHH:MM:SS.000"
+        let eclipseDate = dateValue.trim();
+        // Check if it already has a timezone indicator (Z, +, or - after the time part)
+        const hasTimezone =
+          /[Z+-]\d{2}:?\d{2}$/.test(eclipseDate) || eclipseDate.endsWith("Z");
+        if (!hasTimezone) {
+          // If no timezone indicator, assume UTC
+          eclipseDate = `${eclipseDate}Z`;
+        }
+        const eclipseDateTime = new Date(eclipseDate);
+        // Only add if date is valid
+        if (!isNaN(eclipseDateTime.getTime())) {
+          eclipseMap.set(eclipseDateTime.getTime(), {
+            type: "solar",
+            date: eclipseDateTime,
+          });
+          processedSolarEclipses++;
+        } else {
+          console.warn("Invalid date for solar eclipse:", dateValue);
+        }
+      });
+      console.log(
+        `☀️ Processed ${processedSolarEclipses} valid solar eclipse dates`
+      );
+      console.log(
+        `📊 Total eclipse map size: ${eclipseMap.size} (${processedLunarEclipses} lunar + ${processedSolarEclipses} solar)`
+      );
+
       // Get location from context or use default
       const location = currentChart?.location || {
         latitude: 40.7128,
@@ -833,12 +1048,54 @@ export default function CalendarScreen({ navigation }: any) {
         })
       );
 
-      // Convert to LunationEvent format
+      // Convert to LunationEvent format and mark eclipses
       const lunations: LunationEvent[] = phasesWithMoonPositions
         .filter((phase) => phase.utcDateTime && phase.localDateTime)
         .map((phase, index) => {
           // Format the phase name (convert from camelCase to spaced words)
           const phaseName = phase.moonPhase.replace(/([A-Z])/g, " $1").trim();
+
+          // Check if this lunation is an eclipse
+          // Match eclipses within 48 hours of the lunation (eclipses can occur slightly before/after exact phase)
+          const lunationTime = phase.utcDateTime!.getTime();
+          let eclipseInfo: { type: "lunar" | "solar"; date: Date } | undefined;
+          let closestTimeDiff = Infinity;
+
+          // Find closest eclipse within 48 hours
+          for (const [eclipseTime, info] of eclipseMap.entries()) {
+            const timeDiff = Math.abs(lunationTime - eclipseTime);
+            // Expand window to 48 hours to account for timezone differences and slight timing variations
+            if (timeDiff < 48 * 60 * 60 * 1000 && timeDiff < closestTimeDiff) {
+              // Within 48 hours and closer than previous match
+              eclipseInfo = info;
+              closestTimeDiff = timeDiff;
+            }
+          }
+
+          // Debug: Log if we're close to an eclipse but not matching
+          if (eclipseMap.size > 0 && !eclipseInfo) {
+            // Check if we're very close (within 48 hours) but not matching phase
+            for (const [eclipseTime, info] of eclipseMap.entries()) {
+              const timeDiff = Math.abs(lunationTime - eclipseTime);
+              if (timeDiff < 48 * 60 * 60 * 1000) {
+                const hoursDiff = (timeDiff / (60 * 60 * 1000)).toFixed(1);
+                console.log(
+                  `⚠️ Lunation ${phaseName} at ${phase.utcDateTime!.toISOString()} is ${hoursDiff}h from ${
+                    info.type
+                  } eclipse at ${info.date.toISOString()} but phase doesn't match`
+                );
+              }
+            }
+          }
+
+          // Verify eclipse type matches phase:
+          // Solar eclipses occur at New Moon, Lunar eclipses at Full Moon
+          const isNewMoon = phaseName === "New Moon";
+          const isFullMoon = phaseName === "Full Moon";
+          const isEclipse =
+            eclipseInfo &&
+            ((eclipseInfo.type === "solar" && isNewMoon) ||
+              (eclipseInfo.type === "lunar" && isFullMoon));
 
           return {
             id: `lunation-${index}-${phase.date}`,
@@ -848,6 +1105,8 @@ export default function CalendarScreen({ navigation }: any) {
             localDateTime: phase.localDateTime!,
             title: phaseName,
             moonPosition: phase.moonPosition,
+            isEclipse: isEclipse || false,
+            eclipseType: isEclipse ? eclipseInfo!.type : undefined,
           };
         });
 
@@ -855,6 +1114,43 @@ export default function CalendarScreen({ navigation }: any) {
       lunations.sort(
         (a, b) => a.utcDateTime.getTime() - b.utcDateTime.getTime()
       );
+
+      // Debug: Log eclipse information
+      const eclipseCount = lunations.filter((l) => l.isEclipse).length;
+      console.log(
+        `🌑 Found ${eclipseCount} eclipses out of ${lunations.length} lunations`
+      );
+      if (eclipseCount > 0) {
+        lunations
+          .filter((l) => l.isEclipse)
+          .forEach((eclipse) => {
+            console.log(
+              `  ${eclipse.title} (${
+                eclipse.eclipseType
+              }) at ${eclipse.utcDateTime.toISOString()}`
+            );
+          });
+      } else if (eclipseMap.size > 0) {
+        console.log(
+          `⚠️ Warning: ${eclipseMap.size} eclipses in map but 0 matched to lunations`
+        );
+        console.log("Eclipse map entries:");
+        eclipseMap.forEach((info, time) => {
+          console.log(
+            `  ${
+              info.type
+            } eclipse at ${info.date.toISOString()} (timestamp: ${time})`
+          );
+        });
+        console.log("Sample lunation times:");
+        lunations.slice(0, 5).forEach((lunation) => {
+          console.log(
+            `  ${
+              lunation.title
+            } at ${lunation.utcDateTime.toISOString()} (timestamp: ${lunation.utcDateTime.getTime()})`
+          );
+        });
+      }
 
       setLunationEvents(lunations);
     } catch (error) {
@@ -866,7 +1162,14 @@ export default function CalendarScreen({ navigation }: any) {
   };
 
   // Get emoji for moon phase
-  const getPhaseEmoji = (phaseName: string): string => {
+  const getPhaseEmoji = (
+    phaseName: string,
+    isEclipse?: boolean,
+    eclipseType?: "lunar" | "solar"
+  ): string => {
+    if (isEclipse) {
+      return eclipseType === "solar" ? "🌑" : "🌕"; // Solar eclipse at New Moon, Lunar at Full Moon
+    }
     switch (phaseName) {
       case "New Moon":
         return "🌑";
@@ -1107,42 +1410,18 @@ export default function CalendarScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      {/* View Mode Navigation Bar - Now on top */}
-      <View style={styles.viewModeNavBar}>
-        <TouchableOpacity
-          style={styles.viewModeButton}
-          onPress={() => setViewMode("LIST")}
-          activeOpacity={0.7}
-        >
-          <Text
-            style={[
-              styles.viewModeText,
-              viewMode === "LIST" && styles.viewModeTextActive,
-            ]}
-          >
-            LIST
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.viewModeButton}
-          onPress={() => setViewMode("LINES")}
-          activeOpacity={0.7}
-        >
-          <Text
-            style={[
-              styles.viewModeText,
-              viewMode === "LINES" && styles.viewModeTextActive,
-            ]}
-          >
-            LINES
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Year Navigation Header - Centered with Today button on right */}
+      {/* Year Navigation Header - Centered with toggle button on left and Today button on right */}
       <View style={styles.headerContainer}>
         <View style={styles.headerLeft}>
-          {/* Empty spacer for centering */}
+          <TouchableOpacity
+            style={styles.viewModeToggleButton}
+            onPress={() => setViewMode(viewMode === "LIST" ? "LINES" : "LIST")}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.viewModeToggleButtonText}>
+              {viewMode === "LIST" ? "LIST" : "LINES"}
+            </Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.headerCenter}>
           <TouchableOpacity
@@ -1270,6 +1549,8 @@ export default function CalendarScreen({ navigation }: any) {
                     date: event.localDateTime,
                     longitude,
                     phase: event.title as "New Moon" | "Full Moon",
+                    isEclipse: event.isEclipse || false,
+                    eclipseType: event.eclipseType,
                   };
                 })
                 .filter(
@@ -1279,6 +1560,8 @@ export default function CalendarScreen({ navigation }: any) {
                     date: Date;
                     longitude: number;
                     phase: "New Moon" | "Full Moon";
+                    isEclipse?: boolean;
+                    eclipseType?: "lunar" | "solar";
                   } => l !== null && l.longitude >= 0 && l.longitude <= 360
                 )}
             />
@@ -1348,6 +1631,11 @@ export default function CalendarScreen({ navigation }: any) {
                   // Render lunation event
                   if (event.type === "lunation") {
                     const eventIsToday = isToday(event.localDateTime);
+                    const eclipseLabel = event.isEclipse
+                      ? ` (${
+                          event.eclipseType === "solar" ? "Solar" : "Lunar"
+                        } Eclipse)`
+                      : "";
                     return (
                       <TouchableOpacity
                         key={event.id}
@@ -1366,7 +1654,14 @@ export default function CalendarScreen({ navigation }: any) {
                       >
                         <View style={styles.eventLeftColumn}>
                           <Text style={styles.eventTitle}>
-                            {getPhaseEmoji(event.title)} {event.title}
+                            {getPhaseEmoji(
+                              event.title,
+                              event.isEclipse,
+                              event.eclipseType
+                            )}{" "}
+                            {event.isEclipse && "🔴 "}
+                            {event.title}
+                            {eclipseLabel}
                           </Text>
                           <Text style={styles.eventDate}>
                             {formatDate(event.localDateTime)} at{" "}
@@ -1782,30 +2077,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#111",
   },
-  viewModeNavBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 15,
-    height: Platform.OS === "ios" ? 44 : 56, // Match React Navigation header height
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  viewModeButton: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  viewModeText: {
-    color: "#8a8a8a",
-    fontSize: 14,
-    fontWeight: "600",
-    letterSpacing: 1,
-  },
-  viewModeTextActive: {
-    color: "#e6e6fa",
-    fontWeight: "bold",
-  },
   linesContainer: {
     flex: 1,
     backgroundColor: "#111",
@@ -1855,7 +2126,9 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flex: 1,
-    // Empty spacer for centering
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
   },
   headerCenter: {
     flex: 0,
@@ -1882,6 +2155,19 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     minWidth: 60,
     textAlign: "center",
+  },
+  viewModeToggleButton: {
+    backgroundColor: "#2a2a3a",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#e6e6fa",
+  },
+  viewModeToggleButtonText: {
+    color: "#e6e6fa",
+    fontSize: 11,
+    fontWeight: "600",
   },
   scrollToTodayButton: {
     backgroundColor: "#2a2a3a",

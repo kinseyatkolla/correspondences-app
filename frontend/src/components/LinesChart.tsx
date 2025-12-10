@@ -21,6 +21,8 @@ interface LunationMarker {
   date: Date;
   longitude: number; // Moon's zodiac longitude (0-360)
   phase: "New Moon" | "Full Moon";
+  isEclipse?: boolean;
+  eclipseType?: "lunar" | "solar";
 }
 
 interface LinesChartProps {
@@ -257,6 +259,8 @@ export default function LinesChart({
     .map((lunation) => {
       // Determine if this is a full moon (declared once at the start)
       const isFullMoon = lunation.phase === "Full Moon";
+      const isEclipse = lunation.isEclipse || false;
+      const eclipseType = lunation.eclipseType;
 
       // Find the closest date index for this lunation
       const lunationDate = new Date(lunation.date);
@@ -300,6 +304,21 @@ export default function LinesChart({
         padding
       );
 
+      // Eclipse markers: red fill for eclipses
+      if (isEclipse) {
+        return (
+          <Circle
+            key={`lunation-${lunation.date.getTime()}`}
+            cx={x}
+            cy={y}
+            r={6} // Same size as regular lunations
+            fill="#FF6B6B" // Red for eclipses
+            opacity={0.95}
+          />
+        );
+      }
+
+      // Regular lunation markers
       return (
         <Circle
           key={`lunation-${lunation.date.getTime()}`}

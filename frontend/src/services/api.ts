@@ -4,14 +4,19 @@ import Constants from "expo-constants";
 // Helper function to extract IP from various Expo Constants sources
 function extractIpFromHost(host: string | undefined | null): string | null {
   if (!host) return null;
-  
+
   // Remove protocol if present (exp://, http://, https://, etc.)
   const cleanHost = host.replace(/^[^:]+:\/\//, "");
   // Extract IP (everything before the port)
   const ip = cleanHost.split(":")[0];
-  
+
   // Validate it's a proper IP address
-  if (ip && ip !== "localhost" && ip !== "127.0.0.1" && ip.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+  if (
+    ip &&
+    ip !== "localhost" &&
+    ip !== "127.0.0.1" &&
+    ip.match(/^\d+\.\d+\.\d+\.\d+$/)
+  ) {
     return ip;
   }
   return null;
@@ -21,7 +26,9 @@ function extractIpFromHost(host: string | undefined | null): string | null {
 function getLocalApiUrl(): string {
   // If environment variable is set, use it
   if (process.env.EXPO_PUBLIC_API_URL) {
-    console.log(`📍 Using API URL from environment: ${process.env.EXPO_PUBLIC_API_URL}`);
+    console.log(
+      `📍 Using API URL from environment: ${process.env.EXPO_PUBLIC_API_URL}`
+    );
     return process.env.EXPO_PUBLIC_API_URL;
   }
 
@@ -56,10 +63,10 @@ function getLocalApiUrl(): string {
   // Last resort fallback (will need to be updated manually if this is used)
   console.warn(
     "⚠️ Could not detect local IP. Using fallback. " +
-    "To fix this:\n" +
-    "1. Find your computer's IP address (run: ifconfig on Mac/Linux or ipconfig on Windows)\n" +
-    "2. Set EXPO_PUBLIC_API_URL environment variable: EXPO_PUBLIC_API_URL=http://YOUR_IP:3000/api\n" +
-    "3. Or update the fallback IP in src/services/api.ts"
+      "To fix this:\n" +
+      "1. Find your computer's IP address (run: ifconfig on Mac/Linux or ipconfig on Windows)\n" +
+      "2. Set EXPO_PUBLIC_API_URL environment variable: EXPO_PUBLIC_API_URL=http://YOUR_IP:3000/api\n" +
+      "3. Or update the fallback IP in src/services/api.ts"
   );
   return "http://192.168.0.103:3000/api";
 }
@@ -287,7 +294,7 @@ class ApiService {
       if (__DEV__) {
         console.log(`📡 API Request: ${options.method || "GET"} ${url}`);
       }
-      
+
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
@@ -303,13 +310,16 @@ class ApiService {
       return await response.json();
     } catch (error) {
       console.error(`❌ API Error for ${url}:`, error);
-      if (error instanceof TypeError && error.message === "Network request failed") {
+      if (
+        error instanceof TypeError &&
+        error.message === "Network request failed"
+      ) {
         console.error(
           `💡 Network request failed. Make sure:\n` +
-          `   1. Your backend server is running on port 3000\n` +
-          `   2. Your device is on the same WiFi network as your computer\n` +
-          `   3. The API URL is correct: ${this.baseUrl}\n` +
-          `   4. Your firewall allows connections on port 3000`
+            `   1. Your backend server is running on port 3000\n` +
+            `   2. Your device is on the same WiFi network as your computer\n` +
+            `   3. The API URL is correct: ${this.baseUrl}\n` +
+            `   4. Your firewall allows connections on port 3000`
         );
       }
       throw error;
@@ -878,6 +888,87 @@ class ApiService {
     }
   }
 
+  // OPALE Eclipses API (IMCCE)
+  // 301 = Lunar eclipses, 10 = Solar eclipses
+  async getEclipses(
+    year: number,
+    eclipseType: "lunar" | "solar" = "lunar"
+  ): Promise<{
+    response: {
+      calendar: string;
+      timescale: string;
+      data: Array<{
+        date?: string;
+        datetime?: string;
+        time?: string;
+        eclipseType?: string;
+        type?: string;
+        [key: string]: any;
+      }>;
+    };
+  }> {
+    try {
+      const eclipseCode = eclipseType === "lunar" ? "301" : "10";
+      const response = await fetch(
+        `https://opale.imcce.fr/api/v1/phenomena/eclipses/${eclipseCode}/${year}`
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+
+      // The API returns different structures:
+      // Lunar eclipses (301): response.lunareclipse (array)
+      // Solar eclipses (10): response.data (array)
+      let eclipseData: any[] = [];
+
+      if (eclipseType === "lunar") {
+        // Lunar eclipses are in response.lunareclipse
+        if (
+          data?.response?.lunareclipse &&
+          Array.isArray(data.response.lunareclipse)
+        ) {
+          eclipseData = data.response.lunareclipse;
+        }
+      } else {
+        // Solar eclipses are in response.data
+        if (data?.response?.data && Array.isArray(data.response.data)) {
+          eclipseData = data.response.data;
+        }
+      }
+
+      if (eclipseData.length > 0) {
+        console.log(
+          `OPALE Eclipse API found ${eclipseData.length} ${eclipseType} eclipses`
+        );
+        console.log(
+          `OPALE Eclipse API response sample (${eclipseType}):`,
+          JSON.stringify(eclipseData[0], null, 2).substring(0, 500)
+        );
+      } else {
+        console.warn(
+          `OPALE Eclipse API returned no ${eclipseType} eclipse data for year ${year}`
+        );
+        console.log(
+          "Full API response:",
+          JSON.stringify(data, null, 2).substring(0, 1000)
+        );
+      }
+
+      // Return in expected format
+      return {
+        response: {
+          calendar: data.response?.calendar || data.calendar || "gregorian",
+          timescale: data.response?.timescale || data.timescale || "utc",
+          data: eclipseData,
+        },
+      };
+    } catch (error) {
+      console.error("OPALE Eclipses API Error:", error);
+      throw error;
+    }
+  }
+
   // Get year-long ephemeris data for detecting ingresses and stations
   async getYearEphemeris(
     year: number,
@@ -939,7 +1030,8 @@ class ApiService {
     const requestBody: any = { year };
     if (latitude !== undefined) requestBody.latitude = latitude;
     if (longitude !== undefined) requestBody.longitude = longitude;
-    if (sampleInterval !== undefined) requestBody.sampleInterval = sampleInterval;
+    if (sampleInterval !== undefined)
+      requestBody.sampleInterval = sampleInterval;
 
     const response = await this.fetchData("/astrology/year-ephemeris", {
       method: "POST",
