@@ -73,10 +73,10 @@ const CHART_SIZE = Math.min(screenWidth - 20, 400);
 const CENTER_X = CHART_SIZE / 2;
 const CENTER_Y = CHART_SIZE / 2;
 const ZODIAC_RADIUS = CHART_SIZE * 0.35;
-const ZODIAC_SYMBOLS_RADIUS = CHART_SIZE * 0.3; // Separate radius for zodiac symbols (smaller)
+const ZODIAC_STROKE_WIDTH = 20; // Thickness of the zodiac ring
 const HOUSES_RADIUS = CHART_SIZE * 0.25;
 const PLANETS_RADIUS = CHART_SIZE * 0.35; // For aspect line connections (on zodiac circle)
-const ASPECT_LINES_RADIUS = PLANETS_RADIUS - 5; // For aspect line endpoints (5px inward from planet positions)
+const ASPECT_LINES_RADIUS = ZODIAC_RADIUS - ZODIAC_STROKE_WIDTH / 2; // For aspect line endpoints (at the inner edge of zodiac ring)
 const PLANET_LABELS_RADIUS = CHART_SIZE * 0.45; // For symbol/label display (outside)
 
 // Zodiac signs in order (starting from Aries at 0°)
@@ -404,16 +404,16 @@ export default function AstrologyChart({
 
   return (
     <View style={containerStyle}>
-      <Svg width={size} height={size}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         {/* Zodiac signs ring */}
         {ZODIAC_SIGNS.map((sign, index) => {
           // Calculate the center longitude of each sign (15° mark within each 30° sign)
           const signCenterLongitude = index * 30 + 15;
 
-          // Use the same positioning logic as planets
+          // Use the same positioning logic as planets - center symbols in the arc
           const position = longitudeToPosition(
             signCenterLongitude,
-            ZODIAC_SYMBOLS_RADIUS,
+            ZODIAC_RADIUS,
             ascendantSign
           );
 
@@ -439,7 +439,7 @@ export default function AstrologyChart({
               <Path
                 d={`M ${startPos.x} ${startPos.y} A ${ZODIAC_RADIUS} ${ZODIAC_RADIUS} 0 0 0 ${endPos.x} ${endPos.y}`}
                 stroke={sign.color}
-                strokeWidth="10"
+                strokeWidth={ZODIAC_STROKE_WIDTH.toString()}
                 fill="none"
                 strokeLinecap="butt"
               />
@@ -448,44 +448,22 @@ export default function AstrologyChart({
                 x={position.x}
                 y={position.y + 5}
                 fontSize="20"
-                fill="#e6e6fa"
+                fill={
+                  sign.color === "rgba(245, 238, 43, 1)" ? "#6b6b8a" : "#e6e6fa"
+                }
+                stroke={
+                  sign.color === "rgba(245, 238, 43, 1)" ? "#6b6b8a" : "#e6e6fa"
+                }
+                strokeWidth="0"
                 textAnchor="middle"
                 fontFamily={fontLoaded ? "Physis" : "System"}
+                fontWeight="bold"
               >
                 {sign.symbol}
               </SvgText>
             </G>
           );
         })}
-
-        {/* House numbers */}
-        {houses &&
-          Array.from({ length: 12 }, (_, i) => {
-            // Calculate the cusp position for each house starting from the Ascendant
-            // House 1 is at the Ascendant, then increment clockwise (after mirroring)
-            const houseCuspLongitude = houses.ascendant + i * 30;
-
-            // Use the same positioning logic as planets and zodiac signs
-            const position = longitudeToPosition(
-              houseCuspLongitude,
-              HOUSES_RADIUS,
-              ascendantSign
-            );
-
-            return (
-              <SvgText
-                key={i + 1}
-                x={position.x}
-                y={position.y + 5}
-                fontSize="8"
-                fill="#e6e6fa"
-                textAnchor="middle"
-                fontFamily="System"
-              >
-                {i + 1}
-              </SvgText>
-            );
-          })}
 
         {/* Aspect lines */}
         {aspectLines.map((line, index) => (
@@ -497,7 +475,8 @@ export default function AstrologyChart({
             y2={line.y2}
             stroke={line.color}
             strokeWidth={line.strokeWidth.toString()}
-            opacity={0.7}
+            strokeLinecap="round"
+            opacity={0.5}
           />
         ))}
 
@@ -513,17 +492,21 @@ export default function AstrologyChart({
                 x2={planet.x + (planet.labelX - planet.x) * 0.5}
                 y2={planet.y + (planet.labelY - planet.y) * 0.5}
                 stroke={signColor}
-                strokeWidth="1"
+                strokeWidth="2"
+                strokeLinecap="round"
                 opacity={0.6}
               />
               {/* Planet symbol with Physis font */}
               <SvgText
                 x={planet.labelX - 8}
                 y={planet.labelY + 5}
-                fontSize="14"
+                fontSize="16"
                 fill={signColor}
+                stroke={signColor}
+                strokeWidth="0.6"
                 textAnchor="middle"
                 fontFamily={fontLoaded ? "Physis" : "System"}
+                fontWeight="bold"
               >
                 {planet.symbol}
               </SvgText>
@@ -535,6 +518,7 @@ export default function AstrologyChart({
                 fill={signColor}
                 textAnchor="middle"
                 fontFamily="System"
+                fontWeight="bold"
               >
                 {Math.floor(planet.degree % 30)}
               </SvgText>
@@ -598,8 +582,11 @@ export default function AstrologyChart({
                     y={ascendantLabelPosition.y + 5}
                     fontSize="14"
                     fill={ascendantSignColor}
+                    stroke={ascendantSignColor}
+                    strokeWidth="0.6"
                     textAnchor="middle"
                     fontFamily={fontLoaded ? "Physis" : "System"}
+                    fontWeight="bold"
                   >
                     !
                   </SvgText>
@@ -611,6 +598,7 @@ export default function AstrologyChart({
                     fill={ascendantSignColor}
                     textAnchor="middle"
                     fontFamily="System"
+                    fontWeight="bold"
                   >
                     {Math.floor(houses.ascendant % 30)}
                   </SvgText>

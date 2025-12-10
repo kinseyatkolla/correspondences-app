@@ -111,12 +111,12 @@ router.post("/planets", (req, res) => {
 
     // Calculate Julian Day
     const julianDay = calculateJulianDay(
-      finalYear,
-      finalMonth,
-      finalDay,
-      finalHour,
-      finalMinute,
-      finalSecond
+      year,
+      month,
+      day,
+      hour,
+      minute,
+      second
     );
 
     // Note: For /planets endpoint, we don't have location data, so we'll use geocentric
@@ -220,16 +220,31 @@ router.post("/houses", (req, res) => {
     }
 
     const julianDay = calculateJulianDay(
-      finalYear,
-      finalMonth,
-      finalDay,
-      finalHour,
-      finalMinute,
-      finalSecond
+      year,
+      month,
+      day,
+      hour,
+      minute,
+      second
     );
 
     // Calculate houses
     const houses = sweph.houses(julianDay, latitude, longitude, houseSystem);
+
+    // Log the parameters used for house calculations
+    console.log("🌍 Calculating houses with:", {
+      location: { latitude, longitude },
+      dateTime: {
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        second,
+      },
+      julianDay,
+      houseSystem,
+    });
 
     const houseData = {
       cusps: houses.houses,
@@ -312,7 +327,28 @@ router.post("/chart", (req, res) => {
     );
 
     // Set topocentric location for more accurate calculations
+    // IMPORTANT: This must be called before any calc_ut() calls to ensure
+    // all planetary calculations use the correct location
     sweph.set_topo(longitude, latitude, 0); // 0 altitude for sea level
+
+    // Log the final parameters that will be used for all calculations
+    console.log(
+      "🌍 Setting topocentric location and date for chart calculations:",
+      {
+        location: { latitude, longitude },
+        dateTime: {
+          year,
+          month,
+          day,
+          hour,
+          minute,
+          second,
+        },
+        julianDay,
+        houseSystem,
+        note: "All Swiss Ephemeris calls will use this location and date",
+      }
+    );
 
     // Calculate planets
     const planets = {};
@@ -466,15 +502,16 @@ router.post("/current-chart", (req, res) => {
     // Use custom date/time if provided, otherwise get current date and time in UTC
     let finalYear, finalMonth, finalDay, finalHour, finalMinute, finalSecond;
 
+    // Log the raw request body first
     console.log("📊 Received request body:", {
       latitude,
       longitude,
-      finalYear,
-      finalMonth,
-      finalDay,
-      finalHour,
-      finalMinute,
-      finalSecond,
+      year,
+      month,
+      day,
+      hour,
+      minute,
+      second,
     });
 
     if (year !== undefined && month !== undefined && day !== undefined) {
@@ -534,7 +571,24 @@ router.post("/current-chart", (req, res) => {
     );
 
     // Set topocentric location for more accurate calculations
+    // IMPORTANT: This must be called before any calc_ut() calls to ensure
+    // all planetary calculations use the correct location
     sweph.set_topo(longitude, latitude, 0); // 0 altitude for sea level
+
+    // Log the final parameters that will be used for all calculations
+    console.log("🌍 Setting topocentric location and date for calculations:", {
+      location: { latitude, longitude },
+      dateTime: {
+        year: finalYear,
+        month: finalMonth,
+        day: finalDay,
+        hour: finalHour,
+        minute: finalMinute,
+        second: finalSecond,
+      },
+      julianDay,
+      note: "All Swiss Ephemeris calls will use this location and date",
+    });
 
     // Calculate all planets for current chart
     const planets = {};
@@ -1249,7 +1303,20 @@ router.post("/year-ephemeris", (req, res) => {
     );
 
     // Set topocentric location
+    // IMPORTANT: This must be called before any calc_ut() calls to ensure
+    // all planetary calculations use the correct location
     sweph.set_topo(longitude, latitude, 0);
+
+    // Log the location that will be used for all calculations
+    console.log(
+      "🌍 Setting topocentric location for year-ephemeris calculations:",
+      {
+        location: { latitude, longitude },
+        year,
+        sampleInterval,
+        note: "All Swiss Ephemeris calc_ut() calls will use this location with their respective dates",
+      }
+    );
 
     // Planet IDs to track (including Sun for ingresses, excluding Moon, including North Node)
     const planetIds = [
