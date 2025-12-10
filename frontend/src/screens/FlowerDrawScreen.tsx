@@ -446,14 +446,15 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
       {/* Cards Container - Full Screen */}
       <View style={styles.cardsContainer}>{cards.map(renderCard)}</View>
       {/* Search Navigation Bar - Moved to bottom */}
-      <TouchableOpacity
+      {/* TODO: Uncomment when ready to implement search functionality */}
+      {/* <TouchableOpacity
         style={styles.searchNavBar}
         onPress={() => navigation.navigate("FlowersList")}
         activeOpacity={0.8}
       >
         <Text style={styles.searchNavText}>SEARCH FLOWER ESSENCES</Text>
         <Text style={styles.searchNavArrow}>›</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 }
@@ -520,7 +521,7 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
     marginTop: 50, // Account for back gesture area only (50)
-    marginBottom: 40, // Account for search nav bar only (40)
+    marginBottom: 0, // Search nav bar is hidden for now
   },
   card: {
     position: "absolute",

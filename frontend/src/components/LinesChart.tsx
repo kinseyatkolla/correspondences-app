@@ -369,6 +369,29 @@ export default function LinesChart({
     }
   });
 
+  // Generate month-end lines - black horizontal lines at the first day of each month (1/1, 2/1, etc.) with negative offset
+  const monthEndLines: React.ReactElement[] = [];
+  dates.forEach((date, index) => {
+    // Only show lines for the first day of each month (day === 1)
+    if (date.getDate() === 1) {
+      const y = dateIndexToY(index, dates.length, chartHeight, padding);
+      // Use negative offset to position at end of previous month
+      const offsetY = y - 1;
+      monthEndLines.push(
+        <Line
+          key={`month-end-${index}`}
+          x1={padding.left}
+          y1={offsetY}
+          x2={chartWidth - padding.right}
+          y2={offsetY}
+          stroke="#000000"
+          strokeWidth={1}
+          opacity={1}
+        />
+      );
+    }
+  });
+
   // Find today's date and draw a horizontal line (only if viewing current year)
   // Gracefully handles case where today's date is not in the data (different year)
   const today = new Date();
@@ -418,6 +441,9 @@ export default function LinesChart({
           <Svg width={chartWidth} height={chartHeight}>
             {/* Background: Zodiac sign rectangles (horizontal) */}
             <G>{zodiacRects}</G>
+
+            {/* Month-end lines - black horizontal lines at end of each month */}
+            <G>{monthEndLines}</G>
 
             {/* Grid lines: X-axis (every 30 degrees, now vertical lines) */}
             {xAxisTicks.map((degree) => {

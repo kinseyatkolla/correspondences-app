@@ -1,17 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="Layer_2" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 706.7 706.7">
-  <!-- Generator: Adobe Illustrator 29.4.0, SVG Export Plug-In . SVG Version: 2.1.0 Build 152)  -->
-  <defs>
-    <style>
-      .st0 {
-        fill: #f2f1e7;
-      }
-    </style>
-  </defs>
-  <g id="Layer_1-2">
-    <g>
-      <circle class="st0" cx="353.3" cy="353.3" r="353.3"/>
-      <path d="M706.7,353.3C706.7,158.2,548.5,0,353.3,0s-62.2,4.2-91.3,11.9C175.8,89.8,120,214.1,120,354.2s54.6,261.7,139.2,339.7c30,8.3,61.6,12.7,94.2,12.7,195.1,0,353.3-158.2,353.3-353.3Z"/>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 707 707" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g id="Layer_1-2">
+        <g>
+            <circle cx="353.3" cy="353.3" r="353.3" style="fill:rgb(242,241,231);"/>
+            <path d="M706.7,353.3C706.7,158.2 548.5,0 353.3,0C323.199,0 291.1,4.2 262,11.9C175.8,89.8 120,214.1 120,354.2C120,494.3 174.6,615.9 259.2,693.9C289.2,702.2 320.8,706.6 353.4,706.6C548.5,706.6 706.7,548.4 706.7,353.3Z" style="fill-rule:nonzero;"/>
+        </g>
     </g>
-  </g>
 </svg>
