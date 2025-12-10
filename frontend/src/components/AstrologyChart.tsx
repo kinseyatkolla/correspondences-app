@@ -364,6 +364,9 @@ export default function AstrologyChart({
             ascendant: houses.ascendant,
             ascendantSign: houses.ascendantSign,
             ascendantDegree: houses.ascendantDegree,
+            mc: houses.mc,
+            mcSign: houses.mcSign,
+            mcDegree: houses.mcDegree,
           }
         : null,
       timestamp: new Date().toISOString(),
@@ -601,6 +604,66 @@ export default function AstrologyChart({
                     fontWeight="bold"
                   >
                     {Math.floor(houses.ascendant % 30)}
+                  </SvgText>
+                </>
+              );
+            })()}
+          </G>
+        )}
+
+        {/* Midheaven (MC) */}
+        {houses && houses.mc !== undefined && (
+          <G key="midheaven">
+            {(() => {
+              const mcPosition = longitudeToPosition(
+                houses.mc,
+                PLANETS_RADIUS,
+                ascendantSign
+              );
+              const mcLabelPosition = longitudeToPosition(
+                houses.mc,
+                PLANET_LABELS_RADIUS,
+                ascendantSign
+              );
+              const mcSignColor = getZodiacSignColor(houses.mcSign);
+
+              return (
+                <>
+                  {/* Line marker from zodiac circle to midheaven (50% length) */}
+                  <Line
+                    x1={mcPosition.x}
+                    y1={mcPosition.y}
+                    x2={mcPosition.x + (mcLabelPosition.x - mcPosition.x) * 0.5}
+                    y2={mcPosition.y + (mcLabelPosition.y - mcPosition.y) * 0.5}
+                    stroke={mcSignColor}
+                    strokeWidth="1"
+                    opacity={0.6}
+                  />
+                  {/* Midheaven symbol with Physis font */}
+                  <SvgText
+                    x={mcLabelPosition.x - 8}
+                    y={mcLabelPosition.y + 5}
+                    fontSize="14"
+                    fill={mcSignColor}
+                    stroke={mcSignColor}
+                    strokeWidth="0.6"
+                    textAnchor="middle"
+                    fontFamily={fontLoaded ? "Physis" : "System"}
+                    fontWeight="bold"
+                  >
+                    @
+                  </SvgText>
+                  {/* Midheaven degree with system font */}
+                  <SvgText
+                    x={mcLabelPosition.x + 8}
+                    y={mcLabelPosition.y + 5}
+                    fontSize="12"
+                    fill={mcSignColor}
+                    textAnchor="middle"
+                    fontFamily="System"
+                    fontWeight="bold"
+                  >
+                    {Math.floor(houses.mc % 30)}
                   </SvgText>
                 </>
               );

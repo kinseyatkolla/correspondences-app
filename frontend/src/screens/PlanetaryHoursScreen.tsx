@@ -30,6 +30,7 @@ import {
   getDayRuler,
 } from "../utils/planetaryHoursUtils";
 import { getPlanetColor } from "../utils/ephemerisChartData";
+import DateTimePickerDrawer from "../components/DateTimePickerDrawer";
 
 interface PlanetaryHoursScreenProps {
   navigation: any;
@@ -47,7 +48,7 @@ export default function PlanetaryHoursScreen({
   // Get selected date from route params, default to today
   // Convert from ISO string to Date object if it's a string
   const selectedDateParam = route?.params?.selectedDate;
-  const selectedDate = useMemo(() => {
+  const initialSelectedDate = useMemo(() => {
     if (selectedDateParam instanceof Date) {
       return selectedDateParam;
     } else if (selectedDateParam) {
@@ -56,9 +57,25 @@ export default function PlanetaryHoursScreen({
     return new Date();
   }, [selectedDateParam]);
 
+  // State for the currently displayed date (can be changed via date picker)
+  const [displayDate, setDisplayDate] = useState(initialSelectedDate);
+
+  // Update displayDate when route params change
+  useEffect(() => {
+    setDisplayDate(initialSelectedDate);
+  }, [initialSelectedDate]);
+
+  // Use displayDate as the selectedDate for calculations
+  const selectedDate = displayDate;
+
   // Create a stable string key for the date to use as dependency
   const selectedDateKey = useMemo(() => {
     return selectedDate.toISOString().split("T")[0]; // YYYY-MM-DD format
+  }, [selectedDate]);
+
+  // Create a key that includes both date and time for recalculation tracking
+  const selectedDateTimeKey = useMemo(() => {
+    return selectedDate.getTime().toString(); // Full timestamp including time
   }, [selectedDate]);
 
   // Extract location values in a stable way
@@ -70,19 +87,22 @@ export default function PlanetaryHoursScreen({
     useState<PlanetaryHoursData | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // State for the date/time picker drawer
+  const [drawerVisible, setDrawerVisible] = useState(false);
+
   // Track last calculated date/location to prevent unnecessary recalculations
   const lastCalculationRef = useRef<{
-    dateKey: string;
+    dateTimeKey: string;
     latitude: number;
     longitude: number;
   } | null>(null);
 
   // Calculate planetary hours on mount and when current chart or date changes
   useEffect(() => {
-    // Only recalculate if date or location actually changed
+    // Only recalculate if date/time or location actually changed
     const shouldRecalculate =
       !lastCalculationRef.current ||
-      lastCalculationRef.current.dateKey !== selectedDateKey ||
+      lastCalculationRef.current.dateTimeKey !== selectedDateTimeKey ||
       lastCalculationRef.current.latitude !== locationLat ||
       lastCalculationRef.current.longitude !== locationLng;
 
@@ -94,15 +114,17 @@ export default function PlanetaryHoursScreen({
     const calculatePlanetaryHoursForDate = async (date: Date) => {
       setLoading(true);
       try {
+        // Pass the selected date as referenceTime so the "current" hour is based on the selected time
         const planetaryData = await calculatePlanetaryHours(
           date,
           locationLat,
-          locationLng
+          locationLng,
+          date // Use the selected date/time as the reference time
         );
 
         setPlanetaryHoursData(planetaryData);
         lastCalculationRef.current = {
-          dateKey: selectedDateKey,
+          dateTimeKey: selectedDateTimeKey,
           latitude: locationLat,
           longitude: locationLng,
         };
@@ -115,7 +137,24 @@ export default function PlanetaryHoursScreen({
     };
 
     calculatePlanetaryHoursForDate(selectedDate);
-  }, [locationLat, locationLng, selectedDateKey, selectedDate]);
+  }, [locationLat, locationLng, selectedDateTimeKey, selectedDate]);
+
+  // Drawer functions
+  const openDrawer = () => {
+    setDrawerVisible(true);
+  };
+
+  const closeDrawer = () => {
+    setDrawerVisible(false);
+  };
+
+  const applyDateChange = (date: Date) => {
+    setDisplayDate(date);
+  };
+
+  const followCurrentTime = () => {
+    setDisplayDate(new Date());
+  };
 
   // Helper function to check if selected date is today
   const isToday = () => {
@@ -589,8 +628,7 @@ export default function PlanetaryHoursScreen({
             })()}
 
           {/* Bar Chart */}
-          {isToday() &&
-            planetaryHoursData?.dayHours &&
+          {planetaryHoursData?.dayHours &&
             planetaryHoursData?.nightHours &&
             (() => {
               const dayOfWeek = selectedDate.getDay();
@@ -604,59 +642,61 @@ export default function PlanetaryHoursScreen({
               const isCurrentHourDay =
                 planetaryHoursData.currentHour?.isDayHour;
 
-              // Pre-calculated smooth curve values (using smooth interpolation: 6t⁵ - 15t⁴ + 10t³)
-              // Day hours: 2, 4, 6, 8, 10, 12, 12, 10, 8, 6, 4, 0.5
-              // Night hours: -0.5, -3, -5, -7, -9, -11, -12, -10, -8, -6, -4, -2
+              // Pre-calculated smooth S-curve across all 24 hours (single continuous curve)
+              // Pattern: 2→12→0.5 (hours 1-12) then -0.5→-12→-2 (hours 13-24)
               const smoothInterpolate = (t: number): number => {
                 t = Math.max(0, Math.min(1, t));
                 return t * t * t * (t * (t * 6 - 15) + 10);
               };
 
-              // Pre-calculate day pattern values
-              const dayPatternValues: number[] = [];
+              // Create a single array of 24 values forming a smooth S-curve
+              const all24PatternValues: number[] = [];
+
+              // Day hours 1-12: 2 → 12 (peak at 6-7) → 0.5
               for (let i = 1; i <= 12; i++) {
                 if (i <= 6) {
+                  // Rising: hour 1 (2) → hour 6 (12)
                   const t = (i - 1) / 5;
                   const smoothT = smoothInterpolate(t);
-                  dayPatternValues[i - 1] = 2 + smoothT * 10; // 2 to 12
+                  all24PatternValues[i - 1] = 2 + smoothT * 10; // 2 to 12
                 } else {
+                  // Falling: hour 6 (12) → hour 12 (0.5)
                   const t = (i - 6) / 6;
                   const smoothT = smoothInterpolate(t);
-                  dayPatternValues[i - 1] = 12 - smoothT * 11.5; // 12 to 0.5
+                  all24PatternValues[i - 1] = 12 - smoothT * 11.5; // 12 to 0.5
                 }
               }
 
-              // Pre-calculate night pattern values
-              const nightPatternValues: number[] = [];
-              for (let i = 1; i <= 12; i++) {
-                if (i <= 7) {
-                  const t = (i - 1) / 6;
+              // Night hours 13-24: -0.5 → -12 (dip at 18-19) → -2
+              for (let i = 13; i <= 24; i++) {
+                const nightHour = i - 12; // Convert to 1-12 for night pattern
+                if (nightHour <= 7) {
+                  // Dipping: hour 13 (-0.5) → hour 19 (-12)
+                  const t = (nightHour - 1) / 6;
                   const smoothT = smoothInterpolate(t);
-                  nightPatternValues[i - 1] = -0.5 - smoothT * 11.5; // -0.5 to -12
+                  all24PatternValues[i - 1] = -0.5 - smoothT * 11.5; // -0.5 to -12
                 } else {
-                  const t = (i - 7) / 5;
+                  // Rising: hour 19 (-12) → hour 24 (-2)
+                  const t = (nightHour - 7) / 5;
                   const smoothT = smoothInterpolate(t);
-                  nightPatternValues[i - 1] = -12 + smoothT * 10; // -12 to -2
+                  all24PatternValues[i - 1] = -12 + smoothT * 10; // -12 to -2
                 }
               }
 
-              // Simple lookup function
+              // Simple lookup function - uses position (1-24) instead of hourNum and isDay
               const getHourHeight = (
-                hourNum: number,
+                position: number, // 1-24 position in the sequence
                 maxHeight: number,
-                minHeight: number,
-                isDay: boolean
+                minHeight: number
               ) => {
-                const patternValue = isDay
-                  ? dayPatternValues[hourNum - 1]
-                  : nightPatternValues[hourNum - 1];
+                const patternValue = all24PatternValues[position - 1];
 
-                if (isDay) {
-                  // Map 0.5-12 to minHeight-maxHeight
+                if (patternValue >= 0) {
+                  // Day hours: map 0.5-12 to minHeight-maxHeight
                   const normalized = (patternValue - 0.5) / 11.5;
                   return minHeight + (maxHeight - minHeight) * normalized;
                 } else {
-                  // Map -0.5 to -12 to minHeight-maxHeight (will be positioned downward)
+                  // Night hours: map -0.5 to -12 to minHeight-maxHeight (will be positioned downward)
                   const normalized = (-patternValue - 0.5) / 11.5;
                   return minHeight + (maxHeight - minHeight) * normalized;
                 }
@@ -692,15 +732,10 @@ export default function PlanetaryHoursScreen({
                     {allHours.map((hour, index) => {
                       const hourNum = hour.hour;
                       let height = getHourHeight(
-                        hourNum,
+                        hour.position, // Use position (1-24) for the smooth curve
                         maxBarHeight,
-                        minBarHeight,
-                        hour.isDay
+                        minBarHeight
                       );
-                      // Reduce height for indexes 12 and 13 to half
-                      if (index === 12 || index === 13) {
-                        height = 0.2;
-                      }
                       const isDayRulerHour = hour.planet === dayRuler;
                       const isCurrentHour =
                         currentHourNumber === hourNum &&
@@ -751,8 +786,7 @@ export default function PlanetaryHoursScreen({
             })()}
 
           {/* Day Hours */}
-          {isToday() &&
-            planetaryHoursData?.dayHours &&
+          {planetaryHoursData?.dayHours &&
             (() => {
               const dayOfWeek = selectedDate.getDay();
               const dayRuler = getDayRuler(dayOfWeek);
@@ -843,8 +877,7 @@ export default function PlanetaryHoursScreen({
             })()}
 
           {/* Night Hours */}
-          {isToday() &&
-            planetaryHoursData?.nightHours &&
+          {planetaryHoursData?.nightHours &&
             (() => {
               const dayOfWeek = selectedDate.getDay();
               const dayRuler = getDayRuler(dayOfWeek);
@@ -950,7 +983,37 @@ export default function PlanetaryHoursScreen({
             </Text>
           </View>
         </ScrollView>
+
+        {/* Secondary Navigation Bar - Display Date */}
+        <TouchableOpacity style={styles.secondaryNavBar} onPress={openDrawer}>
+          <Text style={styles.secondaryNavText}>
+            {(() => {
+              const dateString = displayDate.toLocaleDateString("en-US", {
+                weekday: "short",
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              });
+              const timeString = displayDate.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              });
+              return `${dateString} ${timeString}`;
+            })()}
+          </Text>
+          <Text style={styles.arrowIcon}>▼</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Date/Time Picker Drawer */}
+      <DateTimePickerDrawer
+        visible={drawerVisible}
+        onClose={closeDrawer}
+        onApply={applyDateChange}
+        onFollowCurrentTime={followCurrentTime}
+        initialDate={displayDate}
+      />
     </View>
   );
 }
@@ -986,7 +1049,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     padding: 20,
-    paddingBottom: 40, // Account for nav bar
+    paddingBottom: 80, // Account for nav bar and date picker bar
   },
   loadingOverlay: {
     flex: 1,
@@ -1161,5 +1224,33 @@ const styles = StyleSheet.create({
   },
   barChartBar: {
     borderRadius: 1,
+  },
+  secondaryNavBar: {
+    position: "absolute",
+    bottom: 0, // Position directly above the tab bar
+    left: 0,
+    right: 0,
+    height: 40,
+    backgroundColor: "#000000",
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    zIndex: 9999,
+  },
+  secondaryNavText: {
+    color: "#e6e6fa",
+    fontSize: 14,
+    fontWeight: "bold",
+    letterSpacing: 4,
+    textAlign: "left",
+    textTransform: "uppercase",
+    flex: 1,
+  },
+  arrowIcon: {
+    color: "#e6e6fa",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 10,
   },
 });

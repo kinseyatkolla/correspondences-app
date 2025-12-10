@@ -98,10 +98,12 @@ export default function AstrologyScreen({ navigation, route }: any) {
         longitude: -74.006,
       };
 
+      // Pass the date as referenceTime so the "current" hour is based on the selected time
       const planetaryData = await calculatePlanetaryHours(
         date,
         location.latitude,
-        location.longitude
+        location.longitude,
+        date // Use the selected date/time as the reference time
       );
 
       setPlanetaryHoursData(planetaryData);

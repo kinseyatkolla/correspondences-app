@@ -240,11 +240,16 @@ export function calculateSunTimesFallback(
 
 /**
  * Calculate planetary hours for a given date and location
+ * @param date - The date for which to calculate planetary hours
+ * @param latitude - Latitude of the location
+ * @param longitude - Longitude of the location
+ * @param referenceTime - Optional reference time to determine the "current" hour. If not provided, uses the current time.
  */
 export async function calculatePlanetaryHours(
   date: Date,
   latitude: number,
-  longitude: number
+  longitude: number,
+  referenceTime?: Date
 ): Promise<PlanetaryHoursData> {
   const { sunrise, sunset } = await fetchSunTimes(date, latitude, longitude);
 
@@ -297,8 +302,8 @@ export async function calculatePlanetaryHours(
     });
   }
 
-  // Find current planetary hour
-  const currentTime = new Date();
+  // Find current planetary hour using referenceTime if provided, otherwise use current time
+  const currentTime = referenceTime || new Date();
   const allHours = [...dayHours, ...nightHours];
   const currentHour = allHours.find(
     (hour) => currentTime >= hour.startTime && currentTime < hour.endTime
