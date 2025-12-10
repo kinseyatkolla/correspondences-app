@@ -11,13 +11,19 @@ import {
 } from "react-native";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { sharedUI } from "../styles/sharedUI";
-import { usePhysisFont, getPhysisSymbolStyle } from "../utils/physisFont";
+import {
+  usePhysisFont,
+  getPhysisSymbolStyle,
+  getPhysisSymbolStyleCustom,
+} from "../utils/physisFont";
 import { getPlanetKeysFromNames } from "../utils/physisSymbolMap";
 import {
   calculatePlanetaryHours,
   PlanetaryHoursData,
   formatTime,
+  getDayRuler,
 } from "../utils/planetaryHoursUtils";
+import { getPlanetColor } from "../utils/ephemerisChartData";
 
 interface PlanetaryHoursScreenProps {
   navigation: any;
@@ -389,36 +395,111 @@ export default function PlanetaryHoursScreen({
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={sharedUI.pageTitle}>🕐 Planetary Hours</Text>
-          <Text style={sharedUI.pageSubtitle}>
-            Discover the planetary rulers of time
-          </Text>
+          {/* Day and Hour Cards Row */}
+          {planetaryHoursData?.currentHour &&
+            (() => {
+              const dayOfWeek = selectedDate.getDay();
+              const dayRuler = getDayRuler(dayOfWeek);
+              const dayNames = [
+                "Sunday",
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+              ];
+              const dayName = dayNames[dayOfWeek];
+              const currentHourPlanet = planetaryHoursData.currentHour.planet;
 
-          {/* Current Hour */}
-          {planetaryHoursData?.currentHour && (
-            <View style={styles.cardContainer}>
-              <Text style={styles.cardTitle}>Current Planetary Hour</Text>
-              <View style={styles.currentHourDisplay}>
-                <Text style={styles.planetSymbol}>
-                  <Text style={getPhysisSymbolStyle(fontLoaded, "large")}>
-                    {planetKeys[planetaryHoursData.currentHour.planet] || "?"}
-                  </Text>
-                </Text>
-                <View style={styles.currentHourInfo}>
-                  <Text style={styles.currentPlanetName}>
-                    {planetaryHoursData.currentHour.planet} Hour
-                  </Text>
-                  <Text style={styles.hourType}>
-                    {planetaryHoursData.currentHour.isDayHour ? "Day" : "Night"}
-                  </Text>
-                  <Text style={styles.timeRange}>
-                    {formatTime(planetaryHoursData.currentHour.startTime)} -{" "}
-                    {formatTime(planetaryHoursData.currentHour.endTime)}
-                  </Text>
+              // Get planet colors (convert to lowercase for color lookup)
+              const dayRulerColor = getPlanetColor(dayRuler.toLowerCase());
+              const hourPlanetColor = getPlanetColor(
+                currentHourPlanet.toLowerCase()
+              );
+
+              // Use greyish-blue text color (#6b6b8a) when background is yellow/gold (Jupiter)
+              // This matches the color used on the astrology chart's zodiac ring for yellow signs
+              const isDayRulerJupiter = dayRuler.toLowerCase() === "jupiter";
+              const isHourPlanetJupiter =
+                currentHourPlanet.toLowerCase() === "jupiter";
+              const dayTextColor = isDayRulerJupiter ? "#6b6b8a" : "#e6e6fa";
+              const hourTextColor = isHourPlanetJupiter ? "#6b6b8a" : "#e6e6fa";
+
+              return (
+                <View style={styles.dayHourCardsRow}>
+                  {/* Day Card */}
+                  <View
+                    style={[
+                      styles.dayHourCard,
+                      { backgroundColor: dayRulerColor },
+                    ]}
+                  >
+                    {/* Left Column - Symbol */}
+                    <View style={styles.dayHourCardLeftCol}>
+                      <Text
+                        style={[
+                          styles.dayHourCardSymbol,
+                          { color: dayTextColor },
+                        ]}
+                      >
+                        <Text
+                          style={getPhysisSymbolStyleCustom(fontLoaded, 58)}
+                        >
+                          {planetKeys[dayRuler] || "?"}
+                        </Text>
+                      </Text>
+                    </View>
+                    {/* Right Column - Text */}
+                    <View style={styles.dayHourCardRightCol}>
+                      <Text
+                        style={[
+                          styles.dayHourCardText,
+                          { color: dayTextColor },
+                        ]}
+                      >
+                        {dayName} {dayRuler} Day
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Hour Card */}
+                  <View
+                    style={[
+                      styles.dayHourCard,
+                      { backgroundColor: hourPlanetColor },
+                    ]}
+                  >
+                    {/* Left Column - Symbol */}
+                    <View style={styles.dayHourCardLeftCol}>
+                      <Text
+                        style={[
+                          styles.dayHourCardSymbol,
+                          { color: hourTextColor },
+                        ]}
+                      >
+                        <Text
+                          style={getPhysisSymbolStyleCustom(fontLoaded, 58)}
+                        >
+                          {planetKeys[currentHourPlanet] || "?"}
+                        </Text>
+                      </Text>
+                    </View>
+                    {/* Right Column - Text */}
+                    <View style={styles.dayHourCardRightCol}>
+                      <Text
+                        style={[
+                          styles.dayHourCardText,
+                          { color: hourTextColor },
+                        ]}
+                      >
+                        {currentHourPlanet} Hour
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </View>
-          )}
+              );
+            })()}
 
           {/* Debug Information */}
           {planetaryHoursData && (
@@ -689,5 +770,44 @@ const styles = StyleSheet.create({
     color: "#e6e6fa",
     marginBottom: 10,
     textAlign: "center",
+  },
+  dayHourCardsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+    gap: 15,
+  },
+  dayHourCard: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    borderRadius: 10,
+    padding: 5,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+    flexDirection: "row",
+    minHeight: 65,
+  },
+  dayHourCardLeftCol: {
+    flex: 0,
+    paddingLeft: 6,
+    paddingRight: 6,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dayHourCardRightCol: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "flex-start",
+    paddingLeft: 6,
+  },
+  dayHourCardSymbol: {
+    color: "#e6e6fa",
+    textAlign: "center",
+  },
+  dayHourCardText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#e6e6fa",
+    textAlign: "left",
   },
 });
