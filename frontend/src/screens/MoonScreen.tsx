@@ -1199,7 +1199,9 @@ export default function MoonScreen({ navigation, route }: any) {
                     )}
 
                   {/* Aspects between Sun and Moon */}
-                  {activeChart?.planets?.sun &&
+                  {/* HIDDEN: Aspects table commented out per user request */}
+                  {false &&
+                    activeChart?.planets?.sun &&
                     activeChart?.planets?.moon &&
                     !activeChart.planets.sun.error &&
                     !activeChart.planets.moon.error && (

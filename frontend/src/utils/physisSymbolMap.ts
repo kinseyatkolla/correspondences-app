@@ -112,7 +112,10 @@ export const getPlanetKeysFromNames = (): { [key: string]: string } => {
     Uranus: "i",
     Neptune: "o",
     Pluto: "p",
+    "N. Node": "]",
+    "North Node": "]",
     NorthNode: "]",
+    Ascendant: "!",
   };
 };
 
@@ -226,4 +229,29 @@ export const getChartPointNames = (): { [key: string]: string } => {
     "[": "South Node",
     "]": "North Node",
   };
+};
+
+/**
+ * Get aspect symbols (Physis font keyboard characters)
+ * The Physis font maps numbers to aspect symbols
+ */
+export const getAspectSymbols = (): { [key: string]: string } => {
+  return {
+    conjunct: "1", // 0° - Conjunction
+    opposition: "2", // 180° - Opposition
+    trine: "3", // 120° - Trine
+    square: "4", // 90° - Square
+    sextile: "5", // 60° - Sextile
+  };
+};
+
+/**
+ * Get aspect symbol from aspect name
+ * @param aspectName The name of the aspect (e.g., "conjunct", "opposition", etc.)
+ * @returns The Physis font keyboard character for the aspect, or empty string if not found
+ */
+export const getAspectSymbol = (aspectName: string): string => {
+  const normalizedName = aspectName.toLowerCase().replace(/^whole sign /i, "");
+  const aspectSymbols = getAspectSymbols();
+  return aspectSymbols[normalizedName] || "";
 };

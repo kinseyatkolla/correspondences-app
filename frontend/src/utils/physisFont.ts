@@ -25,10 +25,6 @@ export const usePhysisFont = () => {
   return { fontLoaded };
 };
 
-// Get font family based on loading state
-export const getFontFamily = (fontLoaded: boolean) =>
-  fontLoaded ? "Physis" : "System";
-
 // Physis symbol styles with different sizes
 export const physisStyles = StyleSheet.create({
   // Large symbols (for main displays)
@@ -53,11 +49,12 @@ export const physisStyles = StyleSheet.create({
   },
 });
 
-// Helper function to get physis symbol style with fallback
+// Helper function to get physis symbol style
+// Always uses Physis font (local bundled font, should always be available)
 export const getPhysisSymbolStyle = (
   fontLoaded: boolean,
   size: "large" | "medium" | "small" | "extraSmall" = "medium"
-) => [physisStyles[size], { fontFamily: getFontFamily(fontLoaded) }];
+) => physisStyles[size];
 
 // Helper function to get physis symbol style with custom size
 export const getPhysisSymbolStyleCustom = (
@@ -65,7 +62,7 @@ export const getPhysisSymbolStyleCustom = (
   fontSize: number
 ) => [
   {
-    fontFamily: getFontFamily(fontLoaded),
+    fontFamily: "Physis",
     fontSize: fontSize,
   },
 ];

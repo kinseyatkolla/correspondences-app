@@ -329,6 +329,7 @@ export default function CalendarScreen({ navigation }: any) {
     ingress: true,
     station: true,
   });
+  const [isToggleDisabled, setIsToggleDisabled] = useState(false);
 
   // Lines view state
   const [linesData, setLinesData] = useState<any>(null);
@@ -1638,8 +1639,16 @@ export default function CalendarScreen({ navigation }: any) {
         <View style={styles.headerLeft}>
           <TouchableOpacity
             style={styles.viewModeToggleButton}
-            onPress={() => setViewMode(viewMode === "LIST" ? "LINES" : "LIST")}
+            onPress={() => {
+              if (isToggleDisabled) return;
+              setIsToggleDisabled(true);
+              setViewMode(viewMode === "LIST" ? "LINES" : "LIST");
+              setTimeout(() => {
+                setIsToggleDisabled(false);
+              }, 500);
+            }}
             activeOpacity={0.7}
+            disabled={isToggleDisabled}
           >
             <Text style={styles.viewModeToggleButtonText}>
               {viewMode === "LIST" ? "LINES" : "LIST"}

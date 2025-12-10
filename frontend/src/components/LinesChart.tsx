@@ -506,7 +506,7 @@ function LinesChart({
               x2={padding.left}
               y2={chartHeight - padding.bottom}
               stroke="#555"
-              strokeWidth={1}
+              strokeWidth={0}
             />
 
             {/* Labels */}

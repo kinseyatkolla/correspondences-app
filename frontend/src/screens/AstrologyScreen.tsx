@@ -22,10 +22,15 @@ import DateTimePickerDrawer from "../components/DateTimePickerDrawer";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { apiService, BirthData, BirthChart } from "../services/api";
 import { sharedUI } from "../styles/sharedUI";
-import { usePhysisFont, getPhysisSymbolStyle } from "../utils/physisFont";
+import {
+  usePhysisFont,
+  getPhysisSymbolStyle,
+  getPhysisSymbolStyleCustom,
+} from "../utils/physisFont";
 import {
   getPlanetKeysFromNames,
   getZodiacKeysFromNames,
+  getAspectSymbol,
 } from "../utils/physisSymbolMap";
 import AstrologyChart from "../components/AstrologyChart";
 import CurrentPlanetaryHour from "../components/CurrentPlanetaryHour";
@@ -926,6 +931,7 @@ export default function AstrologyScreen({ navigation, route }: any) {
           <View style={styles.contentLayer}>
             <ScrollView
               style={styles.scrollContainer}
+              contentContainerStyle={styles.scrollContentContainer}
               showsVerticalScrollIndicator={false}
             >
               {/* Current Planetary Hour */}
@@ -1938,11 +1944,6 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                 <>
                                                   <View
                                                     style={
-                                                      styles.planetCardFooterDivider
-                                                    }
-                                                  />
-                                                  <View
-                                                    style={
                                                       styles.planetCardFooter
                                                     }
                                                   >
@@ -1953,13 +1954,15 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                     >
                                                       WHOLE SIGN ASPECTS
                                                     </Text>
-                                                    <Text
-                                                      style={
-                                                        styles.planetCardFooterAspectText
-                                                      }
+                                                    <View
+                                                      style={{
+                                                        flexDirection: "row",
+                                                        flexWrap: "wrap",
+                                                        gap: 8,
+                                                      }}
                                                     >
-                                                      {wholeSignAspects
-                                                        .map((aspect) => {
+                                                      {wholeSignAspects.map(
+                                                        (aspect, index) => {
                                                           const aspectType =
                                                             aspect.aspectName
                                                               .replace(
@@ -1967,10 +1970,65 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                                 ""
                                                               )
                                                               .toLowerCase();
-                                                          return `${aspectType} ${aspect.displayName}`;
-                                                        })
-                                                        .join(", ")}
-                                                    </Text>
+                                                          const aspectSymbol =
+                                                            getAspectSymbol(
+                                                              aspectType
+                                                            );
+                                                          const planetKey =
+                                                            getPlanetKeysFromNames()[
+                                                              aspect.displayName
+                                                            ] ||
+                                                            (aspect.displayName ===
+                                                            "N. Node"
+                                                              ? "]"
+                                                              : null);
+                                                          return (
+                                                            <View
+                                                              key={index}
+                                                              style={{
+                                                                flexDirection:
+                                                                  "row",
+                                                                alignItems:
+                                                                  "center",
+                                                              }}
+                                                            >
+                                                              {aspectSymbol && (
+                                                                <Text
+                                                                  style={[
+                                                                    styles.planetCardFooterAspectText,
+                                                                    getPhysisSymbolStyleCustom(
+                                                                      fontLoaded,
+                                                                      40
+                                                                    ),
+                                                                    {
+                                                                      lineHeight: 46,
+                                                                    },
+                                                                  ]}
+                                                                >
+                                                                  {aspectSymbol}
+                                                                </Text>
+                                                              )}
+                                                              {planetKey && (
+                                                                <Text
+                                                                  style={[
+                                                                    styles.planetCardFooterAspectText,
+                                                                    getPhysisSymbolStyleCustom(
+                                                                      fontLoaded,
+                                                                      40
+                                                                    ),
+                                                                    {
+                                                                      lineHeight: 46,
+                                                                    },
+                                                                  ]}
+                                                                >
+                                                                  {planetKey}
+                                                                </Text>
+                                                              )}
+                                                            </View>
+                                                          );
+                                                        }
+                                                      )}
+                                                    </View>
                                                   </View>
                                                 </>
                                               )}
@@ -2159,11 +2217,6 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                               <>
                                                 <View
                                                   style={
-                                                    styles.planetCardFooterDivider
-                                                  }
-                                                />
-                                                <View
-                                                  style={
                                                     styles.planetCardFooter
                                                   }
                                                 >
@@ -2174,13 +2227,15 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                   >
                                                     WHOLE SIGN ASPECTS
                                                   </Text>
-                                                  <Text
-                                                    style={
-                                                      styles.planetCardFooterAspectText
-                                                    }
+                                                  <View
+                                                    style={{
+                                                      flexDirection: "row",
+                                                      flexWrap: "wrap",
+                                                      gap: 8,
+                                                    }}
                                                   >
-                                                    {wholeSignAspects
-                                                      .map((aspect) => {
+                                                    {wholeSignAspects.map(
+                                                      (aspect, index) => {
                                                         const aspectType =
                                                           aspect.aspectName
                                                             .replace(
@@ -2188,10 +2243,61 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                               ""
                                                             )
                                                             .toLowerCase();
-                                                        return `${aspectType} ${aspect.displayName}`;
-                                                      })
-                                                      .join(", ")}
-                                                  </Text>
+                                                        const aspectSymbol =
+                                                          getAspectSymbol(
+                                                            aspectType
+                                                          );
+                                                        const planetKey =
+                                                          getPlanetKeysFromNames()[
+                                                            aspect.displayName
+                                                          ];
+                                                        return (
+                                                          <View
+                                                            key={index}
+                                                            style={{
+                                                              flexDirection:
+                                                                "row",
+                                                              alignItems:
+                                                                "center",
+                                                            }}
+                                                          >
+                                                            {aspectSymbol && (
+                                                              <Text
+                                                                style={[
+                                                                  styles.planetCardFooterAspectText,
+                                                                  getPhysisSymbolStyleCustom(
+                                                                    fontLoaded,
+                                                                    40
+                                                                  ),
+                                                                  {
+                                                                    lineHeight: 46,
+                                                                  },
+                                                                ]}
+                                                              >
+                                                                {aspectSymbol}
+                                                              </Text>
+                                                            )}
+                                                            {planetKey && (
+                                                              <Text
+                                                                style={[
+                                                                  styles.planetCardFooterAspectText,
+                                                                  getPhysisSymbolStyleCustom(
+                                                                    fontLoaded,
+                                                                    40
+                                                                  ),
+                                                                  {
+                                                                    lineHeight: 46,
+                                                                  },
+                                                                ]}
+                                                              >
+                                                                {planetKey}
+                                                              </Text>
+                                                            )}
+                                                          </View>
+                                                        );
+                                                      }
+                                                    )}
+                                                  </View>
                                                 </View>
                                               </>
                                             )}
@@ -2233,7 +2339,8 @@ export default function AstrologyScreen({ navigation, route }: any) {
                   return (
                     <>
                       {/* Planet Aspects */}
-                      {planetConfigs.map((config) => {
+                      {/* COMMENTED OUT: Planet aspect cards with semi-opaque grey background - can be uncommented for testing */}
+                      {/* {planetConfigs.map((config) => {
                         const planet = activeChart.planets[config.name];
                         if (!planet || planet.error) return null;
 
@@ -2275,10 +2382,11 @@ export default function AstrologyScreen({ navigation, route }: any) {
                             )}
                           </View>
                         );
-                      })}
+                      })} */}
 
                       {/* Ascendant Aspects */}
-                      {activeChart.houses &&
+                      {/* COMMENTED OUT: Ascendant aspects table - can be uncommented for testing */}
+                      {/* {activeChart.houses &&
                         activeChart.houses.ascendant &&
                         activeChart.houses.ascendantSign && (
                           <View style={styles.cardContainer}>
@@ -2341,29 +2449,30 @@ export default function AstrologyScreen({ navigation, route }: any) {
                               activeChart
                             )}
                           </View>
-                        )}
+                        )} */}
                     </>
                   );
                 })()}
 
               {/* Current Planetary Positions */}
-              {activeChart && !ephemerisLoading && !selectedDateLoading && (
+              {/* COMMENTED OUT: Current planetary positions table - can be uncommented for testing */}
+              {/* {activeChart && !ephemerisLoading && !selectedDateLoading && (
                 <View style={styles.cardContainer}>
                   <Text style={styles.cardTitle}>
                     🌙 Current Planetary Positions
                   </Text>
                   {/* Ascendant */}
-                  {activeChart.houses && (
+              {/* {activeChart.houses && (
                     <View style={styles.planetRow}>
                       <Text style={styles.zodiacSymbol}>
                         {/* ascendant symbol */}
-                        <Text
+              {/* <Text
                           style={getPhysisSymbolStyle(fontLoaded, "medium")}
                         >
                           !
                         </Text>{" "}
                         {/* zodiac symbol */}
-                        <Text
+              {/* <Text
                           style={getPhysisSymbolStyle(fontLoaded, "medium")}
                         >
                           {
@@ -2419,13 +2528,13 @@ export default function AstrologyScreen({ navigation, route }: any) {
                         <View key={planetName} style={styles.planetRow}>
                           <Text style={styles.zodiacSymbol}>
                             {/* planet symbol  */}
-                            <Text
+              {/* <Text
                               style={getPhysisSymbolStyle(fontLoaded, "medium")}
                             >
                               {physisSymbol}
                             </Text>{" "}
                             {/* zodiac symbol */}
-                            <Text
+              {/* <Text
                               style={getPhysisSymbolStyle(fontLoaded, "medium")}
                             >
                               {physisZodiacSymbol}
@@ -2445,7 +2554,7 @@ export default function AstrologyScreen({ navigation, route }: any) {
                     }
                   )}
                 </View>
-              )}
+              )} */}
             </ScrollView>
           </View>
 
@@ -2518,7 +2627,9 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     padding: 0,
-    paddingBottom: 50, // Account for calculator nav bar
+  },
+  scrollContentContainer: {
+    paddingBottom: 20, // Account for calculator nav bar and datepicker
   },
   chartContainer: {
     alignItems: "center",
@@ -2804,16 +2915,15 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     fontFamily: "monospace",
   },
-  planetCardFooterDivider: {
-    height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    marginTop: 8,
-    marginBottom: 8,
-    marginHorizontal: 12,
-  },
   planetCardFooter: {
+    marginTop: 8,
+    marginLeft: -12,
+    marginRight: -12,
     paddingHorizontal: 12,
+    paddingTop: 8,
     paddingBottom: 12,
+    borderTopWidth: 1,
+    borderTopColor: "hsla(0, 0.00%, 100.00%, 0.20)",
   },
   planetCardFooterAspectText: {
     fontSize: 12,
