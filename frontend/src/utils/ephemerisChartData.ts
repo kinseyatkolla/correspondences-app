@@ -1,7 +1,7 @@
 // ============================================================================
 // EPHEMERIS CHART DATA UTILITIES
 // ============================================================================
-// Transform year ephemeris API response into chart-ready format for garlands view
+// Transform year ephemeris API response into chart-ready format for lines view
 
 // ============================================================================
 // TYPES
@@ -33,7 +33,7 @@ export interface PlanetDataset {
   data: ChartDataPoint[];
 }
 
-export interface GarlandsChartData {
+export interface LinesChartData {
   dates: Date[]; // X-axis labels (one per sample)
   planets: PlanetDataset[]; // Multiple planet lines
 }
@@ -79,7 +79,7 @@ const PLANETS_TO_CHART = [
  */
 export function processEphemerisData(
   samples: EphemerisSample[]
-): GarlandsChartData {
+): LinesChartData {
   if (!samples || samples.length === 0) {
     return {
       dates: [],

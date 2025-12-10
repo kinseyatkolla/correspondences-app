@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { useCalendar } from "../contexts/CalendarContext";
 import { useYear } from "../contexts/YearContext";
@@ -25,9 +26,9 @@ import {
   getZodiacKeysFromNames,
   getPlanetKeysFromNames,
 } from "../utils/physisSymbolMap";
-import GarlandsChart from "../components/GarlandsChart";
+import LinesChart from "../components/LinesChart";
 import { processEphemerisData } from "../utils/ephemerisChartData";
-import { Dimensions } from "react-native";
+import { Dimensions, Platform } from "react-native";
 
 // ============================================================================
 // TYPES
@@ -205,6 +206,92 @@ function ZodiacHeaderRow() {
   );
 }
 
+/**
+ * Filter Row Component - Fixed below navigation bar in LIST view
+ * Displays all filter checkboxes in a single row, matching the position
+ * and fixed-ness of the zodiac header in LINES view
+ */
+function FilterRow({
+  filterStates,
+  toggleFilter,
+}: {
+  filterStates: {
+    lunation: boolean;
+    aspect: boolean;
+    ingress: boolean;
+    station: boolean;
+  };
+  toggleFilter: (type: CalendarEventType) => void;
+}) {
+  return (
+    <View style={styles.filterRowFixed}>
+      <TouchableOpacity
+        style={styles.filterCheckbox}
+        onPress={() => toggleFilter("lunation")}
+        activeOpacity={0.7}
+      >
+        <View
+          style={[
+            styles.checkbox,
+            filterStates.lunation && styles.checkboxChecked,
+          ]}
+        >
+          {filterStates.lunation && <Text style={styles.checkmark}>✓</Text>}
+        </View>
+        <Text style={styles.filterLabel}>Lunations</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.filterCheckbox}
+        onPress={() => toggleFilter("aspect")}
+        activeOpacity={0.7}
+      >
+        <View
+          style={[
+            styles.checkbox,
+            filterStates.aspect && styles.checkboxChecked,
+          ]}
+        >
+          {filterStates.aspect && <Text style={styles.checkmark}>✓</Text>}
+        </View>
+        <Text style={styles.filterLabel}>Aspects</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.filterCheckbox}
+        onPress={() => toggleFilter("ingress")}
+        activeOpacity={0.7}
+      >
+        <View
+          style={[
+            styles.checkbox,
+            filterStates.ingress && styles.checkboxChecked,
+          ]}
+        >
+          {filterStates.ingress && <Text style={styles.checkmark}>✓</Text>}
+        </View>
+        <Text style={styles.filterLabel}>Ingresses</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.filterCheckbox}
+        onPress={() => toggleFilter("station")}
+        activeOpacity={0.7}
+      >
+        <View
+          style={[
+            styles.checkbox,
+            filterStates.station && styles.checkboxChecked,
+          ]}
+        >
+          {filterStates.station && <Text style={styles.checkmark}>✓</Text>}
+        </View>
+        <Text style={styles.filterLabel}>Stations</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -214,7 +301,7 @@ export default function CalendarScreen({ navigation }: any) {
   const { year: selectedYear, setYear: setSelectedYear } = useYear();
   const { events: calendarEvents, loading: calendarLoading } = useCalendar();
 
-  const [viewMode, setViewMode] = useState<"LIST" | "GARLANDS">("LIST");
+  const [viewMode, setViewMode] = useState<"LIST" | "LINES">("LIST");
   const [lunationEvents, setLunationEvents] = useState<LunationEvent[]>([]);
   const [lunationsLoading, setLunationsLoading] = useState(true);
   const [filterStates, setFilterStates] = useState({
@@ -224,15 +311,16 @@ export default function CalendarScreen({ navigation }: any) {
     station: true,
   });
 
-  // Garlands view state
-  const [garlandsData, setGarlandsData] = useState<any>(null);
-  const [garlandsLoading, setGarlandsLoading] = useState(false);
-  const [garlandsError, setGarlandsError] = useState<string | null>(null);
+  // Lines view state
+  const [linesData, setLinesData] = useState<any>(null);
+  const [linesLoading, setLinesLoading] = useState(false);
+  const [linesError, setLinesError] = useState<string | null>(null);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const hasScrolledToToday = useRef(false);
   const todayItemRef = useRef<View>(null);
-  const previousViewMode = useRef<"LIST" | "GARLANDS">("LIST");
+  const previousViewMode = useRef<"LIST" | "LINES">("LIST");
+  const prefetchedYears = useRef<Set<number>>(new Set());
 
   // Fetch all lunations when year changes
   useEffect(() => {
@@ -241,46 +329,301 @@ export default function CalendarScreen({ navigation }: any) {
     hasScrolledToToday.current = false;
   }, [selectedYear]);
 
-  // Fetch garlands data when in GARLANDS view and year changes
+  // Fetch lines data when in LINES view and year changes
   useEffect(() => {
-    if (viewMode === "GARLANDS") {
-      fetchGarlandsData();
+    if (viewMode === "LINES") {
+      fetchLinesData();
     }
   }, [selectedYear, viewMode]);
 
-  // Fetch garlands ephemeris data
-  const fetchGarlandsData = async () => {
+  // Maximum number of years to cache (excluding current year which is always kept)
+  const MAX_CACHED_YEARS = 10;
+
+  // Helper function to create cache key for ephemeris data
+  const getEphemerisCacheKey = (
+    year: number,
+    latitude: number,
+    longitude: number,
+    sampleInterval: number
+  ): string => {
+    return `ephemeris-${year}-${latitude}-${longitude}-${sampleInterval}`;
+  };
+
+  // Get all cached ephemeris keys for the current location
+  const getAllCachedEphemerisKeys = async (
+    latitude: number,
+    longitude: number,
+    sampleInterval: number
+  ): Promise<Array<{ key: string; year: number; timestamp: number }>> => {
     try {
-      setGarlandsLoading(true);
-      setGarlandsError(null);
+      const allKeys = await AsyncStorage.getAllKeys();
+      const prefix = `ephemeris-`;
+      const locationSuffix = `-${latitude}-${longitude}-${sampleInterval}`;
+
+      const cachedEntries: Array<{
+        key: string;
+        year: number;
+        timestamp: number;
+      }> = [];
+
+      for (const key of allKeys) {
+        if (key.startsWith(prefix) && key.endsWith(locationSuffix)) {
+          try {
+            const cached = await AsyncStorage.getItem(key);
+            if (cached) {
+              const parsedCache = JSON.parse(cached);
+              // Extract year from key (format: ephemeris-YEAR-lat-lon-interval)
+              const yearMatch = key.match(/ephemeris-(\d+)-/);
+              if (yearMatch && parsedCache.year && parsedCache.timestamp) {
+                cachedEntries.push({
+                  key,
+                  year: parsedCache.year,
+                  timestamp: parsedCache.timestamp,
+                });
+              }
+            }
+          } catch (err) {
+            // Skip invalid cache entries
+            console.warn(`Skipping invalid cache entry: ${key}`, err);
+          }
+        }
+      }
+
+      return cachedEntries;
+    } catch (err) {
+      console.error("Error getting cached ephemeris keys:", err);
+      return [];
+    }
+  };
+
+  // Evict oldest cached year (excluding current year)
+  const evictOldestCachedYear = async (
+    currentYear: number,
+    latitude: number,
+    longitude: number,
+    sampleInterval: number
+  ) => {
+    try {
+      const cachedEntries = await getAllCachedEphemerisKeys(
+        latitude,
+        longitude,
+        sampleInterval
+      );
+
+      // Filter out current year and sort by timestamp (oldest first)
+      const evictableEntries = cachedEntries
+        .filter((entry) => entry.year !== currentYear)
+        .sort((a, b) => a.timestamp - b.timestamp);
+
+      if (evictableEntries.length > 0) {
+        const oldestEntry = evictableEntries[0];
+        await AsyncStorage.removeItem(oldestEntry.key);
+        console.log(`🗑️ Evicted oldest cached year: ${oldestEntry.year}`);
+      }
+    } catch (err) {
+      console.error("Error evicting oldest cached year:", err);
+    }
+  };
+
+  // Load ephemeris data from cache
+  const loadEphemerisFromCache = async (
+    year: number,
+    latitude: number,
+    longitude: number,
+    sampleInterval: number
+  ): Promise<any | null> => {
+    try {
+      const cacheKey = getEphemerisCacheKey(
+        year,
+        latitude,
+        longitude,
+        sampleInterval
+      );
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (cached) {
+        const parsedCache = JSON.parse(cached);
+        // For current year, cache is permanent (no expiration check)
+        // For other years, also cache permanently since ephemeris data doesn't change
+        console.log(`📦 Loading ephemeris data from cache for year ${year}`);
+        return parsedCache.data;
+      }
+    } catch (err) {
+      console.error("Error loading ephemeris from cache:", err);
+    }
+    return null;
+  };
+
+  // Save ephemeris data to cache
+  const saveEphemerisToCache = async (
+    year: number,
+    latitude: number,
+    longitude: number,
+    sampleInterval: number,
+    data: any
+  ) => {
+    try {
+      const today = new Date();
+      const currentYear = today.getFullYear();
+
+      // Check cache size and evict if needed (but never evict current year)
+      const cachedEntries = await getAllCachedEphemerisKeys(
+        latitude,
+        longitude,
+        sampleInterval
+      );
+
+      // Count unique years (excluding current year and the year we're about to save)
+      const uniqueYears = new Set(
+        cachedEntries
+          .filter((entry) => entry.year !== currentYear && entry.year !== year)
+          .map((entry) => entry.year)
+      );
+
+      // If we're at the limit and this is a new year (not current year and not already cached), evict oldest
+      const isNewYear = !cachedEntries.some((entry) => entry.year === year);
+      if (
+        uniqueYears.size >= MAX_CACHED_YEARS &&
+        year !== currentYear &&
+        isNewYear
+      ) {
+        await evictOldestCachedYear(
+          currentYear,
+          latitude,
+          longitude,
+          sampleInterval
+        );
+      }
+
+      const cacheKey = getEphemerisCacheKey(
+        year,
+        latitude,
+        longitude,
+        sampleInterval
+      );
+      const cacheData = {
+        data,
+        timestamp: Date.now(),
+        year,
+      };
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      console.log(`💾 Saved ephemeris data to cache for year ${year}`);
+    } catch (err) {
+      console.error("Error saving ephemeris to cache:", err);
+    }
+  };
+
+  // Prefetch ephemeris data for a year (used for next year prefetching)
+  const prefetchEphemerisData = async (
+    year: number,
+    latitude: number,
+    longitude: number,
+    sampleInterval: number
+  ) => {
+    // Check if already prefetched
+    if (prefetchedYears.current.has(year)) {
+      return;
+    }
+
+    // Check cache first
+    const cached = await loadEphemerisFromCache(
+      year,
+      latitude,
+      longitude,
+      sampleInterval
+    );
+    if (cached) {
+      prefetchedYears.current.add(year);
+      return;
+    }
+
+    try {
+      console.log(`🔮 Prefetching ephemeris data for year ${year}`);
+      const response = await apiService.getYearEphemeris(
+        year,
+        latitude,
+        longitude,
+        sampleInterval
+      );
+
+      if (response.success && response.data?.samples) {
+        // Process and cache the data
+        const chartData = processEphemerisData(response.data.samples);
+        await saveEphemerisToCache(
+          year,
+          latitude,
+          longitude,
+          sampleInterval,
+          chartData
+        );
+        prefetchedYears.current.add(year);
+        console.log(`✅ Prefetched and cached ephemeris data for year ${year}`);
+      }
+    } catch (error: any) {
+      console.error(
+        `Error prefetching ephemeris data for year ${year}:`,
+        error
+      );
+    }
+  };
+
+  // Fetch lines ephemeris data
+  const fetchLinesData = async () => {
+    try {
+      setLinesLoading(true);
+      setLinesError(null);
 
       const location = currentChart?.location || {
         latitude: 40.7128,
         longitude: -74.006,
       };
 
+      const sampleInterval = 24; // Daily samples
+
+      // Check cache first
+      const cachedData = await loadEphemerisFromCache(
+        selectedYear,
+        location.latitude,
+        location.longitude,
+        sampleInterval
+      );
+
+      if (cachedData) {
+        setLinesData(cachedData);
+        setLinesLoading(false);
+        return;
+      }
+
       // Fetch year ephemeris with daily samples (24h interval) for smoother chart
       const response = await apiService.getYearEphemeris(
         selectedYear,
         location.latitude,
         location.longitude,
-        24 // Daily samples
+        sampleInterval
       );
 
       if (response.success && response.data?.samples) {
         // Process samples into chart-ready format
         const chartData = processEphemerisData(response.data.samples);
-        setGarlandsData(chartData);
+        setLinesData(chartData);
+
+        // Save to cache for future use
+        await saveEphemerisToCache(
+          selectedYear,
+          location.latitude,
+          location.longitude,
+          sampleInterval,
+          chartData
+        );
       } else {
-        setGarlandsError("Failed to fetch ephemeris data");
-        setGarlandsData(null);
+        setLinesError("Failed to fetch ephemeris data");
+        setLinesData(null);
       }
     } catch (error: any) {
-      console.error("Error fetching garlands data:", error);
-      setGarlandsError(error.message || "Failed to fetch ephemeris data");
-      setGarlandsData(null);
+      console.error("Error fetching lines data:", error);
+      setLinesError(error.message || "Failed to fetch ephemeris data");
+      setLinesData(null);
     } finally {
-      setGarlandsLoading(false);
+      setLinesLoading(false);
     }
   };
 
@@ -368,11 +711,11 @@ export default function CalendarScreen({ navigation }: any) {
     filterStates,
   ]);
 
-  // Auto-scroll to today when switching from GARLANDS back to LIST view
+  // Auto-scroll to today when switching from LINES back to LIST view
   useEffect(() => {
-    // Check if we just switched from GARLANDS to LIST
+    // Check if we just switched from LINES to LIST
     if (
-      previousViewMode.current === "GARLANDS" &&
+      previousViewMode.current === "LINES" &&
       viewMode === "LIST" &&
       !loading &&
       filteredEvents &&
@@ -764,134 +1107,7 @@ export default function CalendarScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      {/* Combined Header with Year and Filters */}
-      <View style={styles.headerContainer}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity
-            style={styles.yearNavButton}
-            onPress={() => setSelectedYear(selectedYear - 1)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.yearNavButtonText}>‹</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerText}>{selectedYear}</Text>
-          <TouchableOpacity
-            style={styles.yearNavButton}
-            onPress={() => setSelectedYear(selectedYear + 1)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.yearNavButtonText}>›</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.headerCenter}>
-          {viewMode !== "GARLANDS" && (
-            <TouchableOpacity
-              style={styles.scrollToTodayButton}
-              onPress={scrollToToday}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.scrollToTodayButtonText}>Today</Text>
-            </TouchableOpacity>
-          )}
-          {viewMode === "GARLANDS" && (
-            <View style={[styles.scrollToTodayButton, { opacity: 0 }]} />
-          )}
-        </View>
-        <View style={styles.headerRight}>
-          {viewMode !== "GARLANDS" ? (
-            <>
-              <View style={styles.filterRow}>
-                <TouchableOpacity
-                  style={styles.filterCheckbox}
-                  onPress={() => toggleFilter("lunation")}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      filterStates.lunation && styles.checkboxChecked,
-                    ]}
-                  >
-                    {filterStates.lunation && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
-                  </View>
-                  <Text style={styles.filterLabel}>Lunations</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.filterCheckbox}
-                  onPress={() => toggleFilter("aspect")}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      filterStates.aspect && styles.checkboxChecked,
-                    ]}
-                  >
-                    {filterStates.aspect && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
-                  </View>
-                  <Text style={styles.filterLabel}>Aspects</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.filterRow}>
-                <TouchableOpacity
-                  style={styles.filterCheckbox}
-                  onPress={() => toggleFilter("ingress")}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      filterStates.ingress && styles.checkboxChecked,
-                    ]}
-                  >
-                    {filterStates.ingress && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
-                  </View>
-                  <Text style={styles.filterLabel}>Ingresses</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.filterCheckbox}
-                  onPress={() => toggleFilter("station")}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      filterStates.station && styles.checkboxChecked,
-                    ]}
-                  >
-                    {filterStates.station && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
-                  </View>
-                  <Text style={styles.filterLabel}>Stations</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          ) : (
-            <>
-              {/* Placeholder to maintain layout spacing - invisible but same size */}
-              <View style={styles.filterRow}>
-                <View style={[styles.filterCheckbox, { opacity: 0 }]} />
-                <View style={[styles.filterCheckbox, { opacity: 0 }]} />
-              </View>
-              <View style={styles.filterRow}>
-                <View style={[styles.filterCheckbox, { opacity: 0 }]} />
-                <View style={[styles.filterCheckbox, { opacity: 0 }]} />
-              </View>
-            </>
-          )}
-        </View>
-      </View>
-
-      {/* Secondary Navigation Bar */}
+      {/* View Mode Navigation Bar - Now on top */}
       <View style={styles.viewModeNavBar}>
         <TouchableOpacity
           style={styles.viewModeButton}
@@ -909,41 +1125,99 @@ export default function CalendarScreen({ navigation }: any) {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.viewModeButton}
-          onPress={() => setViewMode("GARLANDS")}
+          onPress={() => setViewMode("LINES")}
           activeOpacity={0.7}
         >
           <Text
             style={[
               styles.viewModeText,
-              viewMode === "GARLANDS" && styles.viewModeTextActive,
+              viewMode === "LINES" && styles.viewModeTextActive,
             ]}
           >
-            GARLANDS
+            LINES
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Zodiac Header Row - Fixed below navigation, only shown in GARLANDS view */}
-      {viewMode === "GARLANDS" &&
-        garlandsData &&
-        !garlandsLoading &&
-        !garlandsError && <ZodiacHeaderRow />}
+      {/* Year Navigation Header - Centered with Today button on right */}
+      <View style={styles.headerContainer}>
+        <View style={styles.headerLeft}>
+          {/* Empty spacer for centering */}
+        </View>
+        <View style={styles.headerCenter}>
+          <TouchableOpacity
+            style={styles.yearNavButton}
+            onPress={() => setSelectedYear(selectedYear - 1)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.yearNavButtonText}>‹</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerText}>{selectedYear}</Text>
+          <TouchableOpacity
+            style={styles.yearNavButton}
+            onPress={async () => {
+              const nextYear = selectedYear + 1;
+              setSelectedYear(nextYear);
+
+              // Prefetch next year's data on first forward click
+              if (!prefetchedYears.current.has(nextYear)) {
+                const location = currentChart?.location || {
+                  latitude: 40.7128,
+                  longitude: -74.006,
+                };
+                // Prefetch in background (don't await, let it happen async)
+                prefetchEphemerisData(
+                  nextYear,
+                  location.latitude,
+                  location.longitude,
+                  24
+                );
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.yearNavButtonText}>›</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.headerRight}>
+          {(viewMode !== "LINES" ||
+            selectedYear !== new Date().getFullYear()) && (
+            <TouchableOpacity
+              style={styles.scrollToTodayButton}
+              onPress={scrollToToday}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.scrollToTodayButtonText}>Today</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Filter Row - Fixed below navigation, only shown in LIST view */}
+      {viewMode === "LIST" && (
+        <FilterRow filterStates={filterStates} toggleFilter={toggleFilter} />
+      )}
+
+      {/* Zodiac Header Row - Fixed below navigation, only shown in LINES view */}
+      {viewMode === "LINES" && linesData && !linesLoading && !linesError && (
+        <ZodiacHeaderRow />
+      )}
 
       {/* Content based on view mode */}
-      {viewMode === "GARLANDS" ? (
-        <View style={styles.garlandsContainer}>
-          {garlandsLoading ? (
+      {viewMode === "LINES" ? (
+        <View style={styles.linesContainer}>
+          {linesLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#e6e6fa" />
               <Text style={styles.loadingText}>Loading chart data...</Text>
             </View>
-          ) : garlandsError ? (
+          ) : linesError ? (
             <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{garlandsError}</Text>
+              <Text style={styles.errorText}>{linesError}</Text>
             </View>
-          ) : garlandsData ? (
-            <GarlandsChart
-              data={garlandsData}
+          ) : linesData ? (
+            <LinesChart
+              data={linesData}
               showHeader={false}
               lunations={lunationEvents
                 .filter(
@@ -1513,7 +1787,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 15,
-    paddingVertical: 10,
+    height: Platform.OS === "ios" ? 44 : 56, // Match React Navigation header height
     borderBottomWidth: 1,
     borderBottomColor: "#333",
   },
@@ -1532,7 +1806,7 @@ const styles = StyleSheet.create({
     color: "#e6e6fa",
     fontWeight: "bold",
   },
-  garlandsContainer: {
+  linesContainer: {
     flex: 1,
     backgroundColor: "#111",
     width: "100%",
@@ -1558,16 +1832,32 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 18, // Reduced to fit smaller header
   },
+  filterRowFixed: {
+    height: 35, // Match zodiac header height
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#111",
+    width: "100%",
+    marginHorizontal: 0,
+    paddingHorizontal: 15,
+    paddingVertical: 0,
+    gap: 16, // Space between filter checkboxes
+  },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 15,
-    paddingVertical: 12,
+    height: Platform.OS === "ios" ? 44 : 56, // Match React Navigation header height
     borderBottomWidth: 1,
     borderBottomColor: "#333",
   },
   headerLeft: {
+    flex: 1,
+    // Empty spacer for centering
+  },
+  headerCenter: {
     flex: 0,
     flexDirection: "row",
     alignItems: "center",
@@ -1593,11 +1883,6 @@ const styles = StyleSheet.create({
     minWidth: 60,
     textAlign: "center",
   },
-  headerCenter: {
-    flex: 0,
-    justifyContent: "center",
-    marginHorizontal: 5,
-  },
   scrollToTodayButton: {
     backgroundColor: "#2a2a3a",
     paddingHorizontal: 10,
@@ -1613,10 +1898,9 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     flex: 1,
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "flex-end",
-    gap: 4,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
   },
   filterRow: {
     flexDirection: "row",

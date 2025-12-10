@@ -1,5 +1,5 @@
 // ============================================================================
-// GARLANDS CHART COMPONENT
+// LINES CHART COMPONENT
 // ============================================================================
 // Displays planet positions throughout a year as line charts (360-degree zodiac)
 // Rotated 90° clockwise: dates on left (Y-axis), degrees on bottom (X-axis)
@@ -7,7 +7,7 @@
 import React from "react";
 import { View, Text, StyleSheet, Dimensions, ScrollView } from "react-native";
 import Svg, { Circle, Line, Text as SvgText, G, Rect } from "react-native-svg";
-import { GarlandsChartData, PlanetDataset } from "../utils/ephemerisChartData";
+import { LinesChartData, PlanetDataset } from "../utils/ephemerisChartData";
 import { getZodiacElement, getZodiacColorStyle } from "../utils/colorUtils";
 import { COLORS } from "../utils/colorUtils";
 import { usePhysisFont, getPhysisSymbolStyle } from "../utils/physisFont";
@@ -23,8 +23,8 @@ interface LunationMarker {
   phase: "New Moon" | "Full Moon";
 }
 
-interface GarlandsChartProps {
-  data: GarlandsChartData;
+interface LinesChartProps {
+  data: LinesChartData;
   width?: number;
   height?: number;
   showHeader?: boolean; // Option to show/hide header (if moved to parent)
@@ -140,13 +140,13 @@ function getZodiacSignColor(signName: string): string {
 // COMPONENT
 // ============================================================================
 
-export default function GarlandsChart({
+export default function LinesChart({
   data,
   width,
   height,
   showHeader = true,
   lunations = [],
-}: GarlandsChartProps) {
+}: LinesChartProps) {
   const { dates, planets } = data;
   const { fontLoaded } = usePhysisFont();
 
