@@ -1491,24 +1491,27 @@ export default function CalendarScreen({ navigation }: any) {
   const loading = lunationsLoading || calendarLoading;
 
   // Format date for display
-  const formatDate = (date: Date): string => {
-    return date.toLocaleDateString("en-US", {
+  // Format date for display in device's local timezone
+  // Backend returns UTC times, JavaScript Date automatically converts to local timezone
+  const formatDate = (utcDate: Date): string => {
+    return utcDate.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
     });
   };
 
-  // Format time for display
-  const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString("en-US", {
+  // Format time for display in device's local timezone
+  // Backend returns UTC times, JavaScript Date automatically converts to local timezone
+  const formatTime = (utcDate: Date): string => {
+    return utcDate.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
     });
   };
 
-  // Check if a date is today
+  // Check if a date is today in device's local timezone
   const isToday = (date: Date): boolean => {
     const today = new Date();
     return (

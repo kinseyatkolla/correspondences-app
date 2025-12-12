@@ -70,6 +70,49 @@ function calculateJulianDay(
   );
 }
 
+// Helper function to calculate speed manually from position differences
+// This is necessary because SEFLG_SPEED with topocentric coordinates is unreliable
+function calculateSpeedFromPositions(
+  julianDay,
+  planetId,
+  useTopocentric = true
+) {
+  const flags = useTopocentric ? SEFLG_TOPOCTR : 0;
+  const smallOffset = 1 / (24 * 60); // 1 minute offset
+
+  try {
+    const resultBefore = sweph.calc_ut(
+      julianDay - smallOffset,
+      planetId,
+      flags
+    );
+    const resultAfter = sweph.calc_ut(julianDay + smallOffset, planetId, flags);
+
+    if (
+      resultBefore.data &&
+      resultBefore.data.length >= 1 &&
+      resultAfter.data &&
+      resultAfter.data.length >= 1
+    ) {
+      const lonBefore = resultBefore.data[0];
+      const lonAfter = resultAfter.data[0];
+
+      // Normalize longitude difference (handle wrap-around)
+      let lonDiff = lonAfter - lonBefore;
+      if (lonDiff > 180) lonDiff -= 360;
+      if (lonDiff < -180) lonDiff += 360;
+
+      // Speed = longitude change / time change (degrees per day)
+      const timeChangeDays = 2 * smallOffset;
+      return lonDiff / timeChangeDays;
+    }
+  } catch (error) {
+    // If calculation fails, return 0
+  }
+
+  return 0;
+}
+
 // Helper function to get zodiac sign from longitude
 function getZodiacSign(longitude) {
   const signs = [
@@ -141,11 +184,17 @@ router.post("/planets", (req, res) => {
 
     planetIds.forEach((planet) => {
       try {
-        const result = sweph.calc_ut(julianDay, planet.id, SEFLG_SPEED);
+        const result = sweph.calc_ut(julianDay, planet.id, 0); // No flags needed, we calculate speed manually
 
-        if (result.data && result.data.length >= 4) {
+        if (result.data && result.data.length >= 1) {
           const longitude = result.data[0];
-          const speed = result.data[3];
+          // Always calculate speed manually - SEFLG_SPEED with topocentric coordinates is unreliable
+          // This endpoint doesn't use topocentric, but we'll calculate manually for consistency
+          const speed = calculateSpeedFromPositions(
+            julianDay,
+            planet.id,
+            false
+          );
           planets[planet.name] = {
             longitude,
             latitude: result.data[1],
@@ -372,12 +421,13 @@ router.post("/chart", (req, res) => {
         const result = sweph.calc_ut(
           julianDay,
           planet.id,
-          SEFLG_TOPOCTR | SEFLG_SPEED
+          SEFLG_TOPOCTR // Don't use SEFLG_SPEED, we calculate manually
         );
 
-        if (result.data && result.data.length >= 4) {
+        if (result.data && result.data.length >= 1) {
           const longitude = result.data[0];
-          const speed = result.data[3];
+          // Always calculate speed manually - SEFLG_SPEED with topocentric coordinates is unreliable
+          const speed = calculateSpeedFromPositions(julianDay, planet.id, true);
           planets[planet.name] = {
             longitude,
             latitude: result.data[1],
@@ -613,12 +663,13 @@ router.post("/current-chart", (req, res) => {
         const result = sweph.calc_ut(
           julianDay,
           planet.id,
-          SEFLG_TOPOCTR | SEFLG_SPEED
+          SEFLG_TOPOCTR // Don't use SEFLG_SPEED, we calculate manually
         );
 
-        if (result.data && result.data.length >= 4) {
+        if (result.data && result.data.length >= 1) {
           const longitude = result.data[0];
-          const speed = result.data[3];
+          // Always calculate speed manually - SEFLG_SPEED with topocentric coordinates is unreliable
+          const speed = calculateSpeedFromPositions(julianDay, planet.id, true);
           planets[planet.name] = {
             longitude,
             latitude: result.data[1],
@@ -814,18 +865,6 @@ function findExactIngressTime(
   const normPrev = normalizeLongitude(prevLongitude);
   const normCurrent = normalizeLongitude(currentLongitude);
 
-  console.log(
-    `🔍 [INGRESS REFINEMENT] ${planetName} entering sign ${targetSign} (boundary ${targetBoundary}°)`
-  );
-  console.log(
-    `   Sample window: ${prevDate.toISOString()} to ${currentDate.toISOString()} (${timeDiffHours}h)`
-  );
-  console.log(
-    `   Longitudes: ${prevLongitude.toFixed(6)}° → ${currentLongitude.toFixed(
-      6
-    )}° (normalized: ${normPrev.toFixed(6)}° → ${normCurrent.toFixed(6)}°)`
-  );
-
   while (high - low > toleranceDays && iterations < maxIterations) {
     iterations++;
     const midJD = (low + high) / 2;
@@ -867,43 +906,21 @@ function findExactIngressTime(
   const timeDiffSeconds = Math.abs((bestJD - currentJD) * 24 * 60 * 60);
   const timeDiffMinutes = timeDiffSeconds / 60;
 
-  if (refined) {
-    console.log(
-      `   ✅ [REFINED] Exact time: ${exactDate.toISOString()} (${timeDiffSeconds.toFixed(
-        3
-      )} sec / ${timeDiffMinutes.toFixed(
-        1
-      )} min from sample, ${iterations} iterations, precision: ±0.01s)`
-    );
-  } else {
-    console.log(
-      `   ⚠️ [NO REFINEMENT] Using sample time: ${sampleDate.toISOString()} (${iterations} iterations, diff: ${timeDiffSeconds.toFixed(
-        3
-      )} sec / ${timeDiffMinutes.toFixed(1)} min)`
-    );
-  }
-
   return bestJD;
 }
 
-// Helper function to find exact station time using binary search
+// Helper function to find exact station time using bisection root-finding
+// We know speed changes sign between prevSpeed and currentSpeed, so we can use bisection
+// to find the exact point where speed = 0
 function findExactStationTime(
   planetId,
   prevJD,
   currentJD,
   prevSpeed,
   currentSpeed,
-  maxIterations = 30, // Increased for higher precision
-  toleranceDays = 0.01 / (24 * 60 * 60) // 0.01 second tolerance for maximum precision
+  maxIterations = 50,
+  toleranceDays = 0.001 / (24 * 60 * 60) // 1 millisecond tolerance
 ) {
-  let low = prevJD;
-  let high = currentJD;
-  let lowSpeed = prevSpeed; // Track speed at low bound
-  let highSpeed = currentSpeed; // Track speed at high bound
-  let bestJD = prevJD;
-  let bestSpeedDiff = Math.abs(prevSpeed); // Track smallest speed magnitude found
-  let iterations = 0;
-
   const planetName = getPlanetNameFromId(planetId);
   const prevDate = julianDayToDate(prevJD);
   const currentDate = julianDayToDate(currentJD);
@@ -911,120 +928,253 @@ function findExactStationTime(
   const stationType =
     prevSpeed > 0 && currentSpeed < 0 ? "retrograde" : "direct";
 
-  console.log(`🔍 [STATION REFINEMENT] ${planetName} ${stationType} station`);
-  console.log(
-    `   Sample window: ${prevDate.toISOString()} to ${currentDate.toISOString()} (${timeDiffHours}h)`
-  );
-  console.log(
-    `   Speeds: ${prevSpeed.toFixed(6)}°/day → ${currentSpeed.toFixed(
-      6
-    )}°/day (signs: ${Math.sign(prevSpeed)} → ${Math.sign(currentSpeed)})`
-  );
+  // Special logging for Jupiter retrograde station on Nov 11, 2025 (expected ~9:37 AM)
+  const isJupiterNov11 =
+    planetName.toLowerCase() === "jupiter" &&
+    prevDate.getUTCFullYear() === 2025 &&
+    prevDate.getUTCMonth() === 10 && // November (0-indexed)
+    prevDate.getUTCDate() === 11 &&
+    stationType === "retrograde";
 
-  while (high - low > toleranceDays && iterations < maxIterations) {
-    iterations++;
-    const midJD = (low + high) / 2;
+  // Station refinement logs removed for cleanliness - keep only errors
+  // console.log(`🔍 [STATION REFINEMENT] ${planetName} ${stationType} station`);
+  // console.log(
+  //   `   Sample window: ${prevDate.toISOString()} to ${currentDate.toISOString()} (${timeDiffHours}h)`
+  // );
+  // IMPORTANT: Recalculate speeds at sample points using calculateSpeedFromPositions
+  // The input speeds may be average speeds over the interval (for large time differences),
+  // but we need actual instantaneous speeds for accurate bisection
+  let recalculatedPrevSpeed = prevSpeed;
+  let recalculatedCurrentSpeed = currentSpeed;
+  try {
+    recalculatedPrevSpeed = calculateSpeedFromPositions(prevJD, planetId, true);
+    recalculatedCurrentSpeed = calculateSpeedFromPositions(
+      currentJD,
+      planetId,
+      true
+    );
+  } catch (error) {
+    // Use input speeds if recalculation fails
+  }
 
+  // Use bisection to find where speed = 0
+  // We know speed changes sign between prevJD and currentJD
+  let low = prevJD;
+  let high = currentJD;
+  let lowSpeed = recalculatedPrevSpeed;
+  let highSpeed = recalculatedCurrentSpeed;
+
+  // Track whether we'll do bisection or just refinement search
+  let skipBisection = false;
+
+  // If recalculated speeds have same sign, we can't use bisection
+  // but we'll still do a refinement search to find the minimum speed
+  if (Math.sign(lowSpeed) === Math.sign(highSpeed)) {
+    // If both speeds are very close to zero (within 0.001°/day), proceed with bisection anyway
+    // The station might be between the samples even if both calculated speeds have same sign
+    if (Math.abs(lowSpeed) > 0.001 || Math.abs(highSpeed) > 0.001) {
+      // Try checking speeds at points slightly inside the interval
+      const offsetDays = (currentJD - prevJD) * 0.1; // 10% into the interval
+      try {
+        const offsetLowSpeed = calculateSpeedFromPositions(
+          prevJD + offsetDays,
+          planetId,
+          true
+        );
+        const offsetHighSpeed = calculateSpeedFromPositions(
+          currentJD - offsetDays,
+          planetId,
+          true
+        );
+
+        // If offset speeds have opposite signs, use them for bisection
+        if (Math.sign(offsetLowSpeed) !== Math.sign(offsetHighSpeed)) {
+          low = prevJD + offsetDays;
+          high = currentJD - offsetDays;
+          lowSpeed = offsetLowSpeed;
+          highSpeed = offsetHighSpeed;
+        } else {
+          // Still same sign even with offsets - can't use bisection
+          // We'll skip bisection and go straight to refinement search
+          skipBisection = true;
+        }
+      } catch (error) {
+        // If offset calculation fails, can't use bisection - do refinement search instead
+        skipBisection = true;
+      }
+    }
+    // If both speeds are very small (< 0.001°/day), proceed with bisection anyway
+    // as the station is likely somewhere in between
+  }
+
+  // Initialize bestJD - use midpoint if doing bisection, otherwise use point with lower speed
+  let bestJD;
+  let bestSpeedAbs = Infinity;
+  let iterations = 0;
+
+  if (skipBisection) {
+    // Can't use bisection - initialize to whichever endpoint has speed closer to zero
+    bestJD =
+      Math.abs(recalculatedCurrentSpeed) < Math.abs(recalculatedPrevSpeed)
+        ? currentJD
+        : prevJD;
+    bestSpeedAbs = Math.min(
+      Math.abs(recalculatedPrevSpeed),
+      Math.abs(recalculatedCurrentSpeed)
+    );
+  } else {
+    // Initialize bestJD to midpoint to avoid starting at exact hour sample times
+    const initialMidJD = (low + high) / 2;
+    bestJD = initialMidJD;
+
+    // Calculate initial speed at midpoint
     try {
-      const result = sweph.calc_ut(
-        midJD,
+      const initialResult = sweph.calc_ut(
+        initialMidJD,
         planetId,
-        SEFLG_TOPOCTR | SEFLG_SPEED
+        SEFLG_TOPOCTR
       );
-      if (result.data && result.data.length >= 4) {
-        const midSpeed = result.data[3];
-        const lowSign = Math.sign(lowSpeed);
-        const midSign = Math.sign(midSpeed);
-        const highSign = Math.sign(highSpeed);
+      if (initialResult.data && initialResult.data.length >= 1) {
+        const initialSpeed = calculateSpeedFromPositions(
+          initialMidJD,
+          planetId,
+          true
+        );
+        bestSpeedAbs = Math.abs(initialSpeed);
+      }
+    } catch (error) {}
+  }
 
-        // Update best match if this is closer to zero
-        if (Math.abs(midSpeed) < bestSpeedDiff) {
-          bestSpeedDiff = Math.abs(midSpeed);
-          bestJD = midJD;
-        }
+  // Only do bisection if we have opposite signs
+  if (!skipBisection) {
+    while (high - low > toleranceDays && iterations < maxIterations) {
+      iterations++;
+      const midJD = (low + high) / 2;
 
-        // Log progress every 3 iterations
-        if (iterations <= 3 || iterations % 3 === 0) {
-          const lowDate = julianDayToDate(low);
-          const highDate = julianDayToDate(high);
-          const windowHours = ((high - low) * 24).toFixed(2);
-          console.log(
-            `   [ITER ${iterations}] mid=${julianDayToDate(
-              midJD
-            ).toISOString()}, speed=${midSpeed.toFixed(
-              6
-            )}°/day, signs=${lowSign}→${midSign}→${highSign}, window=${windowHours}h (${lowDate.toISOString()} → ${highDate.toISOString()})`
-          );
-          if (bestJD !== prevJD && bestJD !== currentJD) {
-            console.log(
-              `      → Best so far: ${julianDayToDate(
-                bestJD
-              ).toISOString()} (speed=${bestSpeedDiff.toFixed(6)}°/day)`
-            );
+      try {
+        // Don't use SEFLG_SPEED flag - we calculate speed manually
+        const result = sweph.calc_ut(midJD, planetId, SEFLG_TOPOCTR);
+
+        if (result.data && result.data.length >= 1) {
+          // Always calculate speed manually - SEFLG_SPEED with topocentric coordinates is unreliable
+          const midSpeed = calculateSpeedFromPositions(midJD, planetId, true);
+          const midSpeedAbs = Math.abs(midSpeed);
+
+          // Track the best (closest to zero) speed we've found
+          // Always update if we find a better speed (no threshold to avoid getting stuck)
+          if (midSpeedAbs < bestSpeedAbs) {
+            bestSpeedAbs = midSpeedAbs;
+            bestJD = midJD;
           }
-        }
 
-        // Binary search: zero crossing is where sign changes
-        // We know lowSpeed and highSpeed have opposite signs (that's how we detected the station)
-        if (lowSign !== midSign) {
-          // Zero crossing is between low and mid
-          high = midJD;
-          highSpeed = midSpeed;
-          if (iterations <= 3) {
-            console.log(
-              `      → Zero crossing between low and mid, updating high`
-            );
+          // Bisection: determine which half contains the zero crossing
+          const lowSign = Math.sign(lowSpeed);
+          const midSign = Math.sign(midSpeed);
+
+          if (lowSign !== midSign) {
+            // Zero crossing is between low and mid
+            high = midJD;
+            highSpeed = midSpeed;
+          } else {
+            // Zero crossing is between mid and high
+            low = midJD;
+            lowSpeed = midSpeed;
           }
         } else {
-          // Zero crossing is between mid and high (lowSign === midSign, but midSign !== highSign)
-          low = midJD;
-          lowSpeed = midSpeed;
-          if (iterations <= 3) {
-            console.log(
-              `      → Zero crossing between mid and high, updating low`
-            );
-          }
+          console.log(
+            `   ⚠️ [ITERATION ${iterations}] calc_ut returned invalid data, breaking`
+          );
+          break;
         }
-      } else {
+      } catch (error) {
         console.log(
-          `   ⚠️ [ITERATION ${iterations}] calc_ut returned invalid data (length: ${result.data?.length}), breaking`
+          `   ❌ [ITERATION ${iterations}] Error in calc_ut: ${error.message}, breaking`
         );
         break;
       }
+    }
+  }
+
+  // After bisection (if used), do a fine-grained search across an EXPANDED window
+  // Expand search window to 6 hours before prevJD and 6 hours after currentJD
+  // This ensures we catch stations that occur near sample boundaries
+  const searchStepSeconds = 30; // 30 second steps (reasonable granularity without being too slow)
+  const searchStepDays = searchStepSeconds / (24 * 60 * 60);
+  const expansionHours = 6; // Search 6 hours before and after the detected interval
+  const expansionDays = expansionHours / 24;
+  const expandedPrevJD = prevJD - expansionDays;
+  const expandedCurrentJD = currentJD + expansionDays;
+  const totalWindowDays = expandedCurrentJD - expandedPrevJD;
+
+  // Track the best point before refinement search for comparison
+  const beforeRefinementJD = bestJD;
+  const beforeRefinementSpeed = bestSpeedAbs;
+
+  // Search from expandedPrevJD to expandedCurrentJD
+  for (
+    let testJD = expandedPrevJD;
+    testJD <= expandedCurrentJD;
+    testJD += searchStepDays
+  ) {
+    try {
+      // Don't use SEFLG_SPEED flag - we calculate speed manually
+      const result = sweph.calc_ut(testJD, planetId, SEFLG_TOPOCTR);
+
+      if (result.data && result.data.length >= 1) {
+        // Always calculate speed manually - SEFLG_SPEED with topocentric coordinates is unreliable
+        const testSpeed = calculateSpeedFromPositions(testJD, planetId, true);
+        const testSpeedAbs = Math.abs(testSpeed);
+
+        // Always update if we find a better speed (no threshold to avoid getting stuck at exact hours)
+        if (testSpeedAbs < bestSpeedAbs) {
+          bestSpeedAbs = testSpeedAbs;
+          bestJD = testJD;
+        }
+      }
     } catch (error) {
-      console.log(
-        `   ❌ [ITERATION ${iterations}] Error in calc_ut: ${error.message}, breaking`
-      );
-      break;
+      // Skip errors
+    }
+  }
+
+  // Always do a final fine-grained search around the best point found
+  const offsetSeconds = Math.abs((bestJD - beforeRefinementJD) * 24 * 60 * 60);
+  // Use a larger search window if the offset from bisection is large (suggests bisection may have been wrong)
+  const fineWindowSeconds = offsetSeconds > 300 ? 600 : 300; // ±10 minutes if large offset, ±5 minutes otherwise
+  const fineStepSeconds = 1; // 1 second steps for maximum precision
+  const fineWindowDays = fineWindowSeconds / (24 * 60 * 60);
+  const fineStepDays = fineStepSeconds / (24 * 60 * 60);
+  const fineBestJD = bestJD;
+  const fineBestSpeed = bestSpeedAbs;
+  let fineChecked = 0;
+
+  for (
+    let offset = -fineWindowDays;
+    offset <= fineWindowDays;
+    offset += fineStepDays
+  ) {
+    const fineJD = bestJD + offset;
+    // Allow fine-grained search within the expanded window (6 hours before/after original interval)
+    if (fineJD < expandedPrevJD || fineJD > expandedCurrentJD) continue;
+
+    try {
+      const fineSpeed = calculateSpeedFromPositions(fineJD, planetId, true);
+      const fineSpeedAbs = Math.abs(fineSpeed);
+      fineChecked++;
+      if (fineSpeedAbs < bestSpeedAbs) {
+        bestSpeedAbs = fineSpeedAbs;
+        bestJD = fineJD;
+      }
+    } catch (error) {
+      // Skip
     }
   }
 
   const exactDate = julianDayToDate(bestJD);
-  const sampleDate = julianDayToDate(currentJD);
-  const refined = bestJD !== currentJD;
-  const timeDiffSeconds = Math.abs((bestJD - currentJD) * 24 * 60 * 60);
-  const timeDiffMinutes = timeDiffSeconds / 60;
-
-  if (refined) {
-    console.log(
-      `   ✅ [REFINED] Exact time: ${exactDate.toISOString()} (${timeDiffSeconds.toFixed(
-        3
-      )} sec / ${timeDiffMinutes.toFixed(
-        1
-      )} min from sample, ${iterations} iterations, precision: ±0.01s)`
-    );
-  } else {
-    console.log(
-      `   ⚠️ [NO REFINEMENT] Using sample time: ${sampleDate.toISOString()} (${iterations} iterations, diff: ${timeDiffSeconds.toFixed(
-        3
-      )} sec / ${timeDiffMinutes.toFixed(1)} min)`
-    );
-  }
 
   return bestJD;
 }
 
-// Helper function to find exact aspect time using binary search
+// Helper function to find exact aspect time using hierarchical search (hour -> minute -> second)
 function findExactAspectTime(
   planet1Id,
   planet2Id,
@@ -1033,8 +1183,8 @@ function findExactAspectTime(
   currentJD,
   prevAngle,
   currentAngle,
-  maxIterations = 30, // Increased for higher precision
-  toleranceDays = 0.01 / (24 * 60 * 60) // 0.01 second tolerance for maximum precision
+  maxIterations = 30, // Not used in hierarchical search, kept for compatibility
+  toleranceDays = 0.01 / (24 * 60 * 60) // Not used in hierarchical search, kept for compatibility
 ) {
   const planet1Name = getPlanetNameFromId(planet1Id);
   const planet2Name = getPlanetNameFromId(planet2Id);
@@ -1060,60 +1210,45 @@ function findExactAspectTime(
   const prevDistance = getDistanceFromTarget(prevAngle);
   const currentDistance = getDistanceFromTarget(currentAngle);
 
-  console.log(
-    `🔍 [ASPECT REFINEMENT] ${planet1Name} ${aspectName} ${planet2Name}`
-  );
-  console.log(
-    `   Sample window: ${prevDate.toISOString()} to ${currentDate.toISOString()} (${timeDiffHours}h)`
-  );
-  console.log(
-    `   Angles: ${prevAngle.toFixed(2)}° → ${currentAngle.toFixed(
-      2
-    )}° (target: ${targetAngle}°)`
-  );
-  console.log(
-    `   Distances from target: ${prevDistance.toFixed(
-      4
-    )}° → ${currentDistance.toFixed(4)}°`
-  );
-
   // If we're not crossing the exact angle, return the sample that's closer
   // (This shouldn't happen if detection is working correctly, but safety check)
   if (prevDistance > 1 && currentDistance > 1) {
-    console.log(
-      `   ⚠️ [NO REFINEMENT] Both distances > 1°, using closer sample`
-    );
     return prevDistance < currentDistance ? prevJD : currentJD;
   }
 
-  let low = prevJD;
-  let high = currentJD;
-  let bestJD = currentJD;
-  let bestDistance = currentDistance;
-  let iterations = 0;
+  // Expand search window to 6 hours before prevJD and 6 hours after currentJD
+  // This ensures we catch aspects that occur near sample boundaries
+  const expansionHours = 6;
+  const expansionDays = expansionHours / 24;
+  const expandedPrevJD = prevJD - expansionDays;
+  const expandedCurrentJD = currentJD + expansionDays;
 
-  // Log initial state
-  if (iterations === 0) {
-    console.log(
-      `   Initial: prevDist=${prevDistance.toFixed(
-        4
-      )}°, currentDist=${currentDistance.toFixed(4)}°`
-    );
-  }
+  // Hierarchical search: find best hour, then best minute, then best second
+  // Initialize bestJD to whichever sample is closer to target angle
+  let bestJD = prevDistance < currentDistance ? prevJD : currentJD;
+  let bestDistance = Math.min(prevDistance, currentDistance);
 
-  while (high - low > toleranceDays && iterations < maxIterations) {
-    iterations++;
-    const midJD = (low + high) / 2;
-    const midDate = julianDayToDate(midJD);
+  // Step 1: Find the best hour within the expanded window
+  // Sample every hour (at :00 minutes) in the expanded window
+  const hoursInWindow = Math.ceil((expandedCurrentJD - expandedPrevJD) * 24);
+
+  let bestHourDate = null;
+  let bestHourDistance = bestDistance;
+
+  for (let h = 0; h <= hoursInWindow; h++) {
+    const hourJD = expandedPrevJD + h / 24;
+
+    // Skip if outside expanded window
+    if (hourJD < expandedPrevJD || hourJD > expandedCurrentJD) continue;
 
     try {
       const result1 = sweph.calc_ut(
-        midJD,
+        hourJD,
         planet1Id,
         SEFLG_TOPOCTR | SEFLG_SPEED
       );
       const result2 = sweph.calc_ut(
-        midJD,
+        hourJD,
         planet2Id,
         SEFLG_TOPOCTR | SEFLG_SPEED
       );
@@ -1127,110 +1262,160 @@ function findExactAspectTime(
         const lon1 = result1.data[0];
         const lon2 = result2.data[0];
         const diff = Math.abs(lon1 - lon2);
-        const midAngle = Math.min(diff, 360 - diff);
-        const midDistance = getDistanceFromTarget(midAngle);
+        const angle = Math.min(diff, 360 - diff);
+        const distance = getDistanceFromTarget(angle);
 
-        // Log every 3rd iteration for debugging
-        if (iterations <= 3 || iterations % 3 === 0) {
-          const lowDate = julianDayToDate(low);
-          const highDate = julianDayToDate(high);
-          const windowHours = ((high - low) * 24).toFixed(2);
-          console.log(
-            `   [ITER ${iterations}] mid=${midDate.toISOString()}, angle=${midAngle.toFixed(
-              2
-            )}°, dist=${midDistance.toFixed(
-              4
-            )}°, window=${windowHours}h (${lowDate.toISOString()} → ${highDate.toISOString()})`
-          );
+        if (distance < bestHourDistance - 1e-10) {
+          bestHourDistance = distance;
+          bestJD = hourJD;
         }
-
-        // Update best match
-        if (midDistance < bestDistance) {
-          bestDistance = midDistance;
-          bestJD = midJD;
-          if (iterations <= 3) {
-            console.log(`      → New best! dist=${bestDistance.toFixed(4)}°`);
-          }
-        }
-
-        // If we're very close to exact, we can stop early
-        if (midDistance < 0.01) {
-          console.log(
-            `   ✅ Found exact match (${midDistance.toFixed(
-              4
-            )}°) at iteration ${iterations}`
-          );
-          return midJD;
-        }
-
-        // Binary search: determine which half contains the exact moment
-        // The exact moment is where distance is minimized
-        // If mid is closer than both prev and current, we're at the right spot
-        // Otherwise, search in the direction that's getting closer
-        if (midDistance < prevDistance && midDistance < currentDistance) {
-          // We're at a local minimum, this is likely the exact moment
-          // But continue to refine
-          if (prevDistance < currentDistance) {
-            high = midJD;
-          } else {
-            low = midJD;
-          }
-        } else if (prevDistance > currentDistance) {
-          // Getting closer from prev to current, exact is between mid and current
-          low = midJD;
-        } else {
-          // Getting closer from current to prev, exact is between prev and mid
-          high = midJD;
-        }
-      } else {
-        console.log(
-          `   ⚠️ [ITERATION ${iterations}] calc_ut returned invalid data, breaking`
-        );
-        break;
       }
     } catch (error) {
-      console.log(
-        `   ❌ [ITERATION ${iterations}] Error in calc_ut: ${error.message}, breaking`
-      );
-      break;
+      // Skip errors for individual hours
+    }
+  }
+
+  // Even if no better hour found, we should still check minutes and seconds
+  // because the optimal time might be between hour boundaries
+  if (bestHourDistance >= bestDistance - 1e-10) {
+    // Reset to initial best values so we search around the initial sample time
+    bestHourDistance = bestDistance;
+    // Use the hour containing the initial best time (round down to hour start)
+    const initialBestDate = julianDayToDate(bestJD);
+    const hourStartDate = new Date(initialBestDate);
+    hourStartDate.setUTCMinutes(0, 0, 0);
+    // Convert back to JD (approximate - this should be fine for our search)
+    const msSinceEpoch = hourStartDate.getTime();
+    const jdOffset = 2440587.5;
+    const msPerDay = 86400000;
+    const hourStartJD = msSinceEpoch / msPerDay + jdOffset;
+    bestJD = hourStartJD;
+  }
+
+  bestHourDate = julianDayToDate(bestJD);
+
+  // Step 2: Find the best minute - search in best hour plus adjacent hours for better precision
+  // Search 1 hour before, the best hour, and 1 hour after (to catch optimal times near boundaries)
+
+  const bestHourJD = bestJD;
+  let bestMinuteDate = bestHourDate;
+  let bestMinuteDistance = bestHourDistance;
+
+  // Search in 3 hours: bestHour - 1h, bestHour, bestHour + 1h
+  const hoursToSearch = [bestHourJD - 1 / 24, bestHourJD, bestHourJD + 1 / 24];
+
+  for (const hourJD of hoursToSearch) {
+    // Skip if outside expanded window
+    if (hourJD < expandedPrevJD || hourJD > expandedCurrentJD) continue;
+
+    // Check all 60 minutes in this hour
+    for (let m = 0; m < 60; m++) {
+      const minuteJD = hourJD + m / (24 * 60);
+
+      // Skip if outside expanded window
+      if (minuteJD < expandedPrevJD || minuteJD > expandedCurrentJD) continue;
+
+      try {
+        const result1 = sweph.calc_ut(
+          minuteJD,
+          planet1Id,
+          SEFLG_TOPOCTR | SEFLG_SPEED
+        );
+        const result2 = sweph.calc_ut(
+          minuteJD,
+          planet2Id,
+          SEFLG_TOPOCTR | SEFLG_SPEED
+        );
+
+        if (
+          result1.data &&
+          result1.data.length >= 1 &&
+          result2.data &&
+          result2.data.length >= 1
+        ) {
+          const lon1 = result1.data[0];
+          const lon2 = result2.data[0];
+          const diff = Math.abs(lon1 - lon2);
+          const angle = Math.min(diff, 360 - diff);
+          const distance = getDistanceFromTarget(angle);
+
+          if (distance < bestMinuteDistance - 1e-10) {
+            bestMinuteDistance = distance;
+            bestMinuteDate = julianDayToDate(minuteJD);
+            bestJD = minuteJD;
+          }
+        }
+      } catch (error) {
+        // Skip errors for individual minutes
+      }
+    }
+  }
+
+  // Step 3: Find the best second - search in best minute plus adjacent minutes for better precision
+  // Search 1 minute before, the best minute, and 1 minute after (to catch optimal times near boundaries)
+
+  const bestMinuteJD = bestJD;
+  let bestSecondDate = bestMinuteDate;
+  let bestSecondDistance = bestMinuteDistance;
+
+  // Search in 3 minutes: bestMinute - 1m, bestMinute, bestMinute + 1m
+  const minutesToSearch = [
+    bestMinuteJD - 1 / (24 * 60),
+    bestMinuteJD,
+    bestMinuteJD + 1 / (24 * 60),
+  ];
+
+  for (const minuteJD of minutesToSearch) {
+    // Skip if outside expanded window
+    if (minuteJD < expandedPrevJD || minuteJD > expandedCurrentJD) continue;
+
+    // Check all 60 seconds in this minute
+    for (let s = 0; s < 60; s++) {
+      const secondJD = minuteJD + s / (24 * 60 * 60);
+
+      // Skip if outside expanded window
+      if (secondJD < expandedPrevJD || secondJD > expandedCurrentJD) continue;
+
+      try {
+        const result1 = sweph.calc_ut(
+          secondJD,
+          planet1Id,
+          SEFLG_TOPOCTR | SEFLG_SPEED
+        );
+        const result2 = sweph.calc_ut(
+          secondJD,
+          planet2Id,
+          SEFLG_TOPOCTR | SEFLG_SPEED
+        );
+
+        if (
+          result1.data &&
+          result1.data.length >= 1 &&
+          result2.data &&
+          result2.data.length >= 1
+        ) {
+          const lon1 = result1.data[0];
+          const lon2 = result2.data[0];
+          const diff = Math.abs(lon1 - lon2);
+          const angle = Math.min(diff, 360 - diff);
+          const distance = getDistanceFromTarget(angle);
+
+          if (distance < bestSecondDistance - 1e-10) {
+            bestSecondDistance = distance;
+            bestSecondDate = julianDayToDate(secondJD);
+            bestJD = secondJD;
+          }
+        }
+      } catch (error) {
+        // Skip errors for individual seconds
+      }
     }
   }
 
   const exactDate = julianDayToDate(bestJD);
-  const sampleDate = julianDayToDate(currentJD);
-  const refined = bestJD !== currentJD;
+  const refined = bestJD !== currentJD && bestJD !== prevJD;
   const timeDiffSeconds = Math.abs((bestJD - currentJD) * 24 * 60 * 60);
   const timeDiffMinutes = timeDiffSeconds / 60;
-  const finalWindowHours = ((high - low) * 24).toFixed(2);
-
-  if (refined) {
-    console.log(
-      `   ✅ [REFINED] Exact time: ${exactDate.toISOString()} (${timeDiffSeconds.toFixed(
-        3
-      )} sec / ${timeDiffMinutes.toFixed(
-        1
-      )} min from sample, ${iterations} iterations, bestDist=${bestDistance.toFixed(
-        4
-      )}°, precision: ±0.01s)`
-    );
-  } else {
-    console.log(
-      `   ⚠️ [NO REFINEMENT] Using sample time: ${sampleDate.toISOString()} (${iterations} iterations, diff: ${timeDiffSeconds.toFixed(
-        3
-      )} sec / ${timeDiffMinutes.toFixed(
-        1
-      )} min, bestDist=${bestDistance.toFixed(
-        4
-      )}°, finalWindow=${finalWindowHours}h, prevDist=${prevDistance.toFixed(
-        4
-      )}°, currDist=${currentDistance.toFixed(4)}°)`
-    );
-    if (bestJD === currentJD && bestDistance === currentDistance) {
-      console.log(
-        `      💡 Reason: bestJD is sample time, bestDistance matches currentDistance - aspect may not cross exact angle in window`
-      );
-    }
-  }
 
   return bestJD;
 }
@@ -1353,6 +1538,7 @@ router.post("/year-ephemeris", (req, res) => {
 
     // Generate samples
     const currentDate = new Date(startDate);
+    const seenTimestamps = new Set(); // Track timestamps to prevent duplicates
     while (currentDate <= endDate) {
       const julianDay = calculateJulianDay(
         currentDate.getUTCFullYear(),
@@ -1363,9 +1549,23 @@ router.post("/year-ephemeris", (req, res) => {
         currentDate.getUTCSeconds()
       );
 
+      // Check for duplicate timestamps (shouldn't happen, but safeguard)
+      const timestamp = currentDate.toISOString();
+      if (seenTimestamps.has(timestamp)) {
+        console.warn(
+          `⚠️ Duplicate timestamp detected: ${timestamp}, skipping sample`
+        );
+        // Skip this sample and advance to next
+        currentDate.setTime(
+          currentDate.getTime() + sampleInterval * 60 * 60 * 1000
+        );
+        continue;
+      }
+      seenTimestamps.add(timestamp);
+
       const sample = {
         julianDay,
-        timestamp: currentDate.toISOString(),
+        timestamp,
         planets: {},
       };
 
@@ -1375,16 +1575,15 @@ router.post("/year-ephemeris", (req, res) => {
           const result = sweph.calc_ut(
             julianDay,
             planet.id,
-            SEFLG_TOPOCTR | SEFLG_SPEED
+            SEFLG_TOPOCTR // Don't use SEFLG_SPEED, we calculate speed manually
           );
 
           if (result.data && result.data.length >= 1) {
             const longitude = result.data[0];
-            let speed = result.data[3] || 0; // Try to get speed from result
-
-            // If speed is 0 or missing, calculate it from previous sample's longitude
-            // This is necessary because SEFLG_SPEED with topocentric coordinates sometimes returns 0
-            if (speed === 0 && samples.length > 0) {
+            // Always calculate speed manually - SEFLG_SPEED with topocentric coordinates is unreliable
+            // For ephemeris samples, we can use the previous sample's longitude for better accuracy with larger time differences
+            let speed = 0;
+            if (samples.length > 0) {
               const prevSample = samples[samples.length - 1];
               const prevPlanet = prevSample.planets[planet.name];
               if (prevPlanet && prevPlanet.longitude !== undefined) {
@@ -1401,16 +1600,9 @@ router.post("/year-ephemeris", (req, res) => {
                 }
               }
             }
-
-            // Debug: Log first few mercury calculations to check speed
-            if (planet.name === "mercury" && samples.length < 3) {
-              console.log(
-                `Mercury calc - JD: ${julianDay}, result.data length: ${
-                  result.data.length
-                }, speed: ${speed.toFixed(6)}, longitude: ${longitude.toFixed(
-                  6
-                )}`
-              );
+            // Fallback to manual calculation if we don't have a previous sample
+            if (speed === 0 && samples.length === 0) {
+              speed = calculateSpeedFromPositions(julianDay, planet.id, true);
             }
 
             sample.planets[planet.name] = {
@@ -1422,14 +1614,6 @@ router.post("/year-ephemeris", (req, res) => {
               degreeFormatted: formatDegree(longitude),
               isRetrograde: speed < 0,
             };
-          } else {
-            // Debug: Log if result structure is unexpected
-            if (planet.name === "mercury" && samples.length < 3) {
-              console.log(
-                `Mercury calc - Unexpected result structure:`,
-                result
-              );
-            }
           }
         } catch (planetError) {
           console.error(`Error calculating ${planet.name}:`, planetError);
@@ -1439,7 +1623,10 @@ router.post("/year-ephemeris", (req, res) => {
       samples.push(sample);
 
       // Move to next sample time
-      currentDate.setUTCHours(currentDate.getUTCHours() + sampleInterval);
+      // Add milliseconds directly to avoid date wrapping issues
+      currentDate.setTime(
+        currentDate.getTime() + sampleInterval * 60 * 60 * 1000
+      );
     }
 
     // Detect events and refine timestamps immediately
@@ -1527,15 +1714,6 @@ router.post("/year-ephemeris", (req, res) => {
           return; // Skip this planet for this sample
         }
 
-        // Log first few speed values for retrograde planets to verify they're being calculated
-        if (i < 5 && ["mercury", "venus", "mars"].includes(planet.name)) {
-          console.log(
-            `[${i}] ${planet.name} speed: ${currentSpeed.toFixed(
-              6
-            )} deg/day, longitude: ${currentLongitude.toFixed(2)}°`
-          );
-        }
-
         // Detect ingress
         if (
           prevState.zodiacSign !== -1 &&
@@ -1558,17 +1736,6 @@ router.post("/year-ephemeris", (req, res) => {
             const exactDate = julianDayToDate(exactJD);
             const exactDateStr = exactDate.toISOString();
             const timeDiff = Math.abs((exactJD - sample.julianDay) * 24 * 60); // minutes
-
-            if (timeDiff > 1) {
-              console.log(
-                `   📊 [EVENT CREATED] ${planet.name} ingress: ${
-                  signs[prevState.zodiacSign]
-                } → ${signs[currentZodiacSign]}`
-              );
-              console.log(`      Sample time: ${sampleDateStr}`);
-              console.log(`      Exact time:  ${exactDateStr}`);
-              console.log(`      Difference:  ${timeDiff.toFixed(1)} minutes`);
-            }
 
             events.push({
               type: "ingress",
@@ -1601,37 +1768,6 @@ router.post("/year-ephemeris", (req, res) => {
 
           const prevSpeedSign = Math.sign(prevState.speed);
           const currentSpeedSign = Math.sign(currentSpeed);
-
-          // Debug: Log speed values for retrograde planets occasionally
-          if (
-            i % 100 === 0 &&
-            ["mercury", "venus", "mars"].includes(planet.name)
-          ) {
-            console.log(
-              `Speed check [${i}]: ${
-                planet.name
-              } prevSpeed=${prevState.speed.toFixed(
-                6
-              )}, currentSpeed=${currentSpeed.toFixed(
-                6
-              )}, prevSign=${prevSpeedSign}, currentSign=${currentSpeedSign}`
-            );
-          }
-
-          // Log when speed signs are different (potential station)
-          if (
-            prevSpeedSign !== 0 &&
-            currentSpeedSign !== 0 &&
-            prevSpeedSign !== currentSpeedSign
-          ) {
-            console.log(
-              `⚠️ Potential station [${i}]: ${
-                planet.name
-              } speed sign changed from ${prevSpeedSign} to ${currentSpeedSign} (prevSpeed=${prevState.speed.toFixed(
-                6
-              )}, currentSpeed=${currentSpeed.toFixed(6)})`
-            );
-          }
 
           // Check if speed crossed zero (sign changed)
           // Relaxed threshold - we want to catch stations even if speeds are small
@@ -1676,31 +1812,6 @@ router.post("/year-ephemeris", (req, res) => {
                 prevState.speed > 0 && currentSpeed < 0
                   ? "retrograde"
                   : "direct";
-
-              if (timeDiff > 1) {
-                console.log(
-                  `   📊 [EVENT CREATED] ${planet.name} ${stationType} station`
-                );
-                console.log(`      Sample time: ${sampleDateStr}`);
-                console.log(`      Exact time:  ${exactDateStr}`);
-                console.log(
-                  `      Difference:  ${timeDiff.toFixed(1)} minutes`
-                );
-              }
-
-              console.log(
-                `✅ Station detected: ${planet.name} ${stationType} at ${exactDateStr}`,
-                {
-                  prevSpeed: prevState.speed,
-                  currentSpeed: currentSpeed,
-                  prevSpeedSign,
-                  currentSpeedSign,
-                  degree: planetData.degreeFormatted,
-                  sign: planetData.zodiacSignName,
-                  sampleIndex: i,
-                  timeDiffMinutes: timeDiff.toFixed(1),
-                }
-              );
 
               events.push({
                 type: "station",
@@ -1871,16 +1982,6 @@ router.post("/year-ephemeris", (req, res) => {
                   const timeDiff = Math.abs(
                     (exactJD - sample.julianDay) * 24 * 60
                   ); // minutes
-
-                  // Always log aspect events for debugging
-                  console.log(
-                    `   📊 [EVENT CREATED] ${planet1.name} ${aspectType.name} ${planet2.name}`
-                  );
-                  console.log(`      Sample time: ${sampleDateStr}`);
-                  console.log(`      Exact time:  ${exactDateStr}`);
-                  console.log(
-                    `      Difference:  ${timeDiff.toFixed(1)} minutes`
-                  );
 
                   events.push({
                     type: "aspect",

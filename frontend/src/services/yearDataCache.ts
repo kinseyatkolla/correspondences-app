@@ -128,12 +128,75 @@ function restoreDatesFromCache(data: any): ProcessedYearData | null {
     // Restore lines data dates
     if (data.linesData) {
       if (data.linesData.dates && Array.isArray(data.linesData.dates)) {
-        data.linesData.dates = data.linesData.dates.map((date: any) => {
+        // Convert to Date objects
+        let restoredDates = data.linesData.dates.map((date: any) => {
           return typeof date === "string" ? new Date(date) : date;
         });
-      }
 
-      if (data.linesData.planets && Array.isArray(data.linesData.planets)) {
+        // Deduplicate dates based on timestamp (in case of duplicates)
+        const seenTimestamps = new Set<number>();
+        const uniqueDates: Date[] = [];
+        const dateIndices: number[] = []; // Track original indices for planet data
+
+        restoredDates.forEach((date: Date, index: number) => {
+          const timestamp = date.getTime();
+          if (!seenTimestamps.has(timestamp)) {
+            seenTimestamps.add(timestamp);
+            uniqueDates.push(date);
+            dateIndices.push(index);
+          }
+        });
+
+        // Log if duplicates were found
+        if (restoredDates.length !== uniqueDates.length) {
+          console.log(
+            `⚠️ Found duplicate dates in cache: ${restoredDates.length} -> ${
+              uniqueDates.length
+            } (removed ${restoredDates.length - uniqueDates.length} duplicates)`
+          );
+        }
+
+        // Validate: lines data should have ~365 entries (one per day)
+        // If it's much more, it might be using wrong sample interval
+        if (uniqueDates.length > 500) {
+          console.warn(
+            `⚠️ Lines data has ${uniqueDates.length} entries (expected ~365). This may indicate incorrect sample interval was used.`
+          );
+        }
+
+        data.linesData.dates = uniqueDates;
+
+        // Also deduplicate planet data to match the deduplicated dates
+        if (data.linesData.planets && Array.isArray(data.linesData.planets)) {
+          data.linesData.planets = data.linesData.planets.map((planet: any) => {
+            if (planet.data && Array.isArray(planet.data)) {
+              // Filter planet data to match the deduplicated date indices
+              const deduplicatedPlanetData = dateIndices
+                .map((originalIndex) => {
+                  const point = planet.data[originalIndex];
+                  if (point) {
+                    if (point.date && typeof point.date === "string") {
+                      return { ...point, date: new Date(point.date) };
+                    }
+                    return point;
+                  }
+                  return null;
+                })
+                .filter((point): point is any => point !== null);
+
+              return {
+                ...planet,
+                data: deduplicatedPlanetData,
+              };
+            }
+            return planet;
+          });
+        }
+      } else if (
+        data.linesData.planets &&
+        Array.isArray(data.linesData.planets)
+      ) {
+        // If dates array is missing but planets exist, restore planet dates
         data.linesData.planets = data.linesData.planets.map((planet: any) => {
           if (planet.data && Array.isArray(planet.data)) {
             planet.data = planet.data.map((point: any) => {
@@ -207,7 +270,14 @@ export async function loadYearDataFromCache(
       return null;
     }
 
-    console.log(`✅ Loaded complete year data from cache for year ${year}`);
+    // Log lines data info for debugging
+    if (restored.linesData?.dates) {
+      console.log(
+        `✅ Loaded complete year data from cache for year ${year} (${restored.linesData.dates.length} date points)`
+      );
+    } else {
+      console.log(`✅ Loaded complete year data from cache for year ${year}`);
+    }
     return restored;
   } catch (error) {
     console.error("Error loading year data from cache:", error);
