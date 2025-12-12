@@ -78,31 +78,50 @@ Fill in all required fields in App Store Connect:
   - Location: Yes (for astrological calculations)
   - No other data collection needed
 
-## Step 3: Update EAS Configuration
+## Step 3: Configure EAS Secrets for Apple Credentials
 
-### 3.1 Update eas.json
+### 3.1 Set Up EAS Secrets
 
-Edit `frontend/eas.json` and replace the placeholder values:
+**IMPORTANT:** For security, credentials are stored as EAS Secrets instead of hardcoded in `eas.json`. This prevents sensitive information from being exposed in version control.
 
-```json
-{
-  "submit": {
-    "production": {
-      "ios": {
-        "appleId": "your-email@example.com",
-        "ascAppId": "1234567890",
-        "appleTeamId": "ABC123DEF4"
-      }
-    }
-  }
-}
+Run these commands in the `frontend` directory. For each command, follow the interactive prompts:
+
+```bash
+cd frontend
+
+# Set your Apple ID (email)
+eas env:create --scope project --name EAS_APPLE_ID --value "your-email@example.com" --type string
+
+# Set your App Store Connect App ID (numeric ID from Step 2.2, stored as string)
+eas env:create --scope project --name EAS_ASC_APP_ID --value "1234567890" --type string
+
+# Set your Apple Team ID (from Step 1.2)
+eas env:create --scope project --name EAS_APPLE_TEAM_ID --value "ABC123DEF4" --type string
 ```
+
+When prompted for each variable:
+
+1. **Select environment:** Choose `production`
+2. **Select visibility:** Choose `Secret` (these are sensitive credentials)
+3. **Select type:** Choose `string` (should be pre-selected if you used `--type string`)
 
 Where:
 
-- `appleId`: Your Apple ID email
-- `ascAppId`: The numeric Apple ID from App Store Connect (Step 2.2)
-- `appleTeamId`: Your Team ID from Apple Developer (Step 1.2)
+- `EAS_APPLE_ID`: Your Apple ID email (e.g., `your-email@example.com`) - **string**
+- `EAS_ASC_APP_ID`: The numeric Apple ID from App Store Connect (Step 2.2) - stored as **string**
+- `EAS_APPLE_TEAM_ID`: Your Team ID from Apple Developer (Step 1.2) - **string**
+
+**Important:** All three should be stored as **string** type, even though `EAS_ASC_APP_ID` is numeric.
+
+The `eas.json` file already references these environment variables using syntax (`${EAS_APPLE_ID}`, etc.), so no changes to `eas.json` are needed.
+
+**Verify environment variables were created:**
+
+```bash
+eas env:list --scope project
+```
+
+See `frontend/EAS_SECRETS_SETUP.md` for detailed instructions and troubleshooting.
 
 ### 3.2 Verify API URL
 

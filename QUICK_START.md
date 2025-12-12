@@ -46,23 +46,34 @@ Once enrolled, collect these three pieces of information:
 3. Go to App Information
 4. Find the numeric "Apple ID" (like `1234567890`)
 
-### 5. Update eas.json
+### 5. Set Up EAS Secrets for Apple Credentials
 
-Edit `frontend/eas.json` and replace:
+**IMPORTANT:** For security, credentials are now stored as EAS Secrets instead of in `eas.json`.
 
-```json
-{
-  "submit": {
-    "production": {
-      "ios": {
-        "appleId": "YOUR_ACTUAL_APPLE_ID@example.com", // ← Replace with your email
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID", // ← Replace with numeric ID
-        "appleTeamId": "YOUR_TEAM_ID" // ← Replace with Team ID
-      }
-    }
-  }
-}
+Run these commands in the `frontend` directory:
+
+```bash
+cd frontend
+
+# Set your Apple ID (email)
+eas env:create --scope project --name EAS_APPLE_ID --value "your-apple-id@example.com" --type string
+
+# Set your App Store Connect App ID (numeric ID, stored as string)
+eas env:create --scope project --name EAS_ASC_APP_ID --value "1234567890" --type string
+
+# Set your Apple Team ID (10-character ID)
+eas env:create --scope project --name EAS_APPLE_TEAM_ID --value "ABC123DEF4" --type string
 ```
+
+When prompted for each variable:
+
+1. **Select environment:** Choose `production`
+2. **Select visibility:** Choose `Secret` (these are sensitive credentials)
+3. **Select type:** Choose `string` (should be pre-selected if you used `--type string`)
+
+**Important:** Replace the placeholder values with your actual credentials. The `eas.json` file already references these environment variables.
+
+See `frontend/EAS_SECRETS_SETUP.md` for detailed instructions.
 
 ### 6. Create Your First Build
 
