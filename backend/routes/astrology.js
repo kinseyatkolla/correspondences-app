@@ -844,15 +844,20 @@ function findExactIngressTime(
   toleranceDays = 0.01 / (24 * 60 * 60) // 0.01 second tolerance for maximum precision
 ) {
   const targetBoundary = targetSign * 30;
-  let low = prevJD;
-  let high = currentJD;
-  let bestJD = currentJD;
-  let iterations = 0;
-
   const planetName = getPlanetNameFromId(planetId);
   const prevDate = julianDayToDate(prevJD);
   const currentDate = julianDayToDate(currentJD);
   const timeDiffHours = ((currentJD - prevJD) * 24).toFixed(2);
+
+  // Expand search window significantly before prevJD and after currentJD
+  // This ensures we catch ingresses that occur well outside sample boundaries
+  // Use at least 24 hours expansion (1 full day on each side) to handle cases
+  // where the ingress occurs much later than the initial sample window suggests
+  const windowSizeHours = (currentJD - prevJD) * 24;
+  const expansionHours = Math.max(24, windowSizeHours * 2); // At least 24h, or 2x window size
+  const expansionDays = expansionHours / 24;
+  const expandedPrevJD = prevJD - expansionDays;
+  const expandedCurrentJD = currentJD + expansionDays;
 
   // Normalize longitude for wrap-around
   const normalizeLongitude = (lon) => {
@@ -865,46 +870,99 @@ function findExactIngressTime(
   const normPrev = normalizeLongitude(prevLongitude);
   const normCurrent = normalizeLongitude(currentLongitude);
 
-  while (high - low > toleranceDays && iterations < maxIterations) {
-    iterations++;
-    const midJD = (low + high) / 2;
+  // Start with expanded window, but narrow down to the actual crossing region
+  let low = expandedPrevJD;
+  let high = expandedCurrentJD;
+  let bestJD = currentJD;
+  let iterations = 0;
 
-    try {
-      const result = sweph.calc_ut(
-        midJD,
-        planetId,
-        SEFLG_TOPOCTR | SEFLG_SPEED
-      );
-      if (result.data && result.data.length >= 1) {
-        const midLongitude = normalizeLongitude(result.data[0]);
-        const prevBeforeBoundary = normPrev < targetBoundary;
-        const midBeforeBoundary = midLongitude < targetBoundary;
+  // Find the crossing point within the expanded window using bisection
+  // We need to find where the longitude crosses the boundary
+  // First, check the endpoints of the expanded window to establish which side we're on
+  let lowLongitude, highLongitude;
+  try {
+    const lowResult = sweph.calc_ut(
+      expandedPrevJD,
+      planetId,
+      SEFLG_TOPOCTR | SEFLG_SPEED
+    );
+    const highResult = sweph.calc_ut(
+      expandedCurrentJD,
+      planetId,
+      SEFLG_TOPOCTR | SEFLG_SPEED
+    );
+    if (
+      lowResult.data &&
+      lowResult.data.length >= 1 &&
+      highResult.data &&
+      highResult.data.length >= 1
+    ) {
+      lowLongitude = normalizeLongitude(lowResult.data[0]);
+      highLongitude = normalizeLongitude(highResult.data[0]);
+    } else {
+      // Fall back to using provided longitudes
+      lowLongitude = normPrev;
+      highLongitude = normCurrent;
+      low = prevJD;
+      high = currentJD;
+    }
+  } catch (error) {
+    // Fall back to using provided longitudes
+    lowLongitude = normPrev;
+    highLongitude = normCurrent;
+    low = prevJD;
+    high = currentJD;
+  }
 
-        if (prevBeforeBoundary !== midBeforeBoundary) {
-          high = midJD;
-          bestJD = midJD;
+  const lowBeforeBoundary = lowLongitude < targetBoundary;
+  const highBeforeBoundary = highLongitude < targetBoundary;
+
+  // If both endpoints are on the same side, there's no crossing in this window
+  // This shouldn't happen if our detection is correct, but handle it gracefully
+  if (lowBeforeBoundary === highBeforeBoundary) {
+    bestJD = (prevJD + currentJD) / 2;
+  } else {
+    // Bisect to find the exact crossing point
+    while (high - low > toleranceDays && iterations < maxIterations) {
+      iterations++;
+      const midJD = (low + high) / 2;
+
+      try {
+        const result = sweph.calc_ut(
+          midJD,
+          planetId,
+          SEFLG_TOPOCTR | SEFLG_SPEED
+        );
+        if (result.data && result.data.length >= 1) {
+          const midLongitude = normalizeLongitude(result.data[0]);
+          const midBeforeBoundary = midLongitude < targetBoundary;
+
+          // Narrow down based on which side of the boundary the midpoint is on
+          if (lowBeforeBoundary !== midBeforeBoundary) {
+            // Crossing is between low and mid
+            high = midJD;
+            highLongitude = midLongitude;
+            bestJD = midJD;
+          } else {
+            // Crossing is between mid and high
+            low = midJD;
+            lowLongitude = midLongitude;
+            bestJD = midJD;
+          }
         } else {
-          low = midJD;
+          console.log(
+            `   ⚠️ [ITERATION ${iterations}] calc_ut returned invalid data, breaking`
+          );
+          break;
         }
-      } else {
+      } catch (error) {
         console.log(
-          `   ⚠️ [ITERATION ${iterations}] calc_ut returned invalid data, breaking`
+          `   ❌ [ITERATION ${iterations}] Error in calc_ut: ${error.message}, breaking`
         );
         break;
       }
-    } catch (error) {
-      console.log(
-        `   ❌ [ITERATION ${iterations}] Error in calc_ut: ${error.message}, breaking`
-      );
-      break;
     }
   }
-
-  const exactDate = julianDayToDate(bestJD);
-  const sampleDate = julianDayToDate(currentJD);
-  const refined = bestJD !== currentJD;
-  const timeDiffSeconds = Math.abs((bestJD - currentJD) * 24 * 60 * 60);
-  const timeDiffMinutes = timeDiffSeconds / 60;
 
   return bestJD;
 }
