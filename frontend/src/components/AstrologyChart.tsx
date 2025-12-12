@@ -408,6 +408,90 @@ export default function AstrologyChart({
   return (
     <View style={containerStyle}>
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* Degree lines - drawn first so they appear behind the zodiac ring */}
+        {/* Planet degree lines */}
+        {testPlanetPositions.map((planet) => {
+          const signColor = getZodiacSignColor(planet.sign);
+          return (
+            <Line
+              key={`${planet.name}-line`}
+              x1={planet.x}
+              y1={planet.y}
+              x2={planet.x + (planet.labelX - planet.x) * 0.5}
+              y2={planet.y + (planet.labelY - planet.y) * 0.5}
+              stroke={signColor}
+              strokeWidth="2"
+              strokeLinecap="round"
+              opacity={0.6}
+            />
+          );
+        })}
+
+        {/* Ascendant degree line */}
+        {houses &&
+          (() => {
+            const ascendantPosition = longitudeToPosition(
+              houses.ascendant,
+              PLANETS_RADIUS,
+              ascendantSign
+            );
+            const ascendantLabelPosition = longitudeToPosition(
+              houses.ascendant,
+              PLANET_LABELS_RADIUS,
+              ascendantSign
+            );
+            const ascendantSignColor = getZodiacSignColor(houses.ascendantSign);
+
+            return (
+              <Line
+                key="ascendant-line"
+                x1={ascendantPosition.x}
+                y1={ascendantPosition.y}
+                x2={
+                  ascendantPosition.x +
+                  (ascendantLabelPosition.x - ascendantPosition.x) * 0.5
+                }
+                y2={
+                  ascendantPosition.y +
+                  (ascendantLabelPosition.y - ascendantPosition.y) * 0.5
+                }
+                stroke={ascendantSignColor}
+                strokeWidth="1"
+                opacity={0.6}
+              />
+            );
+          })()}
+
+        {/* Midheaven degree line */}
+        {houses &&
+          houses.mc !== undefined &&
+          (() => {
+            const mcPosition = longitudeToPosition(
+              houses.mc,
+              PLANETS_RADIUS,
+              ascendantSign
+            );
+            const mcLabelPosition = longitudeToPosition(
+              houses.mc,
+              PLANET_LABELS_RADIUS,
+              ascendantSign
+            );
+            const mcSignColor = getZodiacSignColor(houses.mcSign);
+
+            return (
+              <Line
+                key="midheaven-line"
+                x1={mcPosition.x}
+                y1={mcPosition.y}
+                x2={mcPosition.x + (mcLabelPosition.x - mcPosition.x) * 0.5}
+                y2={mcPosition.y + (mcLabelPosition.y - mcPosition.y) * 0.5}
+                stroke={mcSignColor}
+                strokeWidth="1"
+                opacity={0.6}
+              />
+            );
+          })()}
+
         {/* Zodiac signs ring */}
         {ZODIAC_SIGNS.map((sign, index) => {
           // Calculate the center longitude of each sign (15° mark within each 30° sign)
@@ -488,17 +572,6 @@ export default function AstrologyChart({
           const signColor = getZodiacSignColor(planet.sign);
           return (
             <G key={planet.name}>
-              {/* Line marker from zodiac circle to planet (50% length) */}
-              <Line
-                x1={planet.x}
-                y1={planet.y}
-                x2={planet.x + (planet.labelX - planet.x) * 0.5}
-                y2={planet.y + (planet.labelY - planet.y) * 0.5}
-                stroke={signColor}
-                strokeWidth="2"
-                strokeLinecap="round"
-                opacity={0.6}
-              />
               {/* Planet symbol with Physis font */}
               <SvgText
                 x={planet.labelX - 8}
@@ -547,11 +620,6 @@ export default function AstrologyChart({
         {houses && (
           <G key="ascendant">
             {(() => {
-              const ascendantPosition = longitudeToPosition(
-                houses.ascendant,
-                PLANETS_RADIUS,
-                ascendantSign
-              );
               const ascendantLabelPosition = longitudeToPosition(
                 houses.ascendant,
                 PLANET_LABELS_RADIUS,
@@ -563,22 +631,6 @@ export default function AstrologyChart({
 
               return (
                 <>
-                  {/* Line marker from zodiac circle to ascendant (50% length) */}
-                  <Line
-                    x1={ascendantPosition.x}
-                    y1={ascendantPosition.y}
-                    x2={
-                      ascendantPosition.x +
-                      (ascendantLabelPosition.x - ascendantPosition.x) * 0.5
-                    }
-                    y2={
-                      ascendantPosition.y +
-                      (ascendantLabelPosition.y - ascendantPosition.y) * 0.5
-                    }
-                    stroke={ascendantSignColor}
-                    strokeWidth="1"
-                    opacity={0.6}
-                  />
                   {/* Ascendant symbol with Physis font */}
                   <SvgText
                     x={ascendantLabelPosition.x - 8}
@@ -615,11 +667,6 @@ export default function AstrologyChart({
         {houses && houses.mc !== undefined && (
           <G key="midheaven">
             {(() => {
-              const mcPosition = longitudeToPosition(
-                houses.mc,
-                PLANETS_RADIUS,
-                ascendantSign
-              );
               const mcLabelPosition = longitudeToPosition(
                 houses.mc,
                 PLANET_LABELS_RADIUS,
@@ -629,16 +676,6 @@ export default function AstrologyChart({
 
               return (
                 <>
-                  {/* Line marker from zodiac circle to midheaven (50% length) */}
-                  <Line
-                    x1={mcPosition.x}
-                    y1={mcPosition.y}
-                    x2={mcPosition.x + (mcLabelPosition.x - mcPosition.x) * 0.5}
-                    y2={mcPosition.y + (mcLabelPosition.y - mcPosition.y) * 0.5}
-                    stroke={mcSignColor}
-                    strokeWidth="1"
-                    opacity={0.6}
-                  />
                   {/* Midheaven symbol with Physis font */}
                   <SvgText
                     x={mcLabelPosition.x - 8}
