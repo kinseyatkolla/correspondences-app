@@ -46,14 +46,12 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
-    <key>NSCameraUsageDescription</key>
-    <string>This app uses the camera to scan ISBN barcodes for adding books to your library.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <string>This app uses your location to calculate accurate astrological charts, planetary hours, and lunar phases based on your geographic position.</string>
     <key>NSLocationAlwaysUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <string>This app uses your location to calculate accurate astrological charts, planetary hours, and lunar phases based on your geographic position.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <string>This app uses your location to calculate accurate astrological charts, planetary hours, and lunar phases based on your geographic position.</string>
     <key>RCTNewArchEnabled</key>
     <true/>
     <key>UILaunchStoryboardName</key>

@@ -24,15 +24,25 @@ function extractIpFromHost(host: string | undefined | null): string | null {
 
 // Helper function to get the local IP address from Expo
 function getLocalApiUrl(): string {
-  // If environment variable is set, use it
+  // If environment variable is set, use it (required for production builds)
   if (process.env.EXPO_PUBLIC_API_URL) {
-    console.log(
-      `📍 Using API URL from environment: ${process.env.EXPO_PUBLIC_API_URL}`
-    );
+    if (__DEV__) {
+      console.log(
+        `📍 Using API URL from environment: ${process.env.EXPO_PUBLIC_API_URL}`
+      );
+    }
     return process.env.EXPO_PUBLIC_API_URL;
   }
 
-  // Try multiple methods to get the IP address
+  // In production, EXPO_PUBLIC_API_URL must be set
+  if (!__DEV__) {
+    throw new Error(
+      "EXPO_PUBLIC_API_URL environment variable is required for production builds. " +
+        "Please set it in your eas.json build configuration."
+    );
+  }
+
+  // Development-only: Try multiple methods to get the IP address
   const possibleHosts = [
     Constants.expoConfig?.hostUri,
     Constants.manifest?.hostUri,
@@ -50,17 +60,15 @@ function getLocalApiUrl(): string {
   }
 
   // Debug: Log what Constants contains (for troubleshooting)
-  if (__DEV__) {
-    console.log("🔍 Constants debug info:", {
-      hasExpoConfig: !!Constants.expoConfig,
-      hasManifest: !!Constants.manifest,
-      hasManifest2: !!Constants.manifest2,
-      expoConfigHostUri: Constants.expoConfig?.hostUri,
-      manifestHostUri: Constants.manifest?.hostUri,
-    });
-  }
+  console.log("🔍 Constants debug info:", {
+    hasExpoConfig: !!Constants.expoConfig,
+    hasManifest: !!Constants.manifest,
+    hasManifest2: !!Constants.manifest2,
+    expoConfigHostUri: Constants.expoConfig?.hostUri,
+    manifestHostUri: Constants.manifest?.hostUri,
+  });
 
-  // Last resort fallback (will need to be updated manually if this is used)
+  // Last resort fallback for development only
   console.warn(
     "⚠️ Could not detect local IP. Using fallback. " +
       "To fix this:\n" +
@@ -304,7 +312,23 @@ class ApiService {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to get error message from response
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (e) {
+          // If response isn't JSON, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        const error = new Error(errorMessage);
+        (error as any).status = response.status;
+        (error as any).response = response;
+        throw error;
       }
 
       return await response.json();

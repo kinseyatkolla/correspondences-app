@@ -9,13 +9,17 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kinsey.kinsey.correspondences",
+      "buildNumber": "1",
+      "icon": "./assets/icon.png",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to calculate accurate astrological charts, planetary hours, and lunar phases based on your geographic position.",
+        "NSLocationAlwaysUsageDescription": "This app uses your location to calculate accurate astrological charts, planetary hours, and lunar phases based on your geographic position."
       }
     },
     "android": {

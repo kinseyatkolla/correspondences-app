@@ -125,7 +125,10 @@ export function TarotProvider({ children }: TarotProviderProps) {
   // ===== DRAW STATE MANAGEMENT =====
   const saveDrawState = async () => {
     try {
-      await AsyncStorage.setItem(TAROT_DRAW_STATE_KEY, JSON.stringify(drawState));
+      await AsyncStorage.setItem(
+        TAROT_DRAW_STATE_KEY,
+        JSON.stringify(drawState)
+      );
       console.log("Tarot draw state saved");
     } catch (err) {
       console.error("Error saving draw state:", err);
@@ -193,10 +196,20 @@ export function TarotProvider({ children }: TarotProviderProps) {
       // Save to cache
       await saveTarotCardsToCache(response.data);
       console.log("TarotContext - Saved to cache");
-    } catch (err) {
+    } catch (err: any) {
       console.error("TarotContext - Error loading tarot cards:", err);
       console.error("TarotContext - Error details:", JSON.stringify(err));
-      setError("Failed to load tarot cards");
+      const errorMessage =
+        err?.message || err?.toString() || "Failed to load tarot cards";
+      setError(errorMessage);
+      // If it's a database error, log more details
+      if (
+        err?.status === 503 ||
+        errorMessage.includes("Database") ||
+        errorMessage.includes("MongoDB")
+      ) {
+        console.error("Database connection issue detected:", errorMessage);
+      }
     } finally {
       setLoading(false);
       console.log("TarotContext - Loading complete, final state:", {

@@ -460,6 +460,25 @@ export default function AstrologyScreen({ navigation, route }: any) {
     };
   };
 
+  // Helper function to check if an aspect should be displayed in black
+  // Returns true if aspect is conjunct/square/opposition AND planet is Mars/Saturn/NorthNode
+  const shouldAspectBeBlack = (
+    aspectType: string,
+    planetDisplayName: string
+  ): boolean => {
+    const isHardAspect = ["conjunct", "square", "opposition"].includes(
+      aspectType.toLowerCase()
+    );
+    const isHardPlanet = [
+      "Mars",
+      "Saturn",
+      "N. Node",
+      "North Node",
+      "Pluto",
+    ].includes(planetDisplayName);
+    return isHardAspect && isHardPlanet;
+  };
+
   // Helper function to get aspects for a planet/point (for compact display in cards)
   const getAspectsForCard = (
     sourceName: string,
@@ -1958,7 +1977,8 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                       style={{
                                                         flexDirection: "row",
                                                         flexWrap: "wrap",
-                                                        gap: 8,
+                                                        justifyContent:
+                                                          "space-between",
                                                       }}
                                                     >
                                                       {wholeSignAspects.map(
@@ -1982,6 +2002,14 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                             "N. Node"
                                                               ? "]"
                                                               : null);
+
+                                                          // Check if this aspect should be black
+                                                          const shouldBeBlack =
+                                                            shouldAspectBeBlack(
+                                                              aspectType,
+                                                              aspect.displayName
+                                                            );
+
                                                           return (
                                                             <View
                                                               key={index}
@@ -1990,6 +2018,8 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                                   "row",
                                                                 alignItems:
                                                                   "center",
+                                                                width: "31%",
+                                                                marginBottom: 8,
                                                               }}
                                                             >
                                                               {aspectSymbol && (
@@ -2002,6 +2032,10 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                                     ),
                                                                     {
                                                                       lineHeight: 46,
+                                                                      color:
+                                                                        shouldBeBlack
+                                                                          ? "#000000"
+                                                                          : "#ffffff",
                                                                     },
                                                                   ]}
                                                                 >
@@ -2018,6 +2052,10 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                                     ),
                                                                     {
                                                                       lineHeight: 46,
+                                                                      color:
+                                                                        shouldBeBlack
+                                                                          ? "#000000"
+                                                                          : "#ffffff",
                                                                     },
                                                                   ]}
                                                                 >
@@ -2188,27 +2226,43 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                 }
                                               >
                                                 {aspects.map(
-                                                  (aspect, index) => (
-                                                    <Text
-                                                      key={index}
-                                                      style={
-                                                        styles.planetCardAspectText
-                                                      }
-                                                    >
-                                                      {aspect.aspectName}{" "}
-                                                      {aspect.displayName}
-                                                      {aspect.orb && (
-                                                        <Text
-                                                          style={
-                                                            styles.planetCardAspectOrb
-                                                          }
-                                                        >
-                                                          {" "}
-                                                          ({aspect.orb}°)
-                                                        </Text>
-                                                      )}
-                                                    </Text>
-                                                  )
+                                                  (aspect, index) => {
+                                                    // Check if this aspect should be black
+                                                    const aspectType =
+                                                      aspect.aspectName.toLowerCase();
+                                                    const shouldBeBlack =
+                                                      shouldAspectBeBlack(
+                                                        aspectType,
+                                                        aspect.displayName
+                                                      );
+
+                                                    return (
+                                                      <Text
+                                                        key={index}
+                                                        style={[
+                                                          styles.planetCardAspectText,
+                                                          {
+                                                            color: shouldBeBlack
+                                                              ? "#000000"
+                                                              : "#ffffff",
+                                                          },
+                                                        ]}
+                                                      >
+                                                        {aspect.aspectName}{" "}
+                                                        {aspect.displayName}
+                                                        {aspect.orb && (
+                                                          <Text
+                                                            style={
+                                                              styles.planetCardAspectOrb
+                                                            }
+                                                          >
+                                                            {" "}
+                                                            ({aspect.orb}°)
+                                                          </Text>
+                                                        )}
+                                                      </Text>
+                                                    );
+                                                  }
                                                 )}
                                               </View>
                                             </View>
@@ -2231,7 +2285,8 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                     style={{
                                                       flexDirection: "row",
                                                       flexWrap: "wrap",
-                                                      gap: 8,
+                                                      justifyContent:
+                                                        "space-between",
                                                     }}
                                                   >
                                                     {wholeSignAspects.map(
@@ -2250,7 +2305,19 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                         const planetKey =
                                                           getPlanetKeysFromNames()[
                                                             aspect.displayName
-                                                          ];
+                                                          ] ||
+                                                          (aspect.displayName ===
+                                                          "N. Node"
+                                                            ? "]"
+                                                            : null);
+
+                                                        // Check if this aspect should be black
+                                                        const shouldBeBlack =
+                                                          shouldAspectBeBlack(
+                                                            aspectType,
+                                                            aspect.displayName
+                                                          );
+
                                                         return (
                                                           <View
                                                             key={index}
@@ -2259,6 +2326,8 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                                 "row",
                                                               alignItems:
                                                                 "center",
+                                                              width: "31%",
+                                                              marginBottom: 8,
                                                             }}
                                                           >
                                                             {aspectSymbol && (
@@ -2271,6 +2340,10 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                                   ),
                                                                   {
                                                                     lineHeight: 46,
+                                                                    color:
+                                                                      shouldBeBlack
+                                                                        ? "#000000"
+                                                                        : "#ffffff",
                                                                   },
                                                                 ]}
                                                               >
@@ -2287,6 +2360,10 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                                                   ),
                                                                   {
                                                                     lineHeight: 46,
+                                                                    color:
+                                                                      shouldBeBlack
+                                                                        ? "#000000"
+                                                                        : "#ffffff",
                                                                   },
                                                                 ]}
                                                               >

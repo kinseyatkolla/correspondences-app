@@ -173,9 +173,19 @@ export function FlowersProvider({ children }: FlowersProviderProps) {
 
       // Save to cache
       await saveFlowersToCache(response.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error loading flowers:", err);
-      setError("Failed to load flowers");
+      const errorMessage =
+        err?.message || err?.toString() || "Failed to load flowers";
+      setError(errorMessage);
+      // If it's a database error, log more details
+      if (
+        err?.status === 503 ||
+        errorMessage.includes("Database") ||
+        errorMessage.includes("MongoDB")
+      ) {
+        console.error("Database connection issue detected:", errorMessage);
+      }
     } finally {
       setLoading(false);
     }

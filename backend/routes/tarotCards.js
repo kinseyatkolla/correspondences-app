@@ -1,10 +1,20 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const router = express.Router();
 const TarotCard = require("../models/TarotCard");
 
 // GET /api/tarot-cards - Get all tarot cards
 router.get("/", async (req, res) => {
   try {
+    // Check if database is connected
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: "Database not connected",
+        error: "MongoDB connection not established",
+      });
+    }
+
     const { search, suit, limit = 200, page = 1 } = req.query;
 
     let query = {};

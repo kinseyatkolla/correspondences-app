@@ -8,28 +8,28 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://correspondences-app-production.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "https://correspondences-app-production.up.railway.app/api"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://correspondences-app-production.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "https://correspondences-app-production.up.railway.app/api"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://correspondences-app-production.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "https://correspondences-app-production.up.railway.app/api"
       }
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "appleId": "YOUR_ACTUAL_APPLE_ID@example.com",
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "YOUR_TEAM_ID"
+        "appleId": "kinseyhamilton@me.com",
+        "ascAppId": "6756392610",
+        "appleTeamId": "QGX7CF64T7"
       }
     }
   }
