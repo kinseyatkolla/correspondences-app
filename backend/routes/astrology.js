@@ -1216,9 +1216,12 @@ function findExactAspectTime(
     return prevDistance < currentDistance ? prevJD : currentJD;
   }
 
-  // Expand search window to 6 hours before prevJD and 6 hours after currentJD
-  // This ensures we catch aspects that occur near sample boundaries
-  const expansionHours = 6;
+  // Expand search window significantly before prevJD and after currentJD
+  // This ensures we catch aspects that occur well outside sample boundaries
+  // Use at least 24 hours expansion (1 full day on each side) to handle cases
+  // where the aspect occurs much later than the initial sample window suggests
+  const windowSizeHours = (currentJD - prevJD) * 24;
+  const expansionHours = Math.max(24, windowSizeHours * 2); // At least 24h, or 2x window size
   const expansionDays = expansionHours / 24;
   const expandedPrevJD = prevJD - expansionDays;
   const expandedCurrentJD = currentJD + expansionDays;
@@ -1411,11 +1414,6 @@ function findExactAspectTime(
       }
     }
   }
-
-  const exactDate = julianDayToDate(bestJD);
-  const refined = bestJD !== currentJD && bestJD !== prevJD;
-  const timeDiffSeconds = Math.abs((bestJD - currentJD) * 24 * 60 * 60);
-  const timeDiffMinutes = timeDiffSeconds / 60;
 
   return bestJD;
 }

@@ -23,9 +23,9 @@ eas secret:delete EAS_APPLE_TEAM_ID
 # Recreate using the new env:create command
 # When prompted, select "production" environment and "string" type
 
-eas env:create --scope project --name EAS_APPLE_ID --value "kinseyhamilton@me.com" --type string
-eas env:create --scope project --name EAS_ASC_APP_ID --value "6756392610" --type string
-eas env:create --scope project --name EAS_APPLE_TEAM_ID --value "QGX7CF64T7" --type string
+eas env:create --scope project --name EAS_APPLE_ID --value "apple id email" --type string
+eas env:create --scope project --name EAS_ASC_APP_ID --value "app id" --type string
+eas env:create --scope project --name EAS_APPLE_TEAM_ID --value "team id" --type string
 ```
 
 When prompted:
