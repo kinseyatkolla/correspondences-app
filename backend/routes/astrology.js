@@ -986,19 +986,6 @@ function findExactStationTime(
   const stationType =
     prevSpeed > 0 && currentSpeed < 0 ? "retrograde" : "direct";
 
-  // Special logging for Jupiter retrograde station on Nov 11, 2025 (expected ~9:37 AM)
-  const isJupiterNov11 =
-    planetName.toLowerCase() === "jupiter" &&
-    prevDate.getUTCFullYear() === 2025 &&
-    prevDate.getUTCMonth() === 10 && // November (0-indexed)
-    prevDate.getUTCDate() === 11 &&
-    stationType === "retrograde";
-
-  // Station refinement logs removed for cleanliness - keep only errors
-  // console.log(`🔍 [STATION REFINEMENT] ${planetName} ${stationType} station`);
-  // console.log(
-  //   `   Sample window: ${prevDate.toISOString()} to ${currentDate.toISOString()} (${timeDiffHours}h)`
-  // );
   // IMPORTANT: Recalculate speeds at sample points using calculateSpeedFromPositions
   // The input speeds may be average speeds over the interval (for large time differences),
   // but we need actual instantaneous speeds for accurate bisection
@@ -1777,9 +1764,6 @@ router.post("/year-ephemeris", (req, res) => {
         ) {
           if (prevState.previousSampleIndex !== null) {
             const prevSample = samples[prevState.previousSampleIndex];
-            const sampleDateStr = julianDayToDate(
-              sample.julianDay
-            ).toISOString();
 
             const exactJD = findExactIngressTime(
               planet.id,
@@ -1849,10 +1833,6 @@ router.post("/year-ephemeris", (req, res) => {
               prevSample.planets &&
               prevSample.planets[planet.name]
             ) {
-              const sampleDateStr = julianDayToDate(
-                sample.julianDay
-              ).toISOString();
-
               const exactJD = findExactStationTime(
                 planet.id,
                 prevSample.julianDay,
@@ -2001,10 +1981,6 @@ router.post("/year-ephemeris", (req, res) => {
 
                   // Attempt refinement if we have valid data
                   // Don't require distance to decrease - aspects can be detected at their closest point
-                  const sampleDateStr = julianDayToDate(
-                    sample.julianDay
-                  ).toISOString();
-
                   // For local minimum detection, we may need to check the next sample too
                   // But for now, refine between prev and current
                   let refinementHighJD = sample.julianDay;

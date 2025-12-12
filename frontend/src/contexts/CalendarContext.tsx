@@ -214,10 +214,18 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
         const events = response.data.events
           .map((event: any) => {
             // Parse UTC datetime - ensure it's treated as UTC
-            // If the string doesn't have 'Z' at the end, add it
-            const utcString = event.utcDateTime.endsWith("Z")
-              ? event.utcDateTime
-              : event.utcDateTime + "Z";
+            // Handle both string and Date object inputs (for cache restoration)
+            let utcString: string;
+            if (event.utcDateTime instanceof Date) {
+              utcString = event.utcDateTime.toISOString();
+            } else {
+              // If the string doesn't have 'Z' at the end, add it to ensure UTC parsing
+              utcString =
+                typeof event.utcDateTime === "string" &&
+                event.utcDateTime.endsWith("Z")
+                  ? event.utcDateTime
+                  : event.utcDateTime + "Z";
+            }
             const utcDateTime = new Date(utcString);
 
             // For display, we want the local time representation
