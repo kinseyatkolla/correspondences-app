@@ -229,12 +229,8 @@ export default function DateTimePickerDrawer({
                       mode="date"
                       display={Platform.OS === "ios" ? "spinner" : "default"}
                       onChange={onDateChange}
-                      maximumDate={
-                        new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-                      } // 1 year from now
-                      minimumDate={
-                        new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
-                      } // 1 year ago
+                      // No date limits - Swiss Ephemeris supports dates from ~6000 BC to ~10000 AD
+                      // Users can select any date they want
                       style={styles.inlineDateTimePicker}
                       textColor="#e6e6fa"
                       themeVariant="dark"

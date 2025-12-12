@@ -5,9 +5,11 @@ const router = express.Router();
 const sweph = require("sweph");
 
 // Backend cache for year-ephemeris data
-// Key format: "year-latitude-longitude"
+// Key format: "year-latitude-longitude-sampleInterval"
+// Year data never changes, so we cache it permanently (no expiration)
 const yearEphemerisCache = new Map();
-const CACHE_EXPIRATION_MS = 60 * 60 * 1000; // 1 hour cache expiration
+// Note: Year data is cached permanently since it never changes
+// We only clean up old entries when cache size exceeds limit
 
 // Swiss Ephemeris flags
 const SEFLG_TOPOCTR = 0x00040000; // Topocentric position flag
@@ -787,8 +789,8 @@ function findExactIngressTime(
   currentJD,
   prevLongitude,
   currentLongitude,
-  maxIterations = 20,
-  toleranceDays = 1 / (24 * 60) // 1 minute tolerance
+  maxIterations = 30, // Increased for higher precision
+  toleranceDays = 0.01 / (24 * 60 * 60) // 0.01 second tolerance for maximum precision
 ) {
   const targetBoundary = targetSign * 30;
   let low = prevJD;
@@ -862,19 +864,22 @@ function findExactIngressTime(
   const exactDate = julianDayToDate(bestJD);
   const sampleDate = julianDayToDate(currentJD);
   const refined = bestJD !== currentJD;
-  const timeDiffMinutes = Math.abs((bestJD - currentJD) * 24 * 60);
+  const timeDiffSeconds = Math.abs((bestJD - currentJD) * 24 * 60 * 60);
+  const timeDiffMinutes = timeDiffSeconds / 60;
 
   if (refined) {
     console.log(
-      `   ✅ [REFINED] Exact time: ${exactDate.toISOString()} (${timeDiffMinutes.toFixed(
+      `   ✅ [REFINED] Exact time: ${exactDate.toISOString()} (${timeDiffSeconds.toFixed(
+        3
+      )} sec / ${timeDiffMinutes.toFixed(
         1
-      )} min from sample, ${iterations} iterations)`
+      )} min from sample, ${iterations} iterations, precision: ±0.01s)`
     );
   } else {
     console.log(
-      `   ⚠️ [NO REFINEMENT] Using sample time: ${sampleDate.toISOString()} (${iterations} iterations, diff: ${timeDiffMinutes.toFixed(
-        1
-      )} min)`
+      `   ⚠️ [NO REFINEMENT] Using sample time: ${sampleDate.toISOString()} (${iterations} iterations, diff: ${timeDiffSeconds.toFixed(
+        3
+      )} sec / ${timeDiffMinutes.toFixed(1)} min)`
     );
   }
 
@@ -888,8 +893,8 @@ function findExactStationTime(
   currentJD,
   prevSpeed,
   currentSpeed,
-  maxIterations = 20,
-  toleranceDays = 1 / (24 * 60) // 1 minute tolerance
+  maxIterations = 30, // Increased for higher precision
+  toleranceDays = 0.01 / (24 * 60 * 60) // 0.01 second tolerance for maximum precision
 ) {
   let low = prevJD;
   let high = currentJD;
@@ -997,19 +1002,22 @@ function findExactStationTime(
   const exactDate = julianDayToDate(bestJD);
   const sampleDate = julianDayToDate(currentJD);
   const refined = bestJD !== currentJD;
-  const timeDiffMinutes = Math.abs((bestJD - currentJD) * 24 * 60);
+  const timeDiffSeconds = Math.abs((bestJD - currentJD) * 24 * 60 * 60);
+  const timeDiffMinutes = timeDiffSeconds / 60;
 
   if (refined) {
     console.log(
-      `   ✅ [REFINED] Exact time: ${exactDate.toISOString()} (${timeDiffMinutes.toFixed(
+      `   ✅ [REFINED] Exact time: ${exactDate.toISOString()} (${timeDiffSeconds.toFixed(
+        3
+      )} sec / ${timeDiffMinutes.toFixed(
         1
-      )} min from sample, ${iterations} iterations)`
+      )} min from sample, ${iterations} iterations, precision: ±0.01s)`
     );
   } else {
     console.log(
-      `   ⚠️ [NO REFINEMENT] Using sample time: ${sampleDate.toISOString()} (${iterations} iterations, diff: ${timeDiffMinutes.toFixed(
-        1
-      )} min)`
+      `   ⚠️ [NO REFINEMENT] Using sample time: ${sampleDate.toISOString()} (${iterations} iterations, diff: ${timeDiffSeconds.toFixed(
+        3
+      )} sec / ${timeDiffMinutes.toFixed(1)} min)`
     );
   }
 
@@ -1025,8 +1033,8 @@ function findExactAspectTime(
   currentJD,
   prevAngle,
   currentAngle,
-  maxIterations = 20,
-  toleranceDays = 1 / (24 * 60) // 1 minute tolerance
+  maxIterations = 30, // Increased for higher precision
+  toleranceDays = 0.01 / (24 * 60 * 60) // 0.01 second tolerance for maximum precision
 ) {
   const planet1Name = getPlanetNameFromId(planet1Id);
   const planet2Name = getPlanetNameFromId(planet2Id);
@@ -1191,20 +1199,25 @@ function findExactAspectTime(
   const exactDate = julianDayToDate(bestJD);
   const sampleDate = julianDayToDate(currentJD);
   const refined = bestJD !== currentJD;
-  const timeDiffMinutes = Math.abs((bestJD - currentJD) * 24 * 60);
+  const timeDiffSeconds = Math.abs((bestJD - currentJD) * 24 * 60 * 60);
+  const timeDiffMinutes = timeDiffSeconds / 60;
   const finalWindowHours = ((high - low) * 24).toFixed(2);
 
   if (refined) {
     console.log(
-      `   ✅ [REFINED] Exact time: ${exactDate.toISOString()} (${timeDiffMinutes.toFixed(
+      `   ✅ [REFINED] Exact time: ${exactDate.toISOString()} (${timeDiffSeconds.toFixed(
+        3
+      )} sec / ${timeDiffMinutes.toFixed(
         1
       )} min from sample, ${iterations} iterations, bestDist=${bestDistance.toFixed(
         4
-      )}°)`
+      )}°, precision: ±0.01s)`
     );
   } else {
     console.log(
-      `   ⚠️ [NO REFINEMENT] Using sample time: ${sampleDate.toISOString()} (${iterations} iterations, diff: ${timeDiffMinutes.toFixed(
+      `   ⚠️ [NO REFINEMENT] Using sample time: ${sampleDate.toISOString()} (${iterations} iterations, diff: ${timeDiffSeconds.toFixed(
+        3
+      )} sec / ${timeDiffMinutes.toFixed(
         1
       )} min, bestDist=${bestDistance.toFixed(
         4
@@ -1283,11 +1296,11 @@ router.post("/year-ephemeris", (req, res) => {
     }
 
     // Check cache first
+    // Year data never changes, so we cache it permanently
     const cacheKey = `${year}-${latitude}-${longitude}-${sampleInterval}`;
     const cachedData = yearEphemerisCache.get(cacheKey);
-    const now = Date.now();
 
-    if (cachedData && now - cachedData.timestamp < CACHE_EXPIRATION_MS) {
+    if (cachedData) {
       console.log(
         `📦 Using cached year-ephemeris data for ${year} (${cacheKey})`
       );
@@ -1996,21 +2009,23 @@ router.post("/year-ephemeris", (req, res) => {
       samples, // Keep samples for backward compatibility if needed
     };
 
-    // Store in cache
+    // Store in cache (permanent cache for year data)
     yearEphemerisCache.set(cacheKey, {
       data: responseData,
-      timestamp: now,
+      timestamp: Date.now(), // Keep timestamp for reference, but don't use for expiration
     });
 
-    // Clean up old cache entries (keep only last 10 years worth)
-    if (yearEphemerisCache.size > 10) {
-      const entriesToDelete = [];
-      yearEphemerisCache.forEach((value, key) => {
-        if (now - value.timestamp > CACHE_EXPIRATION_MS) {
-          entriesToDelete.push(key);
-        }
-      });
-      entriesToDelete.forEach((key) => yearEphemerisCache.delete(key));
+    // Clean up old cache entries if cache gets too large (keep only last 20 entries)
+    // This prevents memory issues while still caching many years
+    if (yearEphemerisCache.size > 20) {
+      // Remove oldest entries (by timestamp) until we're under the limit
+      const entries = Array.from(yearEphemerisCache.entries())
+        .map(([key, value]) => ({ key, timestamp: value.timestamp }))
+        .sort((a, b) => a.timestamp - b.timestamp);
+
+      const entriesToDelete = entries.slice(0, yearEphemerisCache.size - 20);
+      entriesToDelete.forEach((entry) => yearEphemerisCache.delete(entry.key));
+      console.log(`🗑️ Cleaned up ${entriesToDelete.length} old cache entries`);
     }
 
     res.json({

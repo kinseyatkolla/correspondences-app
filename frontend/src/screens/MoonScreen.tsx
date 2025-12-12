@@ -50,51 +50,14 @@ import {
   aspectColorStyles,
   zodiacColorStyles,
 } from "../utils/colorUtils";
+import { LunarPhase, Moon30, TithiData } from "../types/moonTypes";
+import { LunationEvent } from "../types/calendarTypes";
 
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
-interface moon30 {
-  number: number;
-  name: string;
-  color: string;
-}
-
-interface TithiData {
-  numbers: [number, number];
-  name: string;
-  planetRuler: string;
-  division: string;
-  deity: string;
-}
-
-interface LunarPhase {
-  moonPhase: string;
-  date: string;
-  utcDateTime?: Date;
-  localDateTime?: Date;
-  moonPosition?: {
-    degree: number;
-    degreeFormatted: string;
-    zodiacSignName: string;
-  };
-}
-
-interface LunationEvent {
-  id: string;
-  type: "lunation";
-  date: Date;
-  utcDateTime: Date;
-  localDateTime: Date;
-  title: string;
-  moonPosition?: {
-    degree: number;
-    degreeFormatted: string;
-    zodiacSignName: string;
-  };
-  isEclipse?: boolean;
-  eclipseType?: "lunar" | "solar";
-}
+// moon30 type is now Moon30 from moonTypes - keeping alias for backward compatibility
+type moon30 = Moon30;
 
 // ============================================================================
 // DATA & CONSTANTS
@@ -470,8 +433,7 @@ export default function MoonScreen({ navigation, route }: any) {
     return null;
   };
 
-  // Function to fetch upcoming lunations from cache (current year and next year)
-  // If cache is empty, fetches and caches the data
+  // Function to fetch upcoming lunations from unified year data cache
   const fetchLunarPhases = async (date: Date) => {
     try {
       setLunarPhasesLoading(true);
@@ -483,19 +445,57 @@ export default function MoonScreen({ navigation, route }: any) {
         longitude: -74.006,
       };
 
-      // Load lunations for current year and next year from cache
-      let currentYearLunations = await loadLunationsFromCache(
+      // Load lunations from unified year data cache
+      const { loadYearDataFromCache } = await import(
+        "../services/yearDataCache"
+      );
+
+      let currentYearLunations: LunationEvent[] | null = null;
+      let nextYearLunations: LunationEvent[] | null = null;
+
+      // Try to load from unified cache
+      const currentYearData = await loadYearDataFromCache(
         currentYear,
         location.latitude,
         location.longitude
       );
-      let nextYearLunations = await loadLunationsFromCache(
+      if (currentYearData?.lunationsData) {
+        currentYearLunations = currentYearData.lunationsData;
+        console.log(
+          `✅ Loaded ${currentYearLunations.length} lunations from unified cache for year ${currentYear}`
+        );
+      }
+
+      const nextYearData = await loadYearDataFromCache(
         nextYear,
         location.latitude,
         location.longitude
       );
+      if (nextYearData?.lunationsData) {
+        nextYearLunations = nextYearData.lunationsData;
+        console.log(
+          `✅ Loaded ${nextYearLunations.length} lunations from unified cache for year ${nextYear}`
+        );
+      }
 
-      // If cache is empty, fetch the data (same logic as CalendarScreen)
+      // Fallback to old cache format for backward compatibility
+      if (!currentYearLunations) {
+        currentYearLunations = await loadLunationsFromCache(
+          currentYear,
+          location.latitude,
+          location.longitude
+        );
+      }
+
+      if (!nextYearLunations) {
+        nextYearLunations = await loadLunationsFromCache(
+          nextYear,
+          location.latitude,
+          location.longitude
+        );
+      }
+
+      // If still no data, fetch it (should rarely happen now)
       if (!currentYearLunations) {
         console.log(
           `🌐 Cache miss for year ${currentYear}, fetching lunations data...`
@@ -561,12 +561,27 @@ export default function MoonScreen({ navigation, route }: any) {
         longitude: -74.006,
       };
 
-      // Load all lunations for the year to check for eclipse
-      const allLunations = await loadLunationsFromCache(
+      // Try unified cache first
+      const { loadYearDataFromCache } = await import(
+        "../services/yearDataCache"
+      );
+      const yearData = await loadYearDataFromCache(
         year,
         location.latitude,
         location.longitude
       );
+
+      let allLunations: LunationEvent[] | null = null;
+      if (yearData?.lunationsData) {
+        allLunations = yearData.lunationsData;
+      } else {
+        // Fallback to old cache format
+        allLunations = await loadLunationsFromCache(
+          year,
+          location.latitude,
+          location.longitude
+        );
+      }
 
       if (!allLunations || allLunations.length === 0) {
         setCurrentDateEclipse(null);

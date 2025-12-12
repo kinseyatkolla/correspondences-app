@@ -17,60 +17,19 @@ import {
   checkForTrine,
   checkForSextile,
 } from "../utils/aspectUtils";
-
-// ============================================================================
-// TYPES
-// ============================================================================
-interface IngressEvent {
-  id: string;
-  type: "ingress";
-  planet: string;
-  fromSign: string;
-  toSign: string;
-  date: Date;
-  utcDateTime: Date;
-  localDateTime: Date;
-  degree: number;
-  degreeFormatted: string;
-  isRetrograde: boolean;
-}
-
-interface StationEvent {
-  id: string;
-  type: "station";
-  planet: string;
-  stationType: "retrograde" | "direct";
-  date: Date;
-  utcDateTime: Date;
-  localDateTime: Date;
-  degree: number;
-  degreeFormatted: string;
-  zodiacSignName: string;
-}
-
-interface AspectEvent {
-  id: string;
-  type: "aspect";
-  planet1: string;
-  planet2: string;
-  aspectName: "conjunct" | "opposition" | "square" | "trine" | "sextile";
-  date: Date;
-  utcDateTime: Date;
-  localDateTime: Date;
-  orb: number;
-  planet1Position: {
-    degree: number;
-    degreeFormatted: string;
-    zodiacSignName: string;
-  };
-  planet2Position: {
-    degree: number;
-    degreeFormatted: string;
-    zodiacSignName: string;
-  };
-}
-
-type CalendarEvent = IngressEvent | StationEvent | AspectEvent;
+import {
+  loadYearDataFromCache,
+  saveYearDataToCache,
+} from "../services/yearDataCache";
+import { processEphemerisData } from "../utils/ephemerisChartData";
+import {
+  CalendarEvent,
+  IngressEvent,
+  StationEvent,
+  AspectEvent,
+  LunationEvent,
+} from "../types/calendarTypes";
+import { fetchLunationsForYear } from "../utils/lunationsUtils";
 
 interface CalendarContextType {
   year: number;
@@ -78,6 +37,8 @@ interface CalendarContextType {
   loading: boolean;
   error: string | null;
   refreshCalendar: () => Promise<void>;
+  linesData: any | null; // Cached lines data for the current year
+  lunationsData: LunationEvent[] | null; // Cached lunations data for the current year
 }
 
 const CalendarContext = createContext<CalendarContextType | undefined>(
@@ -127,7 +88,11 @@ const restoreEventDatesFromCache = (events: any[]): CalendarEvent[] => {
 export function CalendarProvider({ children, year }: CalendarProviderProps) {
   const { currentChart } = useAstrology();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [linesData, setLinesData] = useState<any | null>(null);
+  const [lunationsData, setLunationsData] = useState<LunationEvent[] | null>(
+    null
+  );
+  const [loading, setLoading] = useState(true); // Start as true to check cache first
   const [error, setError] = useState<string | null>(null);
 
   // Track current cache key to detect changes
@@ -822,19 +787,22 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
         longitude: -74.006,
       };
 
-      // Create cache key based on year and location
-      const cacheKey = getCacheKey(year, location.latitude, location.longitude);
-      currentCacheKeyRef.current = cacheKey;
-
-      // Check cache first (both memory and AsyncStorage)
-      const cachedEvents = await loadEventsFromCache(
+      // Check new unified cache first
+      const cachedYearData = await loadYearDataFromCache(
         year,
         location.latitude,
         location.longitude
       );
 
-      if (cachedEvents) {
-        setEvents(cachedEvents);
+      if (cachedYearData) {
+        console.log(
+          `✅ Using cached year data for ${year} (${
+            cachedYearData.listEvents.length
+          } events, ${cachedYearData.lunationsData?.length || 0} lunations)`
+        );
+        setEvents(cachedYearData.listEvents);
+        setLinesData(cachedYearData.linesData);
+        setLunationsData(cachedYearData.lunationsData || null);
         setLoading(false);
         return;
       }
@@ -842,11 +810,13 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
       console.log(`🌐 Fetching year-ephemeris data for ${year} (cache miss)`);
 
       // Fetch year ephemeris - backend now returns events with exact timestamps
+      // Use highest sample rate for best accuracy
+      const sampleInterval = 6; // Sample every 6 hours for better detection
       const response = await apiService.getYearEphemeris(
         year,
         location.latitude,
         location.longitude,
-        12 // Sample every 12 hours for better detection
+        sampleInterval
       );
 
       if (response.success && response.data?.events) {
@@ -926,33 +896,60 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
           eventCounts
         );
 
-        // Debug: Log raw backend response to see if stations are in the response
-        const rawStationCount = response.data.events.filter(
-          (e: any) => e.type === "station"
-        ).length;
-        if (rawStationCount > 0) {
-          console.log(`✅ Backend returned ${rawStationCount} station events`);
-        } else {
-          console.warn(`⚠️ Backend returned 0 station events`);
+        // Process ephemeris samples for LINES view
+        let processedLinesData = null;
+        if (response.data?.samples) {
+          processedLinesData = processEphemerisData(response.data.samples);
         }
 
-        // Save to cache (both AsyncStorage and memory)
-        await saveEventsToCache(
+        // Also fetch lines data with daily samples if we don't have it
+        if (!processedLinesData) {
+          const linesResponse = await apiService.getYearEphemeris(
+            year,
+            location.latitude,
+            location.longitude,
+            24 // Daily samples for lines view
+          );
+          if (linesResponse.success && linesResponse.data?.samples) {
+            processedLinesData = processEphemerisData(
+              linesResponse.data.samples
+            );
+          }
+        }
+
+        // Fetch lunations for the year (MOONS view data)
+        console.log(`🌙 Fetching lunations for year ${year}...`);
+        const lunationsData = await fetchLunationsForYear(
+          year,
+          location.latitude,
+          location.longitude
+        );
+
+        // Save to new unified cache (LIST, LINES, and MOONS data)
+        await saveYearDataToCache(
           year,
           location.latitude,
           location.longitude,
-          events
+          events,
+          processedLinesData,
+          lunationsData
         );
 
         setEvents(events);
+        setLinesData(processedLinesData);
+        setLunationsData(lunationsData);
       } else {
         setError("Failed to fetch ephemeris data");
         setEvents([]);
+        setLinesData(null);
+        setLunationsData(null);
       }
     } catch (err: any) {
       console.error("Error fetching year ephemeris:", err);
       setError(err.message || "Failed to fetch ephemeris data");
       setEvents([]);
+      setLinesData(null);
+      setLunationsData(null);
     } finally {
       setLoading(false);
     }
@@ -964,14 +961,22 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
       latitude: 40.7128,
       longitude: -74.006,
     };
-    const cacheKey = getCacheKey(year, location.latitude, location.longitude);
 
-    // Clear cache for this key to force refresh (both memory and AsyncStorage)
+    // Clear new unified cache
+    try {
+      const { clearYearDataCache } = await import("../services/yearDataCache");
+      await clearYearDataCache(year, location.latitude, location.longitude);
+    } catch (err) {
+      console.error("Error clearing calendar cache:", err);
+    }
+
+    // Also clear old cache for backward compatibility
+    const cacheKey = getCacheKey(year, location.latitude, location.longitude);
     ephemerisCache.delete(cacheKey);
     try {
       await AsyncStorage.removeItem(cacheKey);
     } catch (err) {
-      console.error("Error clearing calendar cache:", err);
+      console.error("Error clearing old calendar cache:", err);
     }
 
     await fetchYearEphemeris();
@@ -990,6 +995,8 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
         loading,
         error,
         refreshCalendar,
+        linesData,
+        lunationsData,
       }}
     >
       {children}

@@ -35,90 +35,16 @@ import {
 import LinesChart from "../components/LinesChart";
 import { processEphemerisData } from "../utils/ephemerisChartData";
 import { Dimensions, Platform } from "react-native";
+import {
+  CalendarEvent,
+  LunationEvent,
+  CalendarEventType,
+} from "../types/calendarTypes";
+import { LunarPhase } from "../types/moonTypes";
 
 // ============================================================================
 // TYPES
 // ============================================================================
-interface LunarPhase {
-  moonPhase: string;
-  date: string;
-  utcDateTime?: Date;
-  localDateTime?: Date;
-  moonPosition?: {
-    degree: number;
-    degreeFormatted: string;
-    zodiacSignName: string;
-  };
-}
-
-type CalendarEventType = "lunation" | "aspect" | "ingress" | "station";
-
-interface LunationEvent {
-  id: string;
-  type: "lunation";
-  date: Date;
-  utcDateTime: Date;
-  localDateTime: Date;
-  title: string;
-  moonPosition?: {
-    degree: number;
-    degreeFormatted: string;
-    zodiacSignName: string;
-  };
-  isEclipse?: boolean;
-  eclipseType?: "lunar" | "solar";
-}
-
-interface IngressEvent {
-  id: string;
-  type: "ingress";
-  planet: string;
-  fromSign: string;
-  toSign: string;
-  date: Date;
-  utcDateTime: Date;
-  localDateTime: Date;
-  degree: number;
-  degreeFormatted: string;
-  isRetrograde: boolean;
-}
-
-interface StationEvent {
-  id: string;
-  type: "station";
-  planet: string;
-  stationType: "retrograde" | "direct";
-  date: Date;
-  utcDateTime: Date;
-  localDateTime: Date;
-  degree: number;
-  degreeFormatted: string;
-  zodiacSignName: string;
-}
-
-interface AspectEvent {
-  id: string;
-  type: "aspect";
-  planet1: string;
-  planet2: string;
-  aspectName: "conjunct" | "opposition" | "square" | "trine" | "sextile";
-  date: Date;
-  utcDateTime: Date;
-  localDateTime: Date;
-  orb: number;
-  planet1Position: {
-    degree: number;
-    degreeFormatted: string;
-    zodiacSignName: string;
-  };
-  planet2Position: {
-    degree: number;
-    degreeFormatted: string;
-    zodiacSignName: string;
-  };
-}
-
-type CalendarEvent = LunationEvent | IngressEvent | StationEvent | AspectEvent;
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -318,7 +244,12 @@ export default function CalendarScreen({ navigation }: any) {
   const { currentChart } = useAstrology();
   const { fontLoaded } = usePhysisFont();
   const { year: selectedYear, setYear: setSelectedYear } = useYear();
-  const { events: calendarEvents, loading: calendarLoading } = useCalendar();
+  const {
+    events: calendarEvents,
+    loading: calendarLoading,
+    linesData: cachedLinesData,
+    lunationsData: cachedLunationsData,
+  } = useCalendar();
 
   const [viewMode, setViewMode] = useState<"LIST" | "LINES">("LIST");
   const [lunationEvents, setLunationEvents] = useState<LunationEvent[]>([]);
@@ -331,7 +262,7 @@ export default function CalendarScreen({ navigation }: any) {
   });
   const [isToggleDisabled, setIsToggleDisabled] = useState(false);
 
-  // Lines view state
+  // Lines view state - now uses cached data from context when available
   const [linesData, setLinesData] = useState<any>(null);
   const [linesLoading, setLinesLoading] = useState(false);
   const [linesError, setLinesError] = useState<string | null>(null);
@@ -343,16 +274,32 @@ export default function CalendarScreen({ navigation }: any) {
   const previousViewMode = useRef<"LIST" | "LINES">("LIST");
   const prefetchedYears = useRef<Set<number>>(new Set());
 
-  // Fetch all lunations when year changes
+  // Use lunations from unified cache when available
   useEffect(() => {
-    fetchAllLunations();
+    // If cached data is available, use it immediately (regardless of calendarLoading state)
+    if (cachedLunationsData) {
+      setLunationEvents(cachedLunationsData);
+      setLunationsLoading(false);
+    } else if (!calendarLoading) {
+      // Only fetch if calendar is done loading and we don't have cached data
+      // This prevents duplicate fetches while calendar is still loading
+      fetchAllLunations();
+    }
     // Reset scroll flag when year changes so we can auto-scroll to today if needed
     hasScrolledToToday.current = false;
-  }, [selectedYear]);
+  }, [selectedYear, cachedLunationsData, calendarLoading]);
 
   // Fetch lines data when in LINES view and year changes
   useEffect(() => {
     if (viewMode === "LINES") {
+      // First check if we have cached data from context for this year
+      if (cachedLinesData && !calendarLoading) {
+        setLinesData(cachedLinesData);
+        linesDataYear.current = selectedYear;
+        setLinesLoading(false);
+        return;
+      }
+
       // Only fetch if we don't already have data for this year
       // Check if linesData exists and matches the selected year
       if (
@@ -363,7 +310,7 @@ export default function CalendarScreen({ navigation }: any) {
         fetchLinesData();
       }
     }
-  }, [selectedYear, viewMode]);
+  }, [selectedYear, viewMode, cachedLinesData, calendarLoading]);
 
   // Memoize allEvents to prevent recalculation on every render
   const allEvents: CalendarEvent[] = useMemo(() => {
@@ -710,7 +657,7 @@ export default function CalendarScreen({ navigation }: any) {
     }
   };
 
-  // Fetch lines ephemeris data
+  // Fetch lines ephemeris data (only if not available from context cache)
   const fetchLinesData = async () => {
     try {
       setLinesLoading(true);
@@ -721,9 +668,26 @@ export default function CalendarScreen({ navigation }: any) {
         longitude: -74.006,
       };
 
+      // First check if we have cached data from the unified cache
+      const { loadYearDataFromCache } = await import(
+        "../services/yearDataCache"
+      );
+      const cachedYearData = await loadYearDataFromCache(
+        selectedYear,
+        location.latitude,
+        location.longitude
+      );
+
+      if (cachedYearData && cachedYearData.linesData) {
+        setLinesData(cachedYearData.linesData);
+        linesDataYear.current = selectedYear;
+        setLinesLoading(false);
+        return;
+      }
+
       const sampleInterval = 24; // Daily samples
 
-      // Check cache first
+      // Check old cache format for backward compatibility
       const cachedData = await loadEphemerisFromCache(
         selectedYear,
         location.latitude,
@@ -752,7 +716,7 @@ export default function CalendarScreen({ navigation }: any) {
         setLinesData(chartData);
         linesDataYear.current = selectedYear;
 
-        // Save to cache for future use
+        // Save to old cache format for backward compatibility
         await saveEphemerisToCache(
           selectedYear,
           location.latitude,

@@ -47,23 +47,13 @@ import {
   aspectColorStyles,
   zodiacColorStyles,
 } from "../utils/colorUtils";
+import { Moon30, TithiData } from "../types/moonTypes";
 
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
-interface moon30 {
-  number: number;
-  name: string;
-  color: string;
-}
-
-interface TithiData {
-  numbers: [number, number];
-  name: string;
-  planetRuler: string;
-  division: string;
-  deity: string;
-}
+// moon30 type is now Moon30 from moonTypes - keeping alias for backward compatibility
+type moon30 = Moon30;
 
 // ============================================================================
 // DATA & CONSTANTS
