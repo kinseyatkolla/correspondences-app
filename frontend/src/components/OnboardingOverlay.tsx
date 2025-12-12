@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -110,16 +110,16 @@ export default function OnboardingOverlay({
 }: OnboardingOverlayProps) {
   const [visible, setVisible] = useState(false);
 
-  useEffect(() => {
-    checkOnboardingStatus();
-  }, []);
-
-  const checkOnboardingStatus = async () => {
+  const checkOnboardingStatus = useCallback(async () => {
     const dismissed = await hasOnboardingBeenDismissed(
       ONBOARDING_KEYS[screenKey]
     );
     setVisible(!dismissed);
-  };
+  }, [screenKey]);
+
+  useEffect(() => {
+    checkOnboardingStatus();
+  }, [checkOnboardingStatus]);
 
   const handleClose = async () => {
     await dismissOnboarding(ONBOARDING_KEYS[screenKey]);

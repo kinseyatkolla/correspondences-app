@@ -393,6 +393,15 @@ export default function MoonScreen({ navigation, route }: any) {
     eclipseType?: "lunar" | "solar";
   } | null>(null);
 
+  // Track the last loaded year/location/date to prevent unnecessary refetches
+  const lastLoadedLunationsRef = useRef<{
+    currentYear: number;
+    nextYear: number;
+    latitude: number;
+    longitude: number;
+    filterDate: string; // ISO string of the date used for filtering
+  } | null>(null);
+
   // Helper function to create cache key for lunations data
   const getLunationsCacheKey = (
     year: number,
@@ -437,7 +446,6 @@ export default function MoonScreen({ navigation, route }: any) {
   // Function to fetch upcoming lunations from unified year data cache
   const fetchLunarPhases = async (date: Date) => {
     try {
-      setLunarPhasesLoading(true);
       const currentYear = date.getFullYear();
       const nextYear = currentYear + 1;
 
@@ -445,6 +453,26 @@ export default function MoonScreen({ navigation, route }: any) {
         latitude: 40.7128,
         longitude: -74.006,
       };
+
+      // Check if we've already loaded this exact year/location/date combination
+      const lastLoaded = lastLoadedLunationsRef.current;
+      const filterDateStr = date.toISOString().split("T")[0]; // Just the date part
+      if (
+        lastLoaded &&
+        lastLoaded.currentYear === currentYear &&
+        lastLoaded.nextYear === nextYear &&
+        lastLoaded.latitude === location.latitude &&
+        lastLoaded.longitude === location.longitude &&
+        lastLoaded.filterDate === filterDateStr
+      ) {
+        // Already loaded this exact data, skip refetch
+        console.log(
+          `⏭️ Skipping lunations refetch - data already loaded for years ${currentYear}/${nextYear} at ${location.latitude}, ${location.longitude} filtered from ${filterDateStr}`
+        );
+        return;
+      }
+
+      setLunarPhasesLoading(true);
 
       // Load lunations from unified year data cache
       const { loadYearDataFromCache } = await import(
@@ -541,7 +569,17 @@ export default function MoonScreen({ navigation, route }: any) {
       );
 
       // Limit to next 12 lunations (approximately 1 year)
-      setLunarPhases(upcomingLunations.slice(0, 12));
+      const limitedLunations = upcomingLunations.slice(0, 12);
+      setLunarPhases(limitedLunations);
+
+      // Update last loaded ref after successful fetch
+      lastLoadedLunationsRef.current = {
+        currentYear,
+        nextYear,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        filterDate: filterDateStr,
+      };
 
       // Check if current displayDate is an eclipse day
       checkEclipseForDate(date);
@@ -1032,16 +1070,41 @@ export default function MoonScreen({ navigation, route }: any) {
       }
 
       // Fetch lunar phases (this will also check for eclipse)
-      fetchLunarPhases(displayDate);
+      // Only fetch if year or location actually changed
+      const location = currentChart?.location || {
+        latitude: 40.7128,
+        longitude: -74.006,
+      };
+      const currentYear = displayDate.getFullYear();
+      const lastLoaded = lastLoadedLunationsRef.current;
+
+      if (
+        !lastLoaded ||
+        lastLoaded.currentYear !== currentYear ||
+        lastLoaded.nextYear !== currentYear + 1 ||
+        lastLoaded.latitude !== location.latitude ||
+        lastLoaded.longitude !== location.longitude ||
+        lastLoaded.filterDate !== displayDate.toISOString().split("T")[0]
+      ) {
+        fetchLunarPhases(displayDate);
+      }
     }
-  }, [displayDate, currentChart]);
+  }, [
+    displayDate,
+    currentChart?.location?.latitude,
+    currentChart?.location?.longitude,
+  ]);
 
   // Check for eclipse when displayDate changes
   useEffect(() => {
     if (displayDate && currentChart) {
       checkEclipseForDate(displayDate);
     }
-  }, [displayDate, currentChart]);
+  }, [
+    displayDate,
+    currentChart?.location?.latitude,
+    currentChart?.location?.longitude,
+  ]);
 
   if (loading || !fontLoaded) {
     return (

@@ -53,6 +53,12 @@ interface CalendarProviderProps {
 // ============================================================================
 // PROVIDER
 // ============================================================================
+// CACHE vs LOCAL STORAGE:
+// - ephemerisCache (Map): In-memory cache - fast but cleared on app restart
+// - AsyncStorage: Persistent local storage - survives app restarts, slower to read/write
+// - yearDataCache service: Uses AsyncStorage for permanent storage of year data
+//   Since year data never changes once calculated, it's stored permanently in AsyncStorage
+//
 // Cache for year-ephemeris data
 // Key format: "year-latitude-longitude"
 interface EphemerisCacheEntry {
@@ -61,7 +67,7 @@ interface EphemerisCacheEntry {
   year: number;
 }
 
-// In-memory cache for quick access
+// In-memory cache for quick access (fast but cleared on app restart)
 const ephemerisCache = new Map<string, EphemerisCacheEntry>();
 
 // Helper function to create cache key
@@ -97,6 +103,13 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
 
   // Track current cache key to detect changes
   const currentCacheKeyRef = useRef<string | null>(null);
+
+  // Track the last loaded year/location to prevent unnecessary refetches
+  const lastLoadedRef = useRef<{
+    year: number;
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   // Load calendar events from AsyncStorage cache
   const loadEventsFromCache = async (
@@ -169,13 +182,28 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
   // Fetch and process year ephemeris data
   const fetchYearEphemeris = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
-
       const location = currentChart?.location || {
         latitude: 40.7128,
         longitude: -74.006,
       };
+
+      // Check if we've already loaded this exact year/location combination
+      const lastLoaded = lastLoadedRef.current;
+      if (
+        lastLoaded &&
+        lastLoaded.year === year &&
+        lastLoaded.latitude === location.latitude &&
+        lastLoaded.longitude === location.longitude
+      ) {
+        // Already loaded this exact data, skip refetch
+        console.log(
+          `⏭️ Skipping refetch - data already loaded for year ${year} at ${location.latitude}, ${location.longitude}`
+        );
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
 
       // Check new unified cache first
       const cachedYearData = await loadYearDataFromCache(
@@ -194,6 +222,12 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
         setLinesData(cachedYearData.linesData);
         setLunationsData(cachedYearData.lunationsData || null);
         setLoading(false);
+        // Update last loaded ref
+        lastLoadedRef.current = {
+          year,
+          latitude: location.latitude,
+          longitude: location.longitude,
+        };
         return;
       }
 
@@ -333,6 +367,13 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
         setEvents(events);
         setLinesData(processedLinesData);
         setLunationsData(lunationsData);
+
+        // Update last loaded ref after successful fetch
+        lastLoadedRef.current = {
+          year,
+          latitude: location.latitude,
+          longitude: location.longitude,
+        };
       } else {
         setError("Failed to fetch ephemeris data");
         setEvents([]);
@@ -348,7 +389,11 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
     } finally {
       setLoading(false);
     }
-  }, [year, currentChart]);
+  }, [
+    year,
+    currentChart?.location?.latitude,
+    currentChart?.location?.longitude,
+  ]);
 
   // Refresh calendar data (bypasses cache)
   const refreshCalendar = useCallback(async () => {
@@ -374,13 +419,40 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
       console.error("Error clearing old calendar cache:", err);
     }
 
+    // Reset last loaded ref to force refetch
+    lastLoadedRef.current = null;
+
     await fetchYearEphemeris();
-  }, [fetchYearEphemeris, year, currentChart]);
+  }, [
+    fetchYearEphemeris,
+    year,
+    currentChart?.location?.latitude,
+    currentChart?.location?.longitude,
+  ]);
 
   // Fetch data on mount and when year or location changes
   useEffect(() => {
-    fetchYearEphemeris();
-  }, [fetchYearEphemeris]);
+    const location = currentChart?.location || {
+      latitude: 40.7128,
+      longitude: -74.006,
+    };
+
+    // Only fetch if year or location actually changed
+    const lastLoaded = lastLoadedRef.current;
+    if (
+      !lastLoaded ||
+      lastLoaded.year !== year ||
+      lastLoaded.latitude !== location.latitude ||
+      lastLoaded.longitude !== location.longitude
+    ) {
+      fetchYearEphemeris();
+    }
+  }, [
+    year,
+    currentChart?.location?.latitude,
+    currentChart?.location?.longitude,
+    fetchYearEphemeris,
+  ]);
 
   return (
     <CalendarContext.Provider
