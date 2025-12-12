@@ -34,6 +34,7 @@ import {
 } from "../utils/physisSymbolMap";
 import LinesChart from "../components/LinesChart";
 import { processEphemerisData } from "../utils/ephemerisChartData";
+import OnboardingOverlay from "../components/OnboardingOverlay";
 import { Dimensions, Platform } from "react-native";
 import {
   CalendarEvent,
@@ -1601,6 +1602,7 @@ export default function CalendarScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
+      <OnboardingOverlay screenKey="BOOK" />
       {/* Year Navigation Header - Centered with toggle button on left and Today button on right */}
       <View style={styles.headerContainer}>
         <View style={styles.headerLeft}>

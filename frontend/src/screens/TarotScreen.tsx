@@ -19,6 +19,7 @@ import { TarotCard } from "../services/api";
 import { useTarot } from "../contexts/TarotContext";
 import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
+import OnboardingOverlay from "../components/OnboardingOverlay";
 
 // ============================================================================
 // COMPONENT
@@ -302,6 +303,7 @@ export default function TarotScreen({ navigation, route }: any) {
   // ===== MAIN TEMPLATE =====
   return (
     <View style={styles.container}>
+      <OnboardingOverlay screenKey="TAROT" />
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}

@@ -25,6 +25,7 @@ import { useAstrology } from "../contexts/AstrologyContext";
 import { apiService, BirthData, BirthChart } from "../services/api";
 import { sharedUI } from "../styles/sharedUI";
 import { usePhysisFont, getPhysisSymbolStyle } from "../utils/physisFont";
+import OnboardingOverlay from "../components/OnboardingOverlay";
 import {
   getZodiacKeysFromNames,
   getPlanetKeysFromNames,
@@ -1069,6 +1070,7 @@ export default function MoonScreen({ navigation, route }: any) {
   // ============================================================================
   return (
     <GestureHandlerRootView style={styles.container}>
+      <OnboardingOverlay screenKey="MOON" />
       <GestureDetector gesture={panGesture}>
         <View style={styles.container}>
           <ScrollView

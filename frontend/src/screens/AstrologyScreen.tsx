@@ -45,6 +45,7 @@ import {
   getActiveAspects,
 } from "../utils/aspectUtils";
 import { getAspectColorStyle, getZodiacColorStyle } from "../utils/colorUtils";
+import OnboardingOverlay from "../components/OnboardingOverlay";
 import {
   getPlanetHappinessEmoji,
   isPlanetaryRuler,
@@ -882,6 +883,7 @@ export default function AstrologyScreen({ navigation, route }: any) {
   // ===== MAIN TEMPLATE =====
   return (
     <GestureHandlerRootView style={styles.container}>
+      <OnboardingOverlay screenKey="ASTROLOGY" />
       <GestureDetector gesture={panGesture}>
         <View style={styles.container}>
           {/* Layered gradient backgrounds */}
