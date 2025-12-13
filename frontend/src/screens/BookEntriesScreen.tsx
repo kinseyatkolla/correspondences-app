@@ -32,18 +32,10 @@ type BookEntriesScreenRouteProp = RouteProp<
   "BookEntries"
 >;
 
-interface BookEntriesScreenProps {
-  navigation: any;
-  route: BookEntriesScreenRouteProp;
-}
-
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function BookEntriesScreen({
-  navigation,
-  route,
-}: BookEntriesScreenProps) {
+export default function BookEntriesScreen({ navigation, route }: any) {
   const { category, search, categoryDisplay } = route.params;
   const [entries, setEntries] = useState<BookOfShadowsEntry[]>([]);
   const [loading, setLoading] = useState(true);

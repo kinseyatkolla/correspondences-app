@@ -5,7 +5,7 @@
 // based on various positive and negative factors
 
 import { BirthChart, PlanetPosition } from "../services/api";
-import { checkAllAspects } from "./aspectUtils";
+import { checkAllAspects, checkAllWholeSignAspects } from "./aspectUtils";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -138,7 +138,7 @@ export const hasHardAspectWithMars: HappinessCheck = (
   const mars = chart.planets.mars;
   if (!mars || mars.error) return false;
 
-  const aspects = checkAllAspects(focusPlanet, mars, 7);
+  const aspects = checkAllAspects(focusPlanet, mars, 3);
   return (
     aspects.conjunct?.hasAspect ||
     aspects.opposition?.hasAspect ||
@@ -161,7 +161,99 @@ export const hasHardAspectWithSaturn: HappinessCheck = (
   const saturn = chart.planets.saturn;
   if (!saturn || saturn.error) return false;
 
-  const aspects = checkAllAspects(focusPlanet, saturn, 7);
+  const aspects = checkAllAspects(focusPlanet, saturn, 3);
+  return (
+    aspects.conjunct?.hasAspect ||
+    aspects.opposition?.hasAspect ||
+    aspects.square?.hasAspect
+  );
+};
+
+/**
+ * Check if planet is in hard aspect (conjunct, opposition, or square) with Pluto
+ * Returns false for Pluto itself (a planet can't aspect itself)
+ */
+export const hasHardAspectWithPluto: HappinessCheck = (
+  chart,
+  focusPlanet,
+  focusPlanetName
+) => {
+  // Doesn't apply to Pluto itself
+  if (focusPlanetName === "pluto") return false;
+
+  const pluto = chart.planets.pluto;
+  if (!pluto || pluto.error) return false;
+
+  const aspects = checkAllAspects(focusPlanet, pluto, 3);
+  return (
+    aspects.conjunct?.hasAspect ||
+    aspects.opposition?.hasAspect ||
+    aspects.square?.hasAspect
+  );
+};
+
+/**
+ * Check if planet is in hard aspect (conjunct, opposition, or square) with Rahu
+ * Returns false for Rahu itself (a planet can't aspect itself)
+ */
+export const hasHardAspectWithRahu: HappinessCheck = (
+  chart,
+  focusPlanet,
+  focusPlanetName
+) => {
+  // Doesn't apply to Rahu itself
+  if (focusPlanetName === "northNode") return false;
+
+  const northNode = chart.planets.northNode;
+  if (!northNode || northNode.error) return false;
+
+  const aspects = checkAllAspects(focusPlanet, northNode, 3);
+  return (
+    aspects.conjunct?.hasAspect ||
+    aspects.opposition?.hasAspect ||
+    aspects.square?.hasAspect
+  );
+};
+
+/**
+ * Check if planet is in hard whole sign aspect (conjunct, opposition, or square) with Mars
+ * Returns false for Mars itself (a planet can't aspect itself)
+ */
+export const hasHardWholeSignAspectWithMars: HappinessCheck = (
+  chart,
+  focusPlanet,
+  focusPlanetName
+) => {
+  // Doesn't apply to Mars itself
+  if (focusPlanetName === "mars") return false;
+
+  const mars = chart.planets.mars;
+  if (!mars || mars.error) return false;
+
+  const aspects = checkAllWholeSignAspects(focusPlanet, mars);
+  return (
+    aspects.conjunct?.hasAspect ||
+    aspects.opposition?.hasAspect ||
+    aspects.square?.hasAspect
+  );
+};
+
+/**
+ * Check if planet is in hard whole sign aspect (conjunct, opposition, or square) with Saturn
+ * Returns false for Saturn itself (a planet can't aspect itself)
+ */
+export const hasHardWholeSignAspectWithSaturn: HappinessCheck = (
+  chart,
+  focusPlanet,
+  focusPlanetName
+) => {
+  // Doesn't apply to Saturn itself
+  if (focusPlanetName === "saturn") return false;
+
+  const saturn = chart.planets.saturn;
+  if (!saturn || saturn.error) return false;
+
+  const aspects = checkAllWholeSignAspects(focusPlanet, saturn);
   return (
     aspects.conjunct?.hasAspect ||
     aspects.opposition?.hasAspect ||
@@ -227,7 +319,7 @@ export const hasAspectWithJupiter: HappinessCheck = (
   const jupiter = chart.planets.jupiter;
   if (!jupiter || jupiter.error) return false;
 
-  const aspects = checkAllAspects(focusPlanet, jupiter, 7);
+  const aspects = checkAllAspects(focusPlanet, jupiter, 3);
   return Object.values(aspects).some((aspect) => aspect.hasAspect);
 };
 
@@ -246,7 +338,45 @@ export const hasAspectWithVenus: HappinessCheck = (
   const venus = chart.planets.venus;
   if (!venus || venus.error) return false;
 
-  const aspects = checkAllAspects(focusPlanet, venus, 7);
+  const aspects = checkAllAspects(focusPlanet, venus, 3);
+  return Object.values(aspects).some((aspect) => aspect.hasAspect);
+};
+
+/**
+ * Check if planet is in any whole sign aspect with Jupiter
+ * Returns false for Jupiter itself (a planet can't aspect itself)
+ */
+export const hasWholeSignAspectWithJupiter: HappinessCheck = (
+  chart,
+  focusPlanet,
+  focusPlanetName
+) => {
+  // Doesn't apply to Jupiter itself
+  if (focusPlanetName === "jupiter") return false;
+
+  const jupiter = chart.planets.jupiter;
+  if (!jupiter || jupiter.error) return false;
+
+  const aspects = checkAllWholeSignAspects(focusPlanet, jupiter);
+  return Object.values(aspects).some((aspect) => aspect.hasAspect);
+};
+
+/**
+ * Check if planet is in any whole sign aspect with Venus
+ * Returns false for Venus itself (a planet can't aspect itself)
+ */
+export const hasWholeSignAspectWithVenus: HappinessCheck = (
+  chart,
+  focusPlanet,
+  focusPlanetName
+) => {
+  // Doesn't apply to Venus itself
+  if (focusPlanetName === "venus") return false;
+
+  const venus = chart.planets.venus;
+  if (!venus || venus.error) return false;
+
+  const aspects = checkAllWholeSignAspects(focusPlanet, venus);
   return Object.values(aspects).some((aspect) => aspect.hasAspect);
 };
 
@@ -259,6 +389,10 @@ const CONS: HappinessCheck[] = [
   isPlanetaryFall,
   hasHardAspectWithMars,
   hasHardAspectWithSaturn,
+  hasHardAspectWithPluto,
+  hasHardAspectWithRahu,
+  hasHardWholeSignAspectWithMars,
+  hasHardWholeSignAspectWithSaturn,
 ];
 
 // Group all positive checks (pros)
@@ -267,6 +401,8 @@ const PROS: HappinessCheck[] = [
   isPlanetaryExaltation,
   hasAspectWithJupiter,
   hasAspectWithVenus,
+  hasWholeSignAspectWithJupiter,
+  hasWholeSignAspectWithVenus,
 ];
 
 // ============================================================================
@@ -283,7 +419,7 @@ export function getPlanetHappinessEmoji(
   focusPlanetName: string
 ): string {
   if (!focusPlanet || focusPlanet.error) {
-    return "😐"; // Neutral for missing/invalid data
+    return "🙂"; // Neutral for missing/invalid data
   }
 
   // Count pros and cons
@@ -320,14 +456,15 @@ export function getPlanetHappinessEmoji(
     // No negatives - pros determine happiness level
     if (proCount >= 3) return "🤩"; // Elated - many pros, no cons
     if (proCount >= 1) return "😊"; // Happy - some pros, no cons
-    return "😐"; // Neutral - no pros, no cons
+    return "🙂"; // Neutral - no pros, no cons
   } else {
     // Has negatives - pros balance them out
     const netHappiness = proCount - conCount;
 
-    if (netHappiness >= 1) return "😊"; // Happy - pros outweigh cons
+    if (netHappiness >= 1) return "🙂"; // Happy - pros outweigh cons
     if (netHappiness === 0) return "😐"; // Neutral - pros balance cons
-    if (netHappiness === -1) return "😔"; // Sad - one more con than pro
+    if (netHappiness === -1) return "🫤"; // Neutral - one more con than pro
+    if (netHappiness === -2) return "😔"; // Sad - two more cons than pros
     return "😰"; // Anguished - significantly more cons than pros
   }
 }

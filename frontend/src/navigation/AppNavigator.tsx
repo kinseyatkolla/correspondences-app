@@ -1,12 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { Text, View, TouchableOpacity, StyleSheet } from "react-native";
+import GearIcon from "../../assets/gear-svgrepo-com.svg";
 import { FlowersProvider } from "../contexts/FlowersContext";
 import { TarotProvider } from "../contexts/TarotContext";
 import { CalendarProvider } from "../contexts/CalendarContext";
 import { YearProvider, useYear } from "../contexts/YearContext";
+import { useAstrology } from "../contexts/AstrologyContext";
+import LocationSettingsModal from "../components/LocationSettingsModal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Import screens
 import MoonScreen from "../screens/MoonScreen";
@@ -53,7 +57,7 @@ function FlowersStack() {
         component={FlowerDrawScreen}
         options={{
           headerShown: false,
-          presentation: "fullScreenModal",
+          presentation: "modal",
         }}
       />
       <Stack.Screen
@@ -94,7 +98,7 @@ function TarotStack() {
         component={TarotDrawScreen}
         options={{
           headerShown: false,
-          presentation: "fullScreenModal",
+          presentation: "modal",
         }}
       />
       <Stack.Screen
@@ -218,7 +222,7 @@ function BookStack() {
       />
       <Stack.Screen
         name="BookEntries"
-        component={BookEntriesScreen}
+        component={BookEntriesScreen as any}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -281,115 +285,160 @@ function CalendarStack() {
   );
 }
 
+function AppNavigatorContent() {
+  const [locationSettingsVisible, setLocationSettingsVisible] = useState(false);
+  const { currentChart, refreshChart } = useAstrology();
+
+  const handleSaveLocation = async (location: {
+    latitude: number;
+    longitude: number;
+    name?: string;
+  }) => {
+    try {
+      await AsyncStorage.setItem("savedLocation", JSON.stringify(location));
+      // Refresh chart with new location
+      await refreshChart();
+    } catch (error) {
+      console.error("Error saving location:", error);
+    }
+  };
+
+  return (
+    <>
+      <NavigationContainer>
+        <Tab.Navigator
+          initialRouteName="Moon"
+          screenOptions={({ navigation }) => ({
+            tabBarActiveTintColor: "#e6e6fa",
+            tabBarInactiveTintColor: "#8a8a8a",
+            tabBarStyle: {
+              backgroundColor: "#000000",
+              borderTopWidth: 0,
+              paddingBottom: 5,
+              paddingTop: 5,
+              height: 60,
+            },
+            headerStyle: {
+              backgroundColor: "#000000",
+              borderBottomWidth: 0,
+              elevation: 0,
+              shadowOpacity: 0,
+            },
+            headerTintColor: "white",
+            headerTitleStyle: {
+              fontWeight: "bold",
+              letterSpacing: 8,
+            },
+            headerTitle: () => (
+              <TouchableOpacity
+                onPress={() => {
+                  const state = navigation.getState();
+                  const currentRoute = state.routes[state.index];
+                  (navigation as any).navigate(currentRoute.name, {
+                    screen: "Admin",
+                  });
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={headerStyles.headerTitle}>CORRESPONDENCES</Text>
+              </TouchableOpacity>
+            ),
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={() => setLocationSettingsVisible(true)}
+                activeOpacity={0.7}
+                style={headerStyles.headerRightButton}
+              >
+                <GearIcon
+                  width={20}
+                  height={20}
+                  fill="#e6e6fa"
+                  color="#e6e6fa"
+                />
+              </TouchableOpacity>
+            ),
+          })}
+        >
+          <Tab.Screen
+            name="Flowers"
+            component={FlowersStack}
+            options={{
+              tabBarLabel: "",
+              tabBarIcon: ({ focused, size }) => (
+                <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
+                  🌸
+                </Text>
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Tarot"
+            component={TarotStack}
+            options={{
+              tabBarLabel: "",
+              tabBarIcon: ({ focused, size }) => (
+                <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
+                  🃏
+                </Text>
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Moon"
+            component={MoonStack}
+            options={{
+              tabBarLabel: "",
+              tabBarIcon: ({ focused, size }) => (
+                <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
+                  🌙
+                </Text>
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Book"
+            component={CalendarStack}
+            options={{
+              tabBarLabel: "",
+              tabBarIcon: ({ focused, size }) => (
+                <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
+                  📖
+                </Text>
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Astrology"
+            component={AstrologyStack}
+            options={{
+              tabBarLabel: "",
+              tabBarIcon: ({ focused, size }) => (
+                <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
+                  ⭐
+                </Text>
+              ),
+            }}
+          />
+        </Tab.Navigator>
+      </NavigationContainer>
+      <LocationSettingsModal
+        visible={locationSettingsVisible}
+        onClose={() => setLocationSettingsVisible(false)}
+        onSave={handleSaveLocation}
+        currentLocation={currentChart?.location || null}
+      />
+    </>
+  );
+}
+
 export default function AppNavigator() {
   return (
     <YearProvider>
       <FlowersProvider>
         <TarotProvider>
-          <NavigationContainer>
-          <Tab.Navigator
-            initialRouteName="Moon"
-            screenOptions={({ navigation }) => ({
-              tabBarActiveTintColor: "#e6e6fa",
-              tabBarInactiveTintColor: "#8a8a8a",
-              tabBarStyle: {
-                backgroundColor: "#000000",
-                borderTopWidth: 0,
-                paddingBottom: 5,
-                paddingTop: 5,
-                height: 60,
-              },
-              headerStyle: {
-                backgroundColor: "#000000",
-                borderBottomWidth: 0,
-                elevation: 0,
-                shadowOpacity: 0,
-              },
-              headerTintColor: "white",
-              headerTitleStyle: {
-                fontWeight: "bold",
-                letterSpacing: 8,
-              },
-              headerTitle: () => (
-                <TouchableOpacity
-                  onPress={() => {
-                    const state = navigation.getState();
-                    const currentRoute = state.routes[state.index];
-                    (navigation as any).navigate(currentRoute.name, {
-                      screen: "Admin",
-                    });
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={headerStyles.headerTitle}>CORRESPONDENCES</Text>
-                </TouchableOpacity>
-              ),
-            })}
-          >
-            <Tab.Screen
-              name="Flowers"
-              component={FlowersStack}
-              options={{
-                tabBarLabel: "",
-                tabBarIcon: ({ focused, size }) => (
-                  <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
-                    🌸
-                  </Text>
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Tarot"
-              component={TarotStack}
-              options={{
-                tabBarLabel: "",
-                tabBarIcon: ({ focused, size }) => (
-                  <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
-                    🃏
-                  </Text>
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Moon"
-              component={MoonStack}
-              options={{
-                tabBarLabel: "",
-                tabBarIcon: ({ focused, size }) => (
-                  <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
-                    🌙
-                  </Text>
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Book"
-              component={CalendarStack}
-              options={{
-                tabBarLabel: "",
-                tabBarIcon: ({ focused, size }) => (
-                  <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
-                    📖
-                  </Text>
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Astrology"
-              component={AstrologyStack}
-              options={{
-                tabBarLabel: "",
-                tabBarIcon: ({ focused, size }) => (
-                  <Text style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}>
-                    ⭐
-                  </Text>
-                ),
-              }}
-            />
-          </Tab.Navigator>
-        </NavigationContainer>
-      </TarotProvider>
-    </FlowersProvider>
+          <AppNavigatorContent />
+        </TarotProvider>
+      </FlowersProvider>
     </YearProvider>
   );
 }
@@ -400,5 +449,9 @@ const headerStyles = StyleSheet.create({
     fontWeight: "bold",
     letterSpacing: 8,
     fontSize: 17,
+  },
+  headerRightButton: {
+    paddingRight: 15,
+    paddingVertical: 5,
   },
 });
