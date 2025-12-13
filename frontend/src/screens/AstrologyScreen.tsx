@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   ImageBackground,
   Animated,
+  useWindowDimensions,
 } from "react-native";
 import {
   GestureHandlerRootView,
@@ -69,6 +70,13 @@ export default function AstrologyScreen({ navigation, route }: any) {
     refreshError,
   } = useAstrology();
   const { fontLoaded } = usePhysisFont();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+
+  // Calculate number of columns based on screen size and orientation
+  // iPad is typically >= 768px width
+  const isIPad = screenWidth >= 768;
+  const isLandscape = screenWidth > screenHeight;
+  const numColumns = isIPad ? (isLandscape ? 6 : 4) : 2;
 
   // Get selected date from route params, default to today
   const selectedDate = route?.params?.selectedDate
@@ -1250,10 +1258,14 @@ export default function AstrologyScreen({ navigation, route }: any) {
                       reorderedPlanets = allPlanets;
                     }
 
-                    // Re-pair the planets into pairs of 2
+                    // Group the planets into rows based on numColumns
                     const planetPairs: typeof basePlanetPairs = [];
-                    for (let i = 0; i < reorderedPlanets.length; i += 2) {
-                      const pair = reorderedPlanets.slice(i, i + 2);
+                    for (
+                      let i = 0;
+                      i < reorderedPlanets.length;
+                      i += numColumns
+                    ) {
+                      const pair = reorderedPlanets.slice(i, i + numColumns);
                       if (pair.length > 0) {
                         planetPairs.push(pair as any);
                       }
@@ -2781,7 +2793,7 @@ const styles = StyleSheet.create({
   },
   planetCardsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     marginBottom: 15,
     gap: 15,
   },

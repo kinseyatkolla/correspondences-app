@@ -5,7 +5,14 @@
 // Rotated 90° clockwise: dates on left (Y-axis), degrees on bottom (X-axis)
 
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet, Dimensions, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  ScrollView,
+  useWindowDimensions,
+} from "react-native";
 import Svg, { Circle, Line, Text as SvgText, G, Rect } from "react-native-svg";
 import { LinesChartData, PlanetDataset } from "../utils/ephemerisChartData";
 import { getZodiacElement, getZodiacColorStyle } from "../utils/colorUtils";
@@ -166,6 +173,7 @@ function LinesChart({
 }: LinesChartProps) {
   const { dates, planets } = data;
   const { fontLoaded } = usePhysisFont();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
   if (dates.length === 0 || planets.length === 0) {
     return (
@@ -177,9 +185,48 @@ function LinesChart({
 
   // Chart is 100% width, height based on data points
   // Use full screen width with no margins
-  const chartWidth = width || SCREEN_WIDTH;
-  // Calculate height: ~2px per date point, minimum reasonable height
-  const calculatedHeight = Math.max(dates.length * 2, 600);
+  const chartWidth = width || screenWidth;
+
+  // Calculate minimum height: ~2px per date point, minimum reasonable height
+  // This becomes the min-height for the chart
+  const minHeight = Math.max(dates.length * 2, 600);
+
+  // For iPad, calculate height to fill screen minus space for legend and other UI
+  // iPad is typically >= 768px width
+  const isIPad = screenWidth >= 768;
+
+  // Estimate space needed for UI elements:
+  // - Tab bar: ~50px
+  // - CalendarScreen header (year navigation): ~60px
+  // - ZodiacHeaderRow (shown separately in CalendarScreen): 40px
+  // - Legend: ~100px (depends on number of planets, but estimate conservatively)
+  // - Padding/margins: ~30px
+  const legendHeight = 100; // Conservative estimate for legend
+  const headerHeight = showHeader ? HEADER_HEIGHT : 0;
+  const tabBarHeight = 50;
+  const calendarHeaderHeight = 60;
+  const zodiacHeaderHeight = 40; // Shown separately in CalendarScreen
+  const paddingHeight = 30;
+  const reservedHeight =
+    tabBarHeight +
+    calendarHeaderHeight +
+    zodiacHeaderHeight +
+    legendHeight +
+    paddingHeight +
+    headerHeight;
+
+  // On iPad, use available screen height minus reserved space
+  // On phones, use the calculated minHeight
+  let calculatedHeight: number;
+  if (isIPad && height === undefined) {
+    // Calculate available height for the chart (fill screen minus reserved space)
+    const availableHeight = screenHeight - reservedHeight;
+    // Use the larger of available height or minHeight
+    calculatedHeight = Math.max(availableHeight, minHeight);
+  } else {
+    calculatedHeight = minHeight;
+  }
+
   const chartHeight = height || calculatedHeight;
   const padding = CHART_PADDING;
 
@@ -463,7 +510,7 @@ function LinesChart({
         showsVerticalScrollIndicator={true}
         contentContainerStyle={{ paddingBottom: 20 }}
       >
-        <View style={styles.chartContainer}>
+        <View style={[styles.chartContainer, { minHeight: minHeight }]}>
           <Svg width={chartWidth} height={chartHeight}>
             {/* Background: Zodiac sign rectangles (horizontal) */}
             <G>{zodiacRects}</G>
