@@ -202,10 +202,8 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
         return;
       }
 
-      setLoading(true);
-      setError(null);
-
-      // Check new unified cache first
+      // Check AsyncStorage cache FIRST before clearing state or setting loading
+      // This ensures instant display of cached data when switching back to a year
       const cachedYearData = await loadYearDataFromCache(
         year,
         location.latitude,
@@ -218,6 +216,7 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
             cachedYearData.listEvents.length
           } events, ${cachedYearData.lunationsData?.length || 0} lunations)`
         );
+        // Update state directly without showing loading state
         setEvents(cachedYearData.listEvents);
         setLinesData(cachedYearData.linesData);
         setLunationsData(cachedYearData.lunationsData || null);
@@ -230,6 +229,15 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
         };
         return;
       }
+
+      // Only clear state and show loading if cache miss (need to fetch)
+      if (lastLoaded && lastLoaded.year !== year) {
+        setEvents([]);
+        setLinesData(null);
+        setLunationsData(null);
+      }
+      setLoading(true);
+      setError(null);
 
       console.log(`🌐 Fetching year-ephemeris data for ${year} (cache miss)`);
 
