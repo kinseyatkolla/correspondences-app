@@ -1477,6 +1477,14 @@ export default function CalendarScreen({ navigation }: any) {
 
   // Function to handle scrolling to today's item when it's measured (for auto-scroll on load)
   const handleTodayItemLayout = (event: any) => {
+    const today = new Date();
+    const todayYear = today.getFullYear();
+    
+    // Only auto-scroll if we're viewing the current year
+    if (selectedYear !== todayYear) {
+      return;
+    }
+    
     if (!hasScrolledToToday.current && scrollViewRef.current) {
       const { y } = event.nativeEvent.layout;
       // y is the top position of the item relative to ScrollView content
@@ -1724,41 +1732,47 @@ export default function CalendarScreen({ navigation }: any) {
             ) : filteredEvents && filteredEvents.length > 0 ? (
               (() => {
                 // Calculate target index once before mapping
+                // Only calculate target index if we're viewing the current year
                 const today = new Date();
                 const todayDate = today.getDate();
                 const todayMonth = today.getMonth();
                 const todayYear = today.getFullYear();
-
-                // Find the first event that is today or upcoming
-                let targetIndex = filteredEvents.findIndex((event) => {
-                  const eventDate = new Date(event.localDateTime);
-                  return (
-                    eventDate.getFullYear() > todayYear ||
-                    (eventDate.getFullYear() === todayYear &&
-                      eventDate.getMonth() > todayMonth) ||
-                    (eventDate.getFullYear() === todayYear &&
-                      eventDate.getMonth() === todayMonth &&
-                      eventDate.getDate() >= todayDate)
-                  );
-                });
-
-                // If no event for today or upcoming, find the last event before today
-                if (targetIndex < 0) {
-                  for (let i = filteredEvents.length - 1; i >= 0; i--) {
-                    const eventDate = new Date(filteredEvents[i].localDateTime);
-                    if (
-                      eventDate.getFullYear() < todayYear ||
+                
+                let targetIndex = -1;
+                
+                // Only find target index if viewing the current year
+                if (selectedYear === todayYear) {
+                  // Find the first event that is today or upcoming
+                  targetIndex = filteredEvents.findIndex((event) => {
+                    const eventDate = new Date(event.localDateTime);
+                    return (
+                      eventDate.getFullYear() > todayYear ||
                       (eventDate.getFullYear() === todayYear &&
-                        eventDate.getMonth() < todayMonth) ||
+                        eventDate.getMonth() > todayMonth) ||
                       (eventDate.getFullYear() === todayYear &&
                         eventDate.getMonth() === todayMonth &&
-                        eventDate.getDate() < todayDate)
-                    ) {
-                      targetIndex = i;
-                      break;
+                        eventDate.getDate() >= todayDate)
+                    );
+                  });
+
+                  // If no event for today or upcoming, find the last event before today
+                  if (targetIndex < 0) {
+                    for (let i = filteredEvents.length - 1; i >= 0; i--) {
+                      const eventDate = new Date(filteredEvents[i].localDateTime);
+                      if (
+                        eventDate.getFullYear() < todayYear ||
+                        (eventDate.getFullYear() === todayYear &&
+                          eventDate.getMonth() < todayMonth) ||
+                        (eventDate.getFullYear() === todayYear &&
+                          eventDate.getMonth() === todayMonth &&
+                          eventDate.getDate() < todayDate)
+                      ) {
+                        targetIndex = i;
+                        break;
+                      }
                     }
+                    if (targetIndex < 0) targetIndex = 0;
                   }
-                  if (targetIndex < 0) targetIndex = 0;
                 }
 
                 return filteredEvents.map((event, index) => {
