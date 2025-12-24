@@ -1855,6 +1855,27 @@ export default function CalendarScreen({ navigation }: any) {
 
                     const planetName = formatPlanetNameForDisplay(event.planet);
 
+                    // Check if this is a solstice or equinox (sun ingress into cardinal signs)
+                    const isSolsticeOrEquinox = 
+                      event.planet === "sun" && 
+                      ["Aries", "Cancer", "Libra", "Capricorn"].includes(event.toSign);
+                    
+                    const getSolsticeOrEquinoxLabel = () => {
+                      if (!isSolsticeOrEquinox) return "";
+                      switch (event.toSign) {
+                        case "Aries":
+                          return "Equinox - ";
+                        case "Cancer":
+                          return "Solstice - ";
+                        case "Libra":
+                          return "Equinox - ";
+                        case "Capricorn":
+                          return "Solstice - ";
+                        default:
+                          return "";
+                      }
+                    };
+
                     const eventIsToday = isToday(event.localDateTime);
                     return (
                       <TouchableOpacity
@@ -1868,6 +1889,7 @@ export default function CalendarScreen({ navigation }: any) {
                       >
                         <View style={styles.eventLeftColumn}>
                           <Text style={styles.eventTitle}>
+                            {getSolsticeOrEquinoxLabel()}
                             {planetName}
                             {event.isRetrograde ? " Rx" : ""} enters{" "}
                             {event.toSign}
