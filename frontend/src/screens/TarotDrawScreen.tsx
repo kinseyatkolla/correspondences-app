@@ -28,10 +28,11 @@ import { sharedUI } from "../styles/sharedUI";
 // CONSTANTS
 // ============================================================================
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const CARD_WIDTH = 240; // 3x bigger
-const CARD_HEIGHT = 360; // 3x bigger
-const INITIAL_CARD_COUNT = 25; // Only render what's visible initially
-const MAX_CARD_COUNT = 50; // Total cards we can have
+const CARD_WIDTH = 240;
+const CARD_HEIGHT = 360;
+const INITIAL_CARD_COUNT = 24; // Only render what's visible initially
+const MAX_CARD_COUNT = 78; // Total cards we can have (full tarot deck)
+const CARDS_TO_ADD_THRESHOLD = 5; // Add more cards when this many or fewer face-down cards remain
 
 // Import all tarot card images
 const tarotImages: { [key: string]: any } = {
@@ -227,6 +228,12 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   const [draggedCard, setDraggedCard] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hasLoadedInitialState, setHasLoadedInitialState] = useState(false);
+  // Track which tarot cards have been assigned to prevent duplicates
+  const [usedTarotCardIds, setUsedTarotCardIds] = useState<Set<string>>(
+    new Set()
+  );
+  // Shuffle key to force immediate re-render on shuffle
+  const [shuffleKey, setShuffleKey] = useState(0);
 
   // ===== LIFECYCLE =====
   useFocusEffect(
@@ -240,6 +247,14 @@ export default function TarotDrawScreen({ navigation, route }: any) {
             // Find the highest z-index from saved state
             const maxZ = Math.max(...savedState.map((card) => card.zIndex));
             setMaxZIndex(maxZ);
+            // Restore used tarot cards tracking from saved state
+            const usedIds = new Set<string>();
+            savedState.forEach((card) => {
+              if (card.tarotCard?._id) {
+                usedIds.add(card.tarotCard._id);
+              }
+            });
+            setUsedTarotCardIds(usedIds);
           } else {
             // Initialize new cards if no saved state
             initializeCards();
@@ -314,36 +329,108 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     const availableWidth = SCREEN_WIDTH - CARD_WIDTH - margin * 2;
     const availableHeight = SCREEN_HEIGHT - CARD_HEIGHT - margin * 2;
 
-    // If no cards exist, initialize them with random positions
-    if (cards.length === 0) {
+    // Reset the used tarot cards tracking when shuffling
+    setUsedTarotCardIds(new Set());
+
+    // Increment shuffle key first to force immediate re-render
+    setShuffleKey((prev) => prev + 1);
+
+    // Always reset to INITIAL_CARD_COUNT when shuffling
+    const newCards: CardData[] = [];
+    for (let i = 0; i < INITIAL_CARD_COUNT; i++) {
+      newCards.push({
+        id: `tarot-card-${i}`,
+        tarotCard: null,
+        x: margin + Math.random() * availableWidth,
+        y: margin + Math.random() * availableHeight,
+        rotation: (Math.random() - 0.5) * 60,
+        zIndex: i,
+        isFlipped: false,
+        isDragging: false,
+      });
+    }
+    setCards(newCards);
+    setMaxZIndex(INITIAL_CARD_COUNT - 1);
+  };
+
+  const addMoreCardsIfNeeded = (currentCards: CardData[]): CardData[] => {
+    // Count how many face-down cards remain
+    const faceDownCount = currentCards.filter((card) => !card.isFlipped).length;
+
+    // If we're getting close to running out of face-down cards and haven't hit the limit
+    // Check if we need to add more cards (trigger when face-down count is at or below threshold)
+    if (
+      faceDownCount <= CARDS_TO_ADD_THRESHOLD &&
+      currentCards.length < MAX_CARD_COUNT
+    ) {
+      console.log(
+        `[addMoreCards] Adding: ${faceDownCount} face-down, ${currentCards.length} total`
+      );
+      const margin = 50;
+      const availableWidth = SCREEN_WIDTH - CARD_WIDTH - margin * 2;
+      const availableHeight = SCREEN_HEIGHT - CARD_HEIGHT - margin * 2;
+
+      // Calculate how many cards to add (don't exceed MAX_CARD_COUNT)
+      // Add enough cards to bring us well above the threshold
+      const cardsToAdd = Math.min(
+        Math.max(8, CARDS_TO_ADD_THRESHOLD + 5), // Add at least 8 cards to avoid frequent additions
+        MAX_CARD_COUNT - currentCards.length
+      );
+
+      console.log(
+        `[addMoreCards] Will add ${cardsToAdd} cards (max: ${MAX_CARD_COUNT}, current: ${currentCards.length})`
+      );
+
+      // Find the highest card index to continue numbering
+      const maxIndex = Math.max(
+        ...currentCards.map((card) => {
+          const match = card.id.match(/tarot-card-(\d+)/);
+          return match ? parseInt(match[1], 10) : -1;
+        }),
+        -1
+      );
+
+      // Find the minimum z-index of existing cards
+      const minZ = Math.min(...currentCards.map((card) => card.zIndex), 0);
+      // Use 0 as base z-index for new cards (they'll render, even if they overlap)
+      // The important thing is they're added to the array and will be visible
+      const baseZ = 0;
+
+      console.log(
+        `[addMoreCards] Max index: ${maxIndex}, Min z-index: ${minZ}, Base z-index: ${baseZ}`
+      );
+
       const newCards: CardData[] = [];
-      for (let i = 0; i < INITIAL_CARD_COUNT; i++) {
+      for (let i = 0; i < cardsToAdd; i++) {
+        const cardIndex = maxIndex + 1 + i;
         newCards.push({
-          id: `tarot-card-${i}`,
+          id: `tarot-card-${cardIndex}`,
           tarotCard: null,
           x: margin + Math.random() * availableWidth,
           y: margin + Math.random() * availableHeight,
           rotation: (Math.random() - 0.5) * 60,
-          zIndex: i,
+          zIndex: baseZ + i, // Start from 0 and increment
           isFlipped: false,
           isDragging: false,
         });
       }
-      setCards(newCards);
-      setMaxZIndex(INITIAL_CARD_COUNT - 1);
-      return;
+
+      console.log(
+        `[addMoreCards] Created ${
+          newCards.length
+        } new cards with IDs: ${newCards.map((c) => c.id).join(", ")}`
+      );
+
+      // Add new cards to existing cards
+      const updatedCards = [...currentCards, ...newCards];
+      console.log(
+        `[addMoreCards] Added ${cardsToAdd} cards. New total: ${updatedCards.length} (was ${currentCards.length})`
+      );
+
+      return updatedCards;
     }
 
-    // If cards exist, shuffle their positions
-    const shuffledCards = cards.map((card: CardData) => ({
-      ...card,
-      x: margin + Math.random() * availableWidth,
-      y: margin + Math.random() * availableHeight,
-      rotation: (Math.random() - 0.5) * 60,
-      isFlipped: false,
-      tarotCard: null, // Clear assigned tarot cards on shuffle
-    }));
-    setCards(shuffledCards);
+    return currentCards;
   };
 
   const bringToFront = (cardId: string) => {
@@ -380,9 +467,31 @@ export default function TarotDrawScreen({ navigation, route }: any) {
         // Assign a random tarot card when flipping to show the front
         let assignedTarotCard = card.tarotCard;
         if (newIsFlipped && !card.tarotCard && allTarotCards.length > 0) {
-          // Pick a random tarot card from the full collection
-          const randomIndex = Math.floor(Math.random() * allTarotCards.length);
-          assignedTarotCard = allTarotCards[randomIndex];
+          // Get available cards that haven't been used yet
+          // Use the current state value for filtering
+          const availableCards = allTarotCards.filter(
+            (tarotCard) => !usedTarotCardIds.has(tarotCard._id || "")
+          );
+
+          // If all cards have been used, we can't assign a new one
+          if (availableCards.length === 0) {
+            // All cards have been used, don't flip this card
+            return card;
+          }
+
+          // Pick a random tarot card from the available (unused) collection
+          const randomIndex = Math.floor(Math.random() * availableCards.length);
+          assignedTarotCard = availableCards[randomIndex];
+
+          // Mark this tarot card as used using functional update to ensure we have latest state
+          if (assignedTarotCard?._id) {
+            const tarotCardId = assignedTarotCard._id;
+            setUsedTarotCardIds((prev) => {
+              const newSet = new Set(prev);
+              newSet.add(tarotCardId);
+              return newSet;
+            });
+          }
         }
 
         return {
@@ -394,11 +503,24 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       }
       return card;
     });
-    setCards(updatedCards);
+
+    // Check if we flipped a card face up (not face down)
+    const flippedCard = updatedCards.find((card) => card.id === cardId);
+    const previousCard = cards.find((c) => c.id === cardId);
+    const wasFlippedFaceUp = flippedCard?.isFlipped && !previousCard?.isFlipped;
+
+    // Add more cards if needed (only when flipping face up)
+    const finalCards = wasFlippedFaceUp
+      ? addMoreCardsIfNeeded(updatedCards)
+      : updatedCards;
+
+    console.log(
+      `[flipCard] Setting cards: ${finalCards.length} total (was ${cards.length})`
+    );
+    setCards(finalCards);
   };
 
   const handleCardPress = (cardId: string) => {
-    console.log("handleCardPress called for:", cardId);
     bringToFront(cardId);
   };
 
@@ -468,7 +590,6 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       >
         <View
           onTouchStart={(event: any) => {
-            console.log("Card View onTouchStart for:", card.id);
             const touches = event.nativeEvent.touches;
             if (touches.length === 1) {
               // Single finger - start drag
@@ -491,7 +612,6 @@ export default function TarotDrawScreen({ navigation, route }: any) {
                 const distanceDiff =
                   currentDistance - lastPinchDistance.current;
                 if (distanceDiff > 10) {
-                  console.log("Pinch expansion detected on card:", card.id);
                   handleCardFlip(card.id);
                   lastPinchDistance.current = 0;
                 }
@@ -511,24 +631,11 @@ export default function TarotDrawScreen({ navigation, route }: any) {
           <TouchableOpacity
             style={styles.cardTouchable}
             onPress={() => {
-              console.log(
-                "TouchableOpacity onPress triggered for:",
-                card.id,
-                "isDragging:",
-                card.isDragging
-              );
               if (!card.isDragging) {
-                console.log("Calling handleCardPress for:", card.id);
                 handleCardPress(card.id);
-              } else {
-                console.log("Card is dragging, not calling handleCardPress");
               }
             }}
             onLongPress={() => {
-              console.log(
-                "TouchableOpacity onLongPress triggered for:",
-                card.id
-              );
               if (!card.isDragging) {
                 handleCardFlip(card.id);
               }
@@ -536,18 +643,13 @@ export default function TarotDrawScreen({ navigation, route }: any) {
             activeOpacity={1}
           >
             <Image
+              key={`${card.id}-${shuffleKey}`}
               source={
                 card.isFlipped && card.tarotCard
                   ? (() => {
-                      console.log(
-                        "Rendering tarot card image:",
-                        card.tarotCard?.name,
-                        card.tarotCard?.imageName
-                      );
                       const mappedFileName = card.tarotCard.imageName
                         ? imageNameToFile[card.tarotCard.imageName]
                         : null;
-                      console.log("Mapped file name:", mappedFileName);
                       return (
                         (mappedFileName && tarotImages[mappedFileName]) ||
                         tarotImages["RWSa-T-00.png"]
