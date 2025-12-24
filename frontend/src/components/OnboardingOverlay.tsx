@@ -50,6 +50,12 @@ const getPlaceholderContent = (
           Shake your device to shuffle the cards.
         </Text>
         <Text style={styles.placeholderParagraph}>
+          Tap a card to bring it to the front
+        </Text>
+        <Text style={styles.placeholderParagraph}>
+          Reverse pinch (zoom in) to flip a card.
+        </Text>
+        <Text style={styles.placeholderParagraph}>
           Copyright 2018 The Flower Essences Deck by Kinsey Watts
         </Text>
         <Text style={styles.placeholderParagraph}>
@@ -63,6 +69,12 @@ const getPlaceholderContent = (
       <>
         <Text style={styles.placeholderParagraph}>
           Shake your device to shuffle the cards.
+        </Text>
+        <Text style={styles.placeholderParagraph}>
+          Tap a card to bring it to the front
+        </Text>
+        <Text style={styles.placeholderParagraph}>
+          Reverse pinch (zoom in) to flip a card.
         </Text>
         <Text style={styles.placeholderParagraph}>
           Art by Pamela Colman Smith from the Rider Waite Smith Tarot Deck.

@@ -76,6 +76,7 @@ export const getPlanetSymbols = (): { [key: string]: string } => {
     i: "♅", // Uranus
     o: "♆", // Neptune
     p: "♇", // Pluto
+    T: "⚷", // Chiron
   };
 };
 
@@ -94,6 +95,7 @@ export const getPlanetNames = (): { [key: string]: string } => {
     i: "Uranus",
     o: "Neptune",
     p: "Pluto",
+    T: "Chiron",
   };
 };
 
@@ -112,9 +114,11 @@ export const getPlanetKeysFromNames = (): { [key: string]: string } => {
     Uranus: "i",
     Neptune: "o",
     Pluto: "p",
+    Chiron: "T",
     "N. Node": "]",
     "North Node": "]",
     NorthNode: "]",
+    SouthNode: "[",
     Ascendant: "!",
   };
 };
