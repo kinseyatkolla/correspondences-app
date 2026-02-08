@@ -76,7 +76,7 @@ function getLocalApiUrl(): string {
       "2. Set EXPO_PUBLIC_API_URL environment variable: EXPO_PUBLIC_API_URL=http://YOUR_IP:3000/api\n" +
       "3. Or update the fallback IP in src/services/api.ts",
   );
-  return "http://192.168.0.103:3000/api";
+  return "http://192.168.0.10:3000/api";
 }
 
 const API_BASE_URL = getLocalApiUrl();
