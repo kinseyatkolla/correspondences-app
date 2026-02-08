@@ -28,7 +28,7 @@ function getLocalApiUrl(): string {
   if (process.env.EXPO_PUBLIC_API_URL) {
     if (__DEV__) {
       console.log(
-        `📍 Using API URL from environment: ${process.env.EXPO_PUBLIC_API_URL}`
+        `📍 Using API URL from environment: ${process.env.EXPO_PUBLIC_API_URL}`,
       );
     }
     return process.env.EXPO_PUBLIC_API_URL;
@@ -38,7 +38,7 @@ function getLocalApiUrl(): string {
   if (!__DEV__) {
     throw new Error(
       "EXPO_PUBLIC_API_URL environment variable is required for production builds. " +
-        "Please set it in your eas.json build configuration."
+        "Please set it in your eas.json build configuration.",
     );
   }
 
@@ -74,7 +74,7 @@ function getLocalApiUrl(): string {
       "To fix this:\n" +
       "1. Find your computer's IP address (run: ifconfig on Mac/Linux or ipconfig on Windows)\n" +
       "2. Set EXPO_PUBLIC_API_URL environment variable: EXPO_PUBLIC_API_URL=http://YOUR_IP:3000/api\n" +
-      "3. Or update the fallback IP in src/services/api.ts"
+      "3. Or update the fallback IP in src/services/api.ts",
   );
   return "http://192.168.0.103:3000/api";
 }
@@ -295,7 +295,7 @@ class ApiService {
   // Generic fetch method with error handling
   private async fetchData<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     try {
@@ -343,7 +343,7 @@ class ApiService {
             `   1. Your backend server is running on port 3000\n` +
             `   2. Your device is on the same WiFi network as your computer\n` +
             `   3. The API URL is correct: ${this.baseUrl}\n` +
-            `   4. Your firewall allows connections on port 3000`
+            `   4. Your firewall allows connections on port 3000`,
         );
       }
       throw error;
@@ -364,7 +364,7 @@ class ApiService {
   }
 
   async createCorrespondence(
-    correspondence: Omit<Correspondence, "id">
+    correspondence: Omit<Correspondence, "id">,
   ): Promise<{ message: string; data: Correspondence }> {
     return this.fetchData("/correspondences", {
       method: "POST",
@@ -378,7 +378,7 @@ class ApiService {
   }
 
   async createContact(
-    contact: Omit<Contact, "id">
+    contact: Omit<Contact, "id">,
   ): Promise<{ message: string; data: Contact }> {
     return this.fetchData("/contacts", {
       method: "POST",
@@ -390,7 +390,7 @@ class ApiService {
   async getFlowerEssences(
     search?: string,
     page = 1,
-    limit = 50
+    limit = 50,
   ): Promise<{
     success: boolean;
     data: FlowerEssence[];
@@ -423,7 +423,7 @@ class ApiService {
   }
 
   async createFlowerEssence(
-    flowerEssence: Omit<FlowerEssence, "_id" | "createdAt" | "updatedAt">
+    flowerEssence: Omit<FlowerEssence, "_id" | "createdAt" | "updatedAt">,
   ): Promise<{
     success: boolean;
     data: FlowerEssence;
@@ -439,7 +439,7 @@ class ApiService {
     id: string,
     flowerEssence: Partial<
       Omit<FlowerEssence, "_id" | "createdAt" | "updatedAt">
-    >
+    >,
   ): Promise<{
     success: boolean;
     data: FlowerEssence;
@@ -465,7 +465,7 @@ class ApiService {
     search?: string,
     suit?: string,
     page = 1,
-    limit = 50
+    limit = 50,
   ): Promise<{
     success: boolean;
     data: TarotCard[];
@@ -499,7 +499,7 @@ class ApiService {
   }
 
   async createTarotCard(
-    tarotCard: Omit<TarotCard, "_id" | "createdAt" | "updatedAt">
+    tarotCard: Omit<TarotCard, "_id" | "createdAt" | "updatedAt">,
   ): Promise<{
     success: boolean;
     data: TarotCard;
@@ -513,7 +513,7 @@ class ApiService {
 
   async updateTarotCard(
     id: string,
-    tarotCard: Partial<Omit<TarotCard, "_id" | "createdAt" | "updatedAt">>
+    tarotCard: Partial<Omit<TarotCard, "_id" | "createdAt" | "updatedAt">>,
   ): Promise<{
     success: boolean;
     data: TarotCard;
@@ -604,7 +604,7 @@ class ApiService {
       hour?: number;
       minute?: number;
       second?: number;
-    }
+    },
   ): Promise<{
     success: boolean;
     data: {
@@ -638,7 +638,16 @@ class ApiService {
       };
     };
   }> {
-    const requestBody = { latitude, longitude };
+    const requestBody: {
+      latitude: number;
+      longitude: number;
+      year?: number;
+      month?: number;
+      day?: number;
+      hour?: number;
+      minute?: number;
+      second?: number;
+    } = { latitude, longitude };
     if (customDate) {
       requestBody.year = customDate.year;
       requestBody.month = customDate.month;
@@ -661,7 +670,7 @@ class ApiService {
     search?: string,
     type?: string,
     page = 1,
-    limit = 50
+    limit = 50,
   ): Promise<{
     success: boolean;
     data: LibraryItem[];
@@ -695,7 +704,7 @@ class ApiService {
   }
 
   async createLibraryItem(
-    libraryItem: Omit<LibraryItem, "_id" | "createdAt" | "updatedAt">
+    libraryItem: Omit<LibraryItem, "_id" | "createdAt" | "updatedAt">,
   ): Promise<{
     success: boolean;
     data: LibraryItem;
@@ -709,7 +718,7 @@ class ApiService {
 
   async updateLibraryItem(
     id: string,
-    libraryItem: Partial<Omit<LibraryItem, "_id" | "createdAt" | "updatedAt">>
+    libraryItem: Partial<Omit<LibraryItem, "_id" | "createdAt" | "updatedAt">>,
   ): Promise<{
     success: boolean;
     data: LibraryItem;
@@ -735,7 +744,7 @@ class ApiService {
     search?: string,
     category?: string,
     page = 1,
-    limit = 50
+    limit = 50,
   ): Promise<{
     success: boolean;
     data: BookOfShadowsEntry[];
@@ -776,7 +785,7 @@ class ApiService {
   }
 
   async createBookOfShadowsEntry(
-    bosEntry: Omit<BookOfShadowsEntry, "_id" | "createdAt" | "updatedAt">
+    bosEntry: Omit<BookOfShadowsEntry, "_id" | "createdAt" | "updatedAt">,
   ): Promise<{
     success: boolean;
     data: BookOfShadowsEntry;
@@ -792,7 +801,7 @@ class ApiService {
     id: string,
     bosEntry: Partial<
       Omit<BookOfShadowsEntry, "_id" | "createdAt" | "updatedAt">
-    >
+    >,
   ): Promise<{
     success: boolean;
     data: BookOfShadowsEntry;
@@ -880,14 +889,14 @@ class ApiService {
     };
   }> {
     return this.fetchData(
-      `/wikipedia/summary?search=${encodeURIComponent(searchTerm)}`
+      `/wikipedia/summary?search=${encodeURIComponent(searchTerm)}`,
     );
   }
 
   // OPALE Lunar Phases API (IMCCE)
   async getLunarPhases(
     year: number,
-    month: number
+    month: number,
   ): Promise<{
     response: {
       calendar: string;
@@ -900,7 +909,7 @@ class ApiService {
   }> {
     try {
       const response = await fetch(
-        `https://opale.imcce.fr/api/v1/phenomena/moonphases?year=${year}&month=${month}`
+        `https://opale.imcce.fr/api/v1/phenomena/moonphases?year=${year}&month=${month}`,
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -916,7 +925,7 @@ class ApiService {
   // 301 = Lunar eclipses, 10 = Solar eclipses
   async getEclipses(
     year: number,
-    eclipseType: "lunar" | "solar" = "lunar"
+    eclipseType: "lunar" | "solar" = "lunar",
   ): Promise<{
     response: {
       calendar: string;
@@ -934,7 +943,7 @@ class ApiService {
     try {
       const eclipseCode = eclipseType === "lunar" ? "301" : "10";
       const response = await fetch(
-        `https://opale.imcce.fr/api/v1/phenomena/eclipses/${eclipseCode}/${year}`
+        `https://opale.imcce.fr/api/v1/phenomena/eclipses/${eclipseCode}/${year}`,
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -963,19 +972,19 @@ class ApiService {
 
       if (eclipseData.length > 0) {
         console.log(
-          `OPALE Eclipse API found ${eclipseData.length} ${eclipseType} eclipses`
+          `OPALE Eclipse API found ${eclipseData.length} ${eclipseType} eclipses`,
         );
         console.log(
           `OPALE Eclipse API response sample (${eclipseType}):`,
-          JSON.stringify(eclipseData[0], null, 2).substring(0, 500)
+          JSON.stringify(eclipseData[0], null, 2).substring(0, 500),
         );
       } else {
         console.warn(
-          `OPALE Eclipse API returned no ${eclipseType} eclipse data for year ${year}`
+          `OPALE Eclipse API returned no ${eclipseType} eclipse data for year ${year}`,
         );
         console.log(
           "Full API response:",
-          JSON.stringify(data, null, 2).substring(0, 1000)
+          JSON.stringify(data, null, 2).substring(0, 1000),
         );
       }
 
@@ -998,7 +1007,7 @@ class ApiService {
     year: number,
     latitude?: number,
     longitude?: number,
-    sampleInterval?: number
+    sampleInterval?: number,
   ): Promise<{
     success: boolean;
     data: {
@@ -1057,10 +1066,16 @@ class ApiService {
     if (sampleInterval !== undefined)
       requestBody.sampleInterval = sampleInterval;
 
-    const response = await this.fetchData("/astrology/year-ephemeris", {
-      method: "POST",
-      body: JSON.stringify(requestBody),
-    });
+    type YearEphemerisResponse = Awaited<
+      ReturnType<ApiService["getYearEphemeris"]>
+    >;
+    const response = await this.fetchData<YearEphemerisResponse>(
+      "/astrology/year-ephemeris",
+      {
+        method: "POST",
+        body: JSON.stringify(requestBody),
+      },
+    );
 
     // Convert date strings back to Date objects for samples (if present)
     if (response.success && response.data?.samples) {
