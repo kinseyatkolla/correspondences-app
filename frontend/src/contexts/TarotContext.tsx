@@ -10,13 +10,17 @@ import React, {
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiService, TarotCard } from "../services/api";
+import type { TarotDeckId } from "../utils/tarotImageHelper";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 const TAROT_CACHE_KEY = "tarot_cache";
 const TAROT_DRAW_STATE_KEY = "tarot_draw_state";
+const TAROT_DECK_KEY = "tarot_deck";
 const CACHE_EXPIRY_HOURS = 24; // Cache for 24 hours
+
+export type { TarotDeckId };
 
 // ============================================================================
 // TYPES
@@ -39,6 +43,10 @@ interface TarotContextType {
   refreshTarotCards: () => Promise<void>;
   lastUpdated: Date | null;
   isFromCache: boolean;
+  // Tarot deck selection
+  selectedDeck: TarotDeckId;
+  setSelectedDeck: (deck: TarotDeckId) => void;
+  saveSelectedDeck: (deck: TarotDeckId) => Promise<void>;
   // Tarot draw state management
   drawState: CardData[];
   setDrawState: (cards: CardData[]) => void;
@@ -70,7 +78,20 @@ export function TarotProvider({ children }: TarotProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
+  const [selectedDeck, setSelectedDeckState] = useState<TarotDeckId>("rws");
   const [drawState, setDrawState] = useState<CardData[]>([]);
+
+  const setSelectedDeck = (deck: TarotDeckId) => {
+    setSelectedDeckState(deck);
+    AsyncStorage.setItem(TAROT_DECK_KEY, deck).catch((err) =>
+      console.error("Error saving tarot deck:", err)
+    );
+  };
+
+  const saveSelectedDeck = async (deck: TarotDeckId) => {
+    setSelectedDeckState(deck);
+    await AsyncStorage.setItem(TAROT_DECK_KEY, deck);
+  };
 
   const isCacheValid = (timestamp: number): boolean => {
     const now = Date.now();
@@ -235,6 +256,15 @@ export function TarotProvider({ children }: TarotProviderProps) {
     await loadTarotCards();
   };
 
+  // Load selected deck from storage on mount
+  useEffect(() => {
+    AsyncStorage.getItem(TAROT_DECK_KEY).then((saved) => {
+      if (saved === "rws" || saved === "correspondences") {
+        setSelectedDeckState(saved);
+      }
+    });
+  }, []);
+
   // Load tarot cards immediately on mount (preload)
   useEffect(() => {
     // Clear any corrupted cache with empty data on startup
@@ -265,6 +295,9 @@ export function TarotProvider({ children }: TarotProviderProps) {
     refreshTarotCards,
     lastUpdated,
     isFromCache,
+    selectedDeck,
+    setSelectedDeck,
+    saveSelectedDeck,
     drawState,
     setDrawState,
     saveDrawState,

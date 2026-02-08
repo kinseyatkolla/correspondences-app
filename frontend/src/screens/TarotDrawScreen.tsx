@@ -19,6 +19,7 @@ import { Accelerometer } from "expo-sensors";
 import { TarotCard } from "../services/api";
 import { useTarot, CardData } from "../contexts/TarotContext";
 import { sharedUI } from "../styles/sharedUI";
+import { getTarotImages, getCardBackImage } from "../utils/tarotImageHelper";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -34,87 +35,6 @@ const INITIAL_CARD_COUNT = 24; // Only render what's visible initially
 const MAX_CARD_COUNT = 78; // Total cards we can have (full tarot deck)
 const CARDS_TO_ADD_THRESHOLD = 5; // Add more cards when this many or fewer face-down cards remain
 
-// Import all tarot card images
-const tarotImages: { [key: string]: any } = {
-  "RWSa-C-02.png": require("../../assets/images/tarot/RWSa-C-02.png"),
-  "RWSa-C-03.png": require("../../assets/images/tarot/RWSa-C-03.png"),
-  "RWSa-C-04.png": require("../../assets/images/tarot/RWSa-C-04.png"),
-  "RWSa-C-05.png": require("../../assets/images/tarot/RWSa-C-05.png"),
-  "RWSa-C-06.png": require("../../assets/images/tarot/RWSa-C-06.png"),
-  "RWSa-C-07.png": require("../../assets/images/tarot/RWSa-C-07.png"),
-  "RWSa-C-08.png": require("../../assets/images/tarot/RWSa-C-08.png"),
-  "RWSa-C-09.png": require("../../assets/images/tarot/RWSa-C-09.png"),
-  "RWSa-C-0A.png": require("../../assets/images/tarot/RWSa-C-0A.png"),
-  "RWSa-C-10.png": require("../../assets/images/tarot/RWSa-C-10.png"),
-  "RWSa-C-J1.png": require("../../assets/images/tarot/RWSa-C-J1.png"),
-  "RWSa-C-J2.png": require("../../assets/images/tarot/RWSa-C-J2.png"),
-  "RWSa-C-KI.png": require("../../assets/images/tarot/RWSa-C-KI.png"),
-  "RWSa-C-QU.png": require("../../assets/images/tarot/RWSa-C-QU.png"),
-  "RWSa-P-02.png": require("../../assets/images/tarot/RWSa-P-02.png"),
-  "RWSa-P-03.png": require("../../assets/images/tarot/RWSa-P-03.png"),
-  "RWSa-P-04.png": require("../../assets/images/tarot/RWSa-P-04.png"),
-  "RWSa-P-05.png": require("../../assets/images/tarot/RWSa-P-05.png"),
-  "RWSa-P-06.png": require("../../assets/images/tarot/RWSa-P-06.png"),
-  "RWSa-P-07.png": require("../../assets/images/tarot/RWSa-P-07.png"),
-  "RWSa-P-08.png": require("../../assets/images/tarot/RWSa-P-08.png"),
-  "RWSa-P-09.png": require("../../assets/images/tarot/RWSa-P-09.png"),
-  "RWSa-P-0A.png": require("../../assets/images/tarot/RWSa-P-0A.png"),
-  "RWSa-P-10.png": require("../../assets/images/tarot/RWSa-P-10.png"),
-  "RWSa-P-J1.png": require("../../assets/images/tarot/RWSa-P-J1.png"),
-  "RWSa-P-J2.png": require("../../assets/images/tarot/RWSa-P-J2.png"),
-  "RWSa-P-KI.png": require("../../assets/images/tarot/RWSa-P-KI.png"),
-  "RWSa-P-QU.png": require("../../assets/images/tarot/RWSa-P-QU.png"),
-  "RWSa-S-02.png": require("../../assets/images/tarot/RWSa-S-02.png"),
-  "RWSa-S-03.png": require("../../assets/images/tarot/RWSa-S-03.png"),
-  "RWSa-S-04.png": require("../../assets/images/tarot/RWSa-S-04.png"),
-  "RWSa-S-05.png": require("../../assets/images/tarot/RWSa-S-05.png"),
-  "RWSa-S-06.png": require("../../assets/images/tarot/RWSa-S-06.png"),
-  "RWSa-S-07.png": require("../../assets/images/tarot/RWSa-S-07.png"),
-  "RWSa-S-08.png": require("../../assets/images/tarot/RWSa-S-08.png"),
-  "RWSa-S-09.png": require("../../assets/images/tarot/RWSa-S-09.png"),
-  "RWSa-S-0A.png": require("../../assets/images/tarot/RWSa-S-0A.png"),
-  "RWSa-S-10.png": require("../../assets/images/tarot/RWSa-S-10.png"),
-  "RWSa-S-J1.png": require("../../assets/images/tarot/RWSa-S-J1.png"),
-  "RWSa-S-J2.png": require("../../assets/images/tarot/RWSa-S-J2.png"),
-  "RWSa-S-KI.png": require("../../assets/images/tarot/RWSa-S-KI.png"),
-  "RWSa-S-QU.png": require("../../assets/images/tarot/RWSa-S-QU.png"),
-  "RWSa-T-00.png": require("../../assets/images/tarot/RWSa-T-00.png"),
-  "RWSa-T-01.png": require("../../assets/images/tarot/RWSa-T-01.png"),
-  "RWSa-T-02.png": require("../../assets/images/tarot/RWSa-T-02.png"),
-  "RWSa-T-03.png": require("../../assets/images/tarot/RWSa-T-03.png"),
-  "RWSa-T-04.png": require("../../assets/images/tarot/RWSa-T-04.png"),
-  "RWSa-T-05.png": require("../../assets/images/tarot/RWSa-T-05.png"),
-  "RWSa-T-06.png": require("../../assets/images/tarot/RWSa-T-06.png"),
-  "RWSa-T-07.png": require("../../assets/images/tarot/RWSa-T-07.png"),
-  "RWSa-T-08.png": require("../../assets/images/tarot/RWSa-T-08.png"),
-  "RWSa-T-09.png": require("../../assets/images/tarot/RWSa-T-09.png"),
-  "RWSa-T-10.png": require("../../assets/images/tarot/RWSa-T-10.png"),
-  "RWSa-T-11.png": require("../../assets/images/tarot/RWSa-T-11.png"),
-  "RWSa-T-12.png": require("../../assets/images/tarot/RWSa-T-12.png"),
-  "RWSa-T-13.png": require("../../assets/images/tarot/RWSa-T-13.png"),
-  "RWSa-T-14.png": require("../../assets/images/tarot/RWSa-T-14.png"),
-  "RWSa-T-15.png": require("../../assets/images/tarot/RWSa-T-15.png"),
-  "RWSa-T-16.png": require("../../assets/images/tarot/RWSa-T-16.png"),
-  "RWSa-T-17.png": require("../../assets/images/tarot/RWSa-T-17.png"),
-  "RWSa-T-18.png": require("../../assets/images/tarot/RWSa-T-18.png"),
-  "RWSa-T-19.png": require("../../assets/images/tarot/RWSa-T-19.png"),
-  "RWSa-T-20.png": require("../../assets/images/tarot/RWSa-T-20.png"),
-  "RWSa-T-21.png": require("../../assets/images/tarot/RWSa-T-21.png"),
-  "RWSa-W-02.png": require("../../assets/images/tarot/RWSa-W-02.png"),
-  "RWSa-W-03.png": require("../../assets/images/tarot/RWSa-W-03.png"),
-  "RWSa-W-04.png": require("../../assets/images/tarot/RWSa-W-04.png"),
-  "RWSa-W-05.png": require("../../assets/images/tarot/RWSa-W-05.png"),
-  "RWSa-W-06.png": require("../../assets/images/tarot/RWSa-W-06.png"),
-  "RWSa-W-07.png": require("../../assets/images/tarot/RWSa-W-07.png"),
-  "RWSa-W-08.png": require("../../assets/images/tarot/RWSa-W-08.png"),
-  "RWSa-W-09.png": require("../../assets/images/tarot/RWSa-W-09.png"),
-  "RWSa-W-0A.png": require("../../assets/images/tarot/RWSa-W-0A.png"),
-  "RWSa-W-10.png": require("../../assets/images/tarot/RWSa-W-10.png"),
-  "RWSa-W-J1.png": require("../../assets/images/tarot/RWSa-W-J1.png"),
-  "RWSa-W-J2.png": require("../../assets/images/tarot/RWSa-W-J2.png"),
-  "RWSa-W-KI.png": require("../../assets/images/tarot/RWSa-W-KI.png"),
-  "RWSa-W-QU.png": require("../../assets/images/tarot/RWSa-W-QU.png"),
-};
 // Map database imageName to actual file names
 const imageNameToFile: { [key: string]: string } = {
   // Major Arcana
@@ -206,9 +126,6 @@ const imageNameToFile: { [key: string]: string } = {
   "king-of-pentacles.jpg": "RWSa-P-KI.png",
 };
 
-// Card back image
-const cardBackImage = require("../../assets/images/tarot/RWSa-X-RL.png");
-
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -216,11 +133,14 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   const {
     tarotCards: allTarotCards,
     loading: tarotLoading,
+    selectedDeck,
     drawState: cards,
     setDrawState: setCards,
     saveDrawState,
     loadDrawState,
   } = useTarot();
+  const tarotImages = getTarotImages(selectedDeck);
+  const cardBackImage = getCardBackImage(selectedDeck);
   const [maxZIndex, setMaxZIndex] = useState(0);
   const lastTapRef = useRef<number>(0);
   const lastPinchDistance = useRef<number>(0);
@@ -230,7 +150,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   const [hasLoadedInitialState, setHasLoadedInitialState] = useState(false);
   // Track which tarot cards have been assigned to prevent duplicates
   const [usedTarotCardIds, setUsedTarotCardIds] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   // Shuffle key to force immediate re-render on shuffle
   const [shuffleKey, setShuffleKey] = useState(0);
@@ -288,7 +208,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
         subscription?.remove();
         // Note: Don't reset global accelerometer interval as it may interfere with other screens
       };
-    }, [hasLoadedInitialState])
+    }, [hasLoadedInitialState]),
   );
 
   // Auto-save draw state whenever cards change
@@ -364,7 +284,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       currentCards.length < MAX_CARD_COUNT
     ) {
       console.log(
-        `[addMoreCards] Adding: ${faceDownCount} face-down, ${currentCards.length} total`
+        `[addMoreCards] Adding: ${faceDownCount} face-down, ${currentCards.length} total`,
       );
       const margin = 50;
       const availableWidth = SCREEN_WIDTH - CARD_WIDTH - margin * 2;
@@ -374,11 +294,11 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       // Add enough cards to bring us well above the threshold
       const cardsToAdd = Math.min(
         Math.max(8, CARDS_TO_ADD_THRESHOLD + 5), // Add at least 8 cards to avoid frequent additions
-        MAX_CARD_COUNT - currentCards.length
+        MAX_CARD_COUNT - currentCards.length,
       );
 
       console.log(
-        `[addMoreCards] Will add ${cardsToAdd} cards (max: ${MAX_CARD_COUNT}, current: ${currentCards.length})`
+        `[addMoreCards] Will add ${cardsToAdd} cards (max: ${MAX_CARD_COUNT}, current: ${currentCards.length})`,
       );
 
       // Find the highest card index to continue numbering
@@ -387,7 +307,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
           const match = card.id.match(/tarot-card-(\d+)/);
           return match ? parseInt(match[1], 10) : -1;
         }),
-        -1
+        -1,
       );
 
       // Find the minimum z-index of existing cards
@@ -397,7 +317,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       const baseZ = 0;
 
       console.log(
-        `[addMoreCards] Max index: ${maxIndex}, Min z-index: ${minZ}, Base z-index: ${baseZ}`
+        `[addMoreCards] Max index: ${maxIndex}, Min z-index: ${minZ}, Base z-index: ${baseZ}`,
       );
 
       const newCards: CardData[] = [];
@@ -418,13 +338,13 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       console.log(
         `[addMoreCards] Created ${
           newCards.length
-        } new cards with IDs: ${newCards.map((c) => c.id).join(", ")}`
+        } new cards with IDs: ${newCards.map((c) => c.id).join(", ")}`,
       );
 
       // Add new cards to existing cards
       const updatedCards = [...currentCards, ...newCards];
       console.log(
-        `[addMoreCards] Added ${cardsToAdd} cards. New total: ${updatedCards.length} (was ${currentCards.length})`
+        `[addMoreCards] Added ${cardsToAdd} cards. New total: ${updatedCards.length} (was ${currentCards.length})`,
       );
 
       return updatedCards;
@@ -470,7 +390,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
           // Get available cards that haven't been used yet
           // Use the current state value for filtering
           const availableCards = allTarotCards.filter(
-            (tarotCard) => !usedTarotCardIds.has(tarotCard._id || "")
+            (tarotCard) => !usedTarotCardIds.has(tarotCard._id || ""),
           );
 
           // If all cards have been used, we can't assign a new one
@@ -515,7 +435,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       : updatedCards;
 
     console.log(
-      `[flipCard] Setting cards: ${finalCards.length} total (was ${cards.length})`
+      `[flipCard] Setting cards: ${finalCards.length} total (was ${cards.length})`,
     );
     setCards(finalCards);
   };
@@ -549,7 +469,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       const newY = touch.pageY - dragOffset.y;
 
       const updatedCards = cards.map((c: CardData) =>
-        c.id === cardId ? { ...c, x: newX, y: newY, isDragging: true } : c
+        c.id === cardId ? { ...c, x: newX, y: newY, isDragging: true } : c,
       );
       setCards(updatedCards);
     }
@@ -559,7 +479,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     if (draggedCard === cardId) {
       setDraggedCard(null);
       const updatedCards = cards.map((c: CardData) =>
-        c.id === cardId ? { ...c, isDragging: false } : c
+        c.id === cardId ? { ...c, isDragging: false } : c,
       );
       setCards(updatedCards);
     }

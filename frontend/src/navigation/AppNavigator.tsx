@@ -9,7 +9,9 @@ import { TarotProvider } from "../contexts/TarotContext";
 import { CalendarProvider } from "../contexts/CalendarContext";
 import { YearProvider, useYear } from "../contexts/YearContext";
 import { useAstrology } from "../contexts/AstrologyContext";
-import LocationSettingsModal from "../components/LocationSettingsModal";
+import AstrologySettingsDrawer from "../components/AstrologySettingsDrawer";
+import FlowerSettingsDrawer from "../components/FlowerSettingsDrawer";
+import TarotSettingsDrawer from "../components/TarotSettingsDrawer";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Import screens
@@ -285,8 +287,11 @@ function CalendarStack() {
   );
 }
 
+type SettingsDrawerType = "astrology" | "flower" | "tarot" | null;
+
 function AppNavigatorContent() {
-  const [locationSettingsVisible, setLocationSettingsVisible] = useState(false);
+  const [settingsDrawerType, setSettingsDrawerType] =
+    useState<SettingsDrawerType>(null);
   const { currentChart, refreshChart } = useAstrology();
 
   const handleSaveLocation = async (location: {
@@ -296,11 +301,19 @@ function AppNavigatorContent() {
   }) => {
     try {
       await AsyncStorage.setItem("savedLocation", JSON.stringify(location));
-      // Refresh chart with new location
       await refreshChart();
     } catch (error) {
       console.error("Error saving location:", error);
     }
+  };
+
+  const openSettingsDrawer = (navigation: any) => {
+    const state = navigation.getState();
+    const currentTab = state?.routes?.[state?.index]?.name ?? null;
+    if (currentTab === "Flowers") setSettingsDrawerType("flower");
+    else if (currentTab === "Tarot") setSettingsDrawerType("tarot");
+    else if (["Moon", "Book", "Astrology"].includes(currentTab ?? ""))
+      setSettingsDrawerType("astrology");
   };
 
   return (
@@ -345,7 +358,7 @@ function AppNavigatorContent() {
             ),
             headerRight: () => (
               <TouchableOpacity
-                onPress={() => setLocationSettingsVisible(true)}
+                onPress={() => openSettingsDrawer(navigation)}
                 activeOpacity={0.7}
                 style={headerStyles.headerRightButton}
               >
@@ -421,11 +434,19 @@ function AppNavigatorContent() {
           />
         </Tab.Navigator>
       </NavigationContainer>
-      <LocationSettingsModal
-        visible={locationSettingsVisible}
-        onClose={() => setLocationSettingsVisible(false)}
+      <AstrologySettingsDrawer
+        visible={settingsDrawerType === "astrology"}
+        onClose={() => setSettingsDrawerType(null)}
         onSave={handleSaveLocation}
         currentLocation={currentChart?.location || null}
+      />
+      <FlowerSettingsDrawer
+        visible={settingsDrawerType === "flower"}
+        onClose={() => setSettingsDrawerType(null)}
+      />
+      <TarotSettingsDrawer
+        visible={settingsDrawerType === "tarot"}
+        onClose={() => setSettingsDrawerType(null)}
       />
     </>
   );

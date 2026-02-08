@@ -95,6 +95,13 @@ export const overlayStyles = StyleSheet.create({
     height: 300,
     borderRadius: 8,
   },
+  placeholderText: {
+    fontSize: 14,
+    color: "#8a8a8a",
+    fontStyle: "italic",
+    padding: 40,
+    textAlign: "center",
+  },
   flowerImage: {
     width: "100%",
     height: undefined,

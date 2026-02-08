@@ -1,5 +1,5 @@
 // ============================================================================
-// Tarot settings drawer — placeholder for Tarot screen settings.
+// Tarot settings drawer — deck selection and Tarot screen settings.
 // ============================================================================
 import React, { useEffect, useRef } from "react";
 import {
@@ -9,7 +9,10 @@ import {
   Modal,
   TouchableOpacity,
   Animated,
+  ScrollView,
 } from "react-native";
+import { useTarot } from "../contexts/TarotContext";
+import { TAROT_DECKS } from "../utils/tarotImageHelper";
 
 interface TarotSettingsDrawerProps {
   visible: boolean;
@@ -20,6 +23,7 @@ export default function TarotSettingsDrawer({
   visible,
   onClose,
 }: TarotSettingsDrawerProps) {
+  const { selectedDeck, setSelectedDeck } = useTarot();
   const drawerAnimation = useRef(new Animated.Value(0)).current;
   const prevVisibleRef = useRef(visible);
 
@@ -77,11 +81,41 @@ export default function TarotSettingsDrawer({
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.drawerContent}>
-              <Text style={styles.placeholderText}>
-                Settings for this section will appear here.
-              </Text>
-            </View>
+            <ScrollView
+              style={styles.drawerContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Choose Your Deck</Text>
+                <Text style={styles.sectionText}>
+                  Select which tarot deck to use for readings and the card
+                  reference.
+                </Text>
+                {TAROT_DECKS.map((deck) => (
+                  <TouchableOpacity
+                    key={deck.id}
+                    style={[
+                      styles.deckOption,
+                      selectedDeck === deck.id && styles.deckOptionSelected,
+                    ]}
+                    onPress={() => setSelectedDeck(deck.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.deckOptionText,
+                        selectedDeck === deck.id && styles.deckOptionTextSelected,
+                      ]}
+                    >
+                      {deck.label}
+                    </Text>
+                    {selectedDeck === deck.id && (
+                      <Text style={styles.checkmark}>✓</Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
           </Animated.View>
         </TouchableOpacity>
       </TouchableOpacity>
@@ -121,9 +155,48 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   drawerContent: { padding: 20 },
-  placeholderText: {
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#b19cd9",
+    marginBottom: 10,
+  },
+  sectionText: {
     fontSize: 14,
     color: "#8a8a8a",
-    fontStyle: "italic",
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  deckOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#2a2a2a",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#444",
+  },
+  deckOptionSelected: {
+    backgroundColor: "#4a2c7a",
+    borderColor: "#6b4c9a",
+  },
+  deckOptionText: {
+    fontSize: 16,
+    color: "#e6e6fa",
+    fontWeight: "500",
+  },
+  deckOptionTextSelected: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  checkmark: {
+    color: "#e6e6fa",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
