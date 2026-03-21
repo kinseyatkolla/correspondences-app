@@ -18,7 +18,8 @@ import {
 import { TarotCard } from "../services/api";
 import { useTarot } from "../contexts/TarotContext";
 import {
-  getTarotCardImages,
+  getTarotImages,
+  resolveTarotFaceFromMap,
 } from "../utils/tarotImageHelper";
 import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
@@ -148,12 +149,10 @@ export default function TarotScreen({ navigation, route }: any) {
   };
 
   // ===== DATA & CONSTANTS =====
-  const tarotCardImages = getTarotCardImages(selectedDeck ?? "rws");
+  const tarotFaceImages = getTarotImages(selectedDeck ?? "rws");
 
-  const getCardImagePath = (card: TarotCard) => {
-    const key = `${card.suit}-${card.number}`;
-    return tarotCardImages[key] ?? null;
-  };
+  const getCardImageSource = (card: TarotCard) =>
+    resolveTarotFaceFromMap(tarotFaceImages, card.imageName);
 
   // ===== RENDER HELPERS =====
   const renderCategorySection = (
@@ -331,17 +330,11 @@ export default function TarotScreen({ navigation, route }: any) {
                     </View>
 
                     <View style={overlayStyles.cardImageContainer}>
-                      {getCardImagePath(selectedCard) ? (
-                        <Image
-                          source={getCardImagePath(selectedCard)!}
-                          style={overlayStyles.cardImage}
-                          resizeMode="contain"
-                        />
-                      ) : (
-                        <Text style={overlayStyles.placeholderText}>
-                          Card image unavailable
-                        </Text>
-                      )}
+                      <Image
+                        source={getCardImageSource(selectedCard)}
+                        style={overlayStyles.cardImage}
+                        resizeMode="contain"
+                      />
                     </View>
 
                     <View style={overlayStyles.section}>

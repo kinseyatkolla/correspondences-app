@@ -19,7 +19,11 @@ import { Accelerometer } from "expo-sensors";
 import { TarotCard } from "../services/api";
 import { useTarot, CardData } from "../contexts/TarotContext";
 import { sharedUI } from "../styles/sharedUI";
-import { getTarotImages, getCardBackImage } from "../utils/tarotImageHelper";
+import {
+  getTarotImages,
+  getCardBackImage,
+  resolveTarotFaceFromMap,
+} from "../utils/tarotImageHelper";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -34,97 +38,6 @@ const CARD_HEIGHT = 360;
 const INITIAL_CARD_COUNT = 24; // Only render what's visible initially
 const MAX_CARD_COUNT = 78; // Total cards we can have (full tarot deck)
 const CARDS_TO_ADD_THRESHOLD = 5; // Add more cards when this many or fewer face-down cards remain
-
-// Map database imageName to actual file names
-const imageNameToFile: { [key: string]: string } = {
-  // Major Arcana
-  "fool.jpg": "RWSa-T-00.png",
-  "magician.jpg": "RWSa-T-01.png",
-  "high-priestess.jpg": "RWSa-T-02.png",
-  "empress.jpg": "RWSa-T-03.png",
-  "emperor.jpg": "RWSa-T-04.png",
-  "hierophant.jpg": "RWSa-T-05.png",
-  "lovers.jpg": "RWSa-T-06.png",
-  "chariot.jpg": "RWSa-T-07.png",
-  "strength.jpg": "RWSa-T-08.png",
-  "hermit.jpg": "RWSa-T-09.png",
-  "wheel-of-fortune.jpg": "RWSa-T-10.png",
-  "justice.jpg": "RWSa-T-11.png",
-  "hanged-man.jpg": "RWSa-T-12.png",
-  "death.jpg": "RWSa-T-13.png",
-  "temperance.jpg": "RWSa-T-14.png",
-  "devil.jpg": "RWSa-T-15.png",
-  "tower.jpg": "RWSa-T-16.png",
-  "star.jpg": "RWSa-T-17.png",
-  "moon.jpg": "RWSa-T-18.png",
-  "sun.jpg": "RWSa-T-19.png",
-  "judgement.jpg": "RWSa-T-20.png",
-  "world.jpg": "RWSa-T-21.png",
-
-  // Cups (C)
-  "ace-cups.jpg": "RWSa-C-02.png",
-  "two-cups.jpg": "RWSa-C-03.png",
-  "three-cups.jpg": "RWSa-C-04.png",
-  "four-cups.jpg": "RWSa-C-05.png",
-  "five-cups.jpg": "RWSa-C-06.png",
-  "six-cups.jpg": "RWSa-C-07.png",
-  "seven-cups.jpg": "RWSa-C-08.png",
-  "eight-cups.jpg": "RWSa-C-09.png",
-  "nine-cups.jpg": "RWSa-C-10.png",
-  "ten-cups.jpg": "RWSa-C-0A.png",
-  "page-cups.jpg": "RWSa-C-J1.png",
-  "knight-cups.jpg": "RWSa-C-J2.png",
-  "queen-cups.jpg": "RWSa-C-QU.png",
-  "king-cups.jpg": "RWSa-C-KI.png",
-
-  // Wands (W)
-  "ace-of-wands.jpg": "RWSa-W-02.png",
-  "two-of-wands.jpg": "RWSa-W-03.png",
-  "three-of-wands.jpg": "RWSa-W-04.png",
-  "four-of-wands.jpg": "RWSa-W-05.png",
-  "five-of-wands.jpg": "RWSa-W-06.png",
-  "six-of-wands.jpg": "RWSa-W-07.png",
-  "seven-of-wands.jpg": "RWSa-W-08.png",
-  "eight-of-wands.jpg": "RWSa-W-09.png",
-  "nine-of-wands.jpg": "RWSa-W-10.png",
-  "ten-of-wands.jpg": "RWSa-W-0A.png",
-  "page-of-wands.jpg": "RWSa-W-J1.png",
-  "knight-of-wands.jpg": "RWSa-W-J2.png",
-  "queen-of-wands.jpg": "RWSa-W-QU.png",
-  "king-of-wands.jpg": "RWSa-W-KI.png",
-
-  // Swords (S)
-  "ace-of-swords.jpg": "RWSa-S-02.png",
-  "two-of-swords.jpg": "RWSa-S-03.png",
-  "three-of-swords.jpg": "RWSa-S-04.png",
-  "four-of-swords.jpg": "RWSa-S-05.png",
-  "five-of-swords.jpg": "RWSa-S-06.png",
-  "six-of-swords.jpg": "RWSa-S-07.png",
-  "seven-of-swords.jpg": "RWSa-S-08.png",
-  "eight-of-swords.jpg": "RWSa-S-09.png",
-  "nine-of-swords.jpg": "RWSa-S-10.png",
-  "ten-of-swords.jpg": "RWSa-S-0A.png",
-  "page-of-swords.jpg": "RWSa-S-J1.png",
-  "knight-of-swords.jpg": "RWSa-S-J2.png",
-  "queen-of-swords.jpg": "RWSa-S-QU.png",
-  "king-of-swords.jpg": "RWSa-S-KI.png",
-
-  // Pentacles (P)
-  "ace-of-pentacles.jpg": "RWSa-P-02.png",
-  "two-of-pentacles.jpg": "RWSa-P-03.png",
-  "three-of-pentacles.jpg": "RWSa-P-04.png",
-  "four-of-pentacles.jpg": "RWSa-P-05.png",
-  "five-of-pentacles.jpg": "RWSa-P-06.png",
-  "six-of-pentacles.jpg": "RWSa-P-07.png",
-  "seven-of-pentacles.jpg": "RWSa-P-08.png",
-  "eight-of-pentacles.jpg": "RWSa-P-09.png",
-  "nine-of-pentacles.jpg": "RWSa-P-10.png",
-  "ten-of-pentacles.jpg": "RWSa-P-0A.png",
-  "page-of-pentacles.jpg": "RWSa-P-J1.png",
-  "knight-of-pentacles.jpg": "RWSa-P-J2.png",
-  "queen-of-pentacles.jpg": "RWSa-P-QU.png",
-  "king-of-pentacles.jpg": "RWSa-P-KI.png",
-};
 
 // ============================================================================
 // COMPONENT
@@ -566,15 +479,10 @@ export default function TarotDrawScreen({ navigation, route }: any) {
               key={`${card.id}-${shuffleKey}`}
               source={
                 card.isFlipped && card.tarotCard
-                  ? (() => {
-                      const mappedFileName = card.tarotCard.imageName
-                        ? imageNameToFile[card.tarotCard.imageName]
-                        : null;
-                      return (
-                        (mappedFileName && tarotImages[mappedFileName]) ||
-                        tarotImages["RWSa-T-00.png"]
-                      );
-                    })()
+                  ? resolveTarotFaceFromMap(
+                      tarotImages,
+                      card.tarotCard.imageName,
+                    )
                   : cardBackImage
               }
               style={styles.cardImage}
