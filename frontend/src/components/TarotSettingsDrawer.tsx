@@ -54,71 +54,76 @@ export default function TarotSettingsDrawer({
       animationType="none"
       onRequestClose={onClose}
     >
-      <TouchableOpacity
-        style={styles.drawerOverlay}
-        activeOpacity={1}
-        onPress={onClose}
-      >
-        <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-          <Animated.View
-            style={[
-              styles.drawerContainer,
-              {
-                transform: [
-                  {
-                    translateY: drawerAnimation.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [800, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <View style={styles.drawerHeader}>
-              <Text style={styles.drawerTitle}>Tarot Settings</Text>
-              <TouchableOpacity onPress={onClose}>
-                <Text style={styles.closeButton}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              style={styles.drawerContent}
-              showsVerticalScrollIndicator={false}
+      <View style={styles.drawerOverlay}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFillObject}
+          activeOpacity={1}
+          onPress={onClose}
+          accessibilityLabel="Close settings"
+        />
+        <Animated.View
+          style={[
+            styles.drawerContainer,
+            {
+              transform: [
+                {
+                  translateY: drawerAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [800, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <View style={styles.drawerHeader}>
+            <Text style={styles.drawerTitle}>Tarot Settings</Text>
+            <TouchableOpacity
+              onPress={onClose}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
             >
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Choose Your Deck</Text>
-                <Text style={styles.sectionText}>
-                  Select which tarot deck to use for readings and the card
-                  reference.
-                </Text>
-                {TAROT_DECKS.map((deck) => (
-                  <TouchableOpacity
-                    key={deck.id}
+              <Text style={styles.closeButton}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            style={styles.drawerContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Choose Your Deck</Text>
+              <Text style={styles.sectionText}>
+                Select which tarot deck to use for readings and the card
+                reference.
+              </Text>
+              {TAROT_DECKS.map((deck) => (
+                <TouchableOpacity
+                  key={deck.id}
+                  style={[
+                    styles.deckOption,
+                    selectedDeck === deck.id && styles.deckOptionSelected,
+                  ]}
+                  onPress={() => setSelectedDeck(deck.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text
                     style={[
-                      styles.deckOption,
-                      selectedDeck === deck.id && styles.deckOptionSelected,
+                      styles.deckOptionText,
+                      selectedDeck === deck.id && styles.deckOptionTextSelected,
                     ]}
-                    onPress={() => setSelectedDeck(deck.id)}
-                    activeOpacity={0.7}
                   >
-                    <Text
-                      style={[
-                        styles.deckOptionText,
-                        selectedDeck === deck.id && styles.deckOptionTextSelected,
-                      ]}
-                    >
-                      {deck.label}
-                    </Text>
-                    {selectedDeck === deck.id && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </Animated.View>
-        </TouchableOpacity>
-      </TouchableOpacity>
+                    {deck.label}
+                  </Text>
+                  {selectedDeck === deck.id && (
+                    <Text style={styles.checkmark}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }

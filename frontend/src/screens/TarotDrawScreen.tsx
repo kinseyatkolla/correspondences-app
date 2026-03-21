@@ -39,6 +39,13 @@ const INITIAL_CARD_COUNT = 24; // Only render what's visible initially
 const MAX_CARD_COUNT = 78; // Total cards we can have (full tarot deck)
 const CARDS_TO_ADD_THRESHOLD = 5; // Add more cards when this many or fewer face-down cards remain
 
+/** Half the cards get an extra 180° so asymmetric back art (e.g. wear) varies; then slight tilt ±30°. */
+function randomFaceDownRotation(): number {
+  const flipBack = Math.random() < 0.5 ? 180 : 0;
+  const tilt = (Math.random() - 0.5) * 60;
+  return flipBack + tilt;
+}
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -144,7 +151,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
         tarotCard: null,
         x: margin + Math.random() * availableWidth,
         y: margin + Math.random() * availableHeight,
-        rotation: (Math.random() - 0.5) * 60,
+        rotation: randomFaceDownRotation(),
         zIndex: i,
         isFlipped: false,
         isDragging: false,
@@ -176,7 +183,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
         tarotCard: null,
         x: margin + Math.random() * availableWidth,
         y: margin + Math.random() * availableHeight,
-        rotation: (Math.random() - 0.5) * 60,
+        rotation: randomFaceDownRotation(),
         zIndex: i,
         isFlipped: false,
         isDragging: false,
@@ -241,7 +248,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
           tarotCard: null,
           x: margin + Math.random() * availableWidth,
           y: margin + Math.random() * availableHeight,
-          rotation: (Math.random() - 0.5) * 60,
+          rotation: randomFaceDownRotation(),
           zIndex: baseZ + i, // Start from 0 and increment
           isFlipped: false,
           isDragging: false,
@@ -331,7 +338,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
           ...card,
           tarotCard: assignedTarotCard,
           isFlipped: newIsFlipped,
-          rotation: newIsFlipped ? 0 : (Math.random() - 0.5) * 60,
+          rotation: newIsFlipped ? 0 : randomFaceDownRotation(),
         };
       }
       return card;

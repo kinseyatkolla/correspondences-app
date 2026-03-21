@@ -68,9 +68,18 @@ export function getDayRuler(dayOfWeek: number): string {
 }
 
 /**
- * Parse time string from API (format: "H:MM:SS AM/PM") to Date object
+ * Parse time from SunriseSunset.io:
+ * - formatted=0: ISO 8601, e.g. "2025-03-21T06:58:47-04:00"
+ * - formatted=1: 12-hour local, e.g. "6:58:47 AM"
  */
 function parseApiTime(timeString: string, date: Date): Date {
+  if (timeString.includes("T")) {
+    const parsed = new Date(timeString);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+
   const [time, period] = timeString.split(" ");
   const [hours, minutes, seconds] = time.split(":").map(Number);
 

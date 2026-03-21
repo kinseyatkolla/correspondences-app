@@ -94,10 +94,11 @@ const TAROT_FACE_FALLBACK_FILE = "RWSa-T-00.png";
 /** Resolve a face image using the same pipeline as the draw screen (`getTarotImages` + RWS file key). */
 export function resolveTarotFaceFromMap(
   images: Record<string, ImageSourcePropType>,
-  imageName?: string | null
+  imageName?: string | null,
 ): ImageSourcePropType {
   const file = imageName ? IMAGE_NAME_TO_RWS_FILE[imageName] : undefined;
-  return ((file && images[file]) || images[TAROT_FACE_FALLBACK_FILE]) as ImageSourcePropType;
+  return ((file && images[file]) ||
+    images[TAROT_FACE_FALLBACK_FILE]) as ImageSourcePropType;
 }
 
 const RWS_IMAGES: Record<string, ImageSourcePropType> = {
@@ -244,8 +245,8 @@ const CORRESPONDENCES_IMAGES: Record<string, ImageSourcePropType> = {
   "RWSa-T-17.png": require("../../assets/images/tarot/correspondences/17-star.png"),
   "RWSa-T-18.png": require("../../assets/images/tarot/correspondences/18-moon.png"),
   "RWSa-T-19.png": require("../../assets/images/tarot/correspondences/19-sun.png"),
-  "RWSa-T-20.png": require("../../assets/images/tarot/correspondences/21-judgement.png"),
-  "RWSa-T-21.png": require("../../assets/images/tarot/correspondences/20-world.png"),
+  "RWSa-T-20.png": require("../../assets/images/tarot/correspondences/20-judgement.png"),
+  "RWSa-T-21.png": require("../../assets/images/tarot/correspondences/21-world.png"),
   "RWSa-W-02.png": require("../../assets/images/tarot/correspondences/wands-01.png"),
   "RWSa-W-03.png": require("../../assets/images/tarot/correspondences/wands-02.png"),
   "RWSa-W-04.png": require("../../assets/images/tarot/correspondences/wands-03.png"),
@@ -266,7 +267,7 @@ const RWS_CARD_BACK = require("../../assets/images/tarot/rws/RWSa-X-RL.png");
 const CORRESPONDENCES_CARD_BACK = require("../../assets/images/tarot/correspondences/back.png");
 
 export function getTarotImages(
-  deck: TarotDeckId
+  deck: TarotDeckId,
 ): Record<string, ImageSourcePropType> {
   return deck === "correspondences" ? CORRESPONDENCES_IMAGES : RWS_IMAGES;
 }
