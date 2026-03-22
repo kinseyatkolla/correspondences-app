@@ -19,7 +19,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.2</string>
+    <string>1.0.4</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -47,11 +47,11 @@
       <true/>
     </dict>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>This app uses your location to calculate accurate astrological charts, planetary hours, and lunar phases based on your geographic position.</string>
+    <string>Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are.</string>
     <key>NSLocationAlwaysUsageDescription</key>
-    <string>This app uses your location to calculate accurate astrological charts, planetary hours, and lunar phases based on your geographic position.</string>
+    <string>Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>This app uses your location to calculate accurate astrological charts, planetary hours, and lunar phases based on your geographic position.</string>
+    <string>Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are.</string>
     <key>RCTNewArchEnabled</key>
     <true/>
     <key>UILaunchStoryboardName</key>

@@ -18,8 +18,9 @@
       "icon": "./assets/icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "This app uses your location to calculate accurate astrological charts, planetary hours, and lunar phases based on your geographic position.",
-        "NSLocationAlwaysUsageDescription": "This app uses your location to calculate accurate astrological charts, planetary hours, and lunar phases based on your geographic position."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are.",
+        "NSLocationWhenInUseUsageDescription": "Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are.",
+        "NSLocationAlwaysUsageDescription": "Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are."
       }
     },
     "android": {
