@@ -34,6 +34,8 @@ export interface CardData {
   zIndex: number;
   isFlipped: boolean;
   isDragging: boolean;
+  /** Index into `getTarotCardBackImages(deck)` for face-down side */
+  cardBackIndex: number;
 }
 
 interface TarotContextType {

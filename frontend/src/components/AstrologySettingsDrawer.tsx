@@ -233,13 +233,14 @@ export default function AstrologySettingsDrawer({
       onRequestClose={onClose}
     >
       <TouchableOpacity
-        style={styles.drawerOverlay}
+        style={sharedUI.drawerOverlay}
         activeOpacity={1}
         onPress={onClose}
       >
         <Animated.View
           style={[
             sharedUI.drawerContainer,
+            { maxHeight: "90%" },
             {
               transform: [
                 {
@@ -252,24 +253,26 @@ export default function AstrologySettingsDrawer({
             },
           ]}
         >
-          <View style={styles.drawerHeader}>
-            <Text style={styles.drawerTitle}>Astrology Settings</Text>
+          <View style={sharedUI.drawerHeader}>
+            <Text style={sharedUI.drawerTitle}>Astrology Settings</Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={styles.closeButton}>✕</Text>
+              <Text style={sharedUI.drawerCloseText}>✕</Text>
             </TouchableOpacity>
           </View>
           <ScrollView
-            style={styles.drawerContent}
+            style={sharedUI.drawerContent}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Set Default Location</Text>
-              <Text style={styles.sectionText}>
+            <View style={sharedUI.drawerSection}>
+              <Text style={sharedUI.sectionTitle}>Set Default Location</Text>
+              <Text style={sharedUI.drawerSectionText}>
                 Set a fixed location to use for all astrological calculations.
               </Text>
             </View>
             {(locationName || (latitude && longitude)) && (
-              <View style={styles.locationNameContainer}>
+              <View
+                style={[sharedUI.drawerMutedPanel, { marginBottom: 20 }]}
+              >
                 <Text style={styles.locationNameLabel}>
                   📍 Current Location
                 </Text>
@@ -291,7 +294,7 @@ export default function AstrologySettingsDrawer({
                 </Text>
               </View>
             )}
-            <View style={styles.section}>
+            <View style={sharedUI.drawerSection}>
               <TouchableOpacity
                 style={[
                   styles.button,
@@ -312,7 +315,7 @@ export default function AstrologySettingsDrawer({
                     ? "Getting Location..."
                     : isCurrentLocation
                       ? "📍 Current Location Already Saved"
-                      : "📍 Use Current Location"}
+                      : "Use Current Location"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -324,42 +327,6 @@ export default function AstrologySettingsDrawer({
 }
 
 const styles = StyleSheet.create({
-  drawerOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "flex-end",
-  },
-  drawerHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  drawerTitle: {
-    color: "#e6e6fa",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  closeButton: {
-    color: "#e6e6fa",
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  drawerContent: { padding: 20 },
-  section: { marginBottom: 24 },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#b19cd9",
-    marginBottom: 10,
-  },
-  sectionText: {
-    fontSize: 14,
-    color: "#8a8a8a",
-    lineHeight: 20,
-  },
   button: {
     backgroundColor: "#2a2a2a",
     paddingVertical: 14,
@@ -386,14 +353,6 @@ const styles = StyleSheet.create({
     borderColor: "#333",
   },
   buttonTextDisabled: { color: "#8a8a8a" },
-  locationNameContainer: {
-    backgroundColor: "#2a2a2a",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#444",
-  },
   locationNameLabel: {
     fontSize: 12,
     color: "#8a8a8a",

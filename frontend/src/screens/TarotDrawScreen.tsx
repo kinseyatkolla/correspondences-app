@@ -2,7 +2,13 @@
 // IMPORTS
 // ============================================================================
 // TypeScript service refresh
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import {
   View,
   Text,
@@ -21,7 +27,7 @@ import { useTarot, CardData } from "../contexts/TarotContext";
 import { sharedUI } from "../styles/sharedUI";
 import {
   getTarotImages,
-  getCardBackImage,
+  getTarotCardBackImages,
   resolveTarotFaceFromMap,
 } from "../utils/tarotImageHelper";
 
@@ -60,7 +66,10 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     loadDrawState,
   } = useTarot();
   const tarotImages = getTarotImages(selectedDeck);
-  const cardBackImage = getCardBackImage(selectedDeck);
+  const cardBackImages = useMemo(
+    () => getTarotCardBackImages(selectedDeck),
+    [selectedDeck],
+  );
   const [maxZIndex, setMaxZIndex] = useState(0);
   const lastTapRef = useRef<number>(0);
   const lastPinchDistance = useRef<number>(0);
@@ -82,8 +91,15 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       if (!hasLoadedInitialState) {
         loadDrawState().then((savedState) => {
           if (savedState && savedState.length > 0) {
-            // Restore saved state
-            setCards(savedState);
+            const backs = getTarotCardBackImages(selectedDeck);
+            const normalized = savedState.map((c) => ({
+              ...c,
+              cardBackIndex:
+                typeof c.cardBackIndex === "number"
+                  ? c.cardBackIndex % backs.length
+                  : Math.floor(Math.random() * backs.length),
+            }));
+            setCards(normalized);
             // Find the highest z-index from saved state
             const maxZ = Math.max(...savedState.map((card) => card.zIndex));
             setMaxZIndex(maxZ);
@@ -155,6 +171,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
         zIndex: i,
         isFlipped: false,
         isDragging: false,
+        cardBackIndex: Math.floor(Math.random() * cardBackImages.length),
       });
     }
 
@@ -187,6 +204,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
         zIndex: i,
         isFlipped: false,
         isDragging: false,
+        cardBackIndex: Math.floor(Math.random() * cardBackImages.length),
       });
     }
     setCards(newCards);
@@ -252,6 +270,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
           zIndex: baseZ + i, // Start from 0 and increment
           isFlipped: false,
           isDragging: false,
+          cardBackIndex: Math.floor(Math.random() * cardBackImages.length),
         });
       }
 
@@ -490,7 +509,9 @@ export default function TarotDrawScreen({ navigation, route }: any) {
                       tarotImages,
                       card.tarotCard.imageName,
                     )
-                  : cardBackImage
+                  : cardBackImages[
+                      (card.cardBackIndex ?? 0) % cardBackImages.length
+                    ]
               }
               style={styles.cardImage}
               resizeMode="contain"

@@ -170,13 +170,14 @@ export default function DateTimePickerDrawer({
       onRequestClose={handleClose}
     >
       <TouchableOpacity
-        style={styles.drawerOverlay}
+        style={sharedUI.drawerOverlayLight}
         activeOpacity={1}
         onPress={handleClose}
       >
         <Animated.View
           style={[
             sharedUI.drawerContainer,
+            { maxHeight: 500 },
             {
               transform: [
                 {
@@ -190,15 +191,20 @@ export default function DateTimePickerDrawer({
           ]}
         >
           <View>
-            <View style={styles.drawerHeader}>
-              <Text style={styles.drawerTitle}>{title}</Text>
+            <View
+              style={[
+                sharedUI.drawerHeader,
+                { borderBottomColor: "#444" },
+              ]}
+            >
+              <Text style={sharedUI.drawerTitleCompact}>{title}</Text>
               <TouchableOpacity onPress={handleClose}>
-                <Text style={styles.closeButton}>✕</Text>
+                <Text style={sharedUI.drawerCloseTextCompact}>✕</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView
-              style={styles.drawerContent}
+              style={sharedUI.drawerContent}
               showsVerticalScrollIndicator={false}
             >
               {/* Date Picker */}
@@ -309,32 +315,6 @@ export default function DateTimePickerDrawer({
 // STYLES
 // ============================================================================
 const styles = StyleSheet.create({
-  drawerOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  drawerHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#444",
-  },
-  drawerTitle: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  closeButton: {
-    color: "#e6e6fa",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  drawerContent: {
-    padding: 20,
-  },
   pickerSection: {
     marginBottom: 20,
   },

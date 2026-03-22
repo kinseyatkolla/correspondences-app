@@ -55,7 +55,7 @@ export default function TarotSettingsDrawer({
       animationType="none"
       onRequestClose={onClose}
     >
-      <View style={styles.drawerOverlay}>
+      <View style={sharedUI.drawerOverlay}>
         <TouchableOpacity
           style={StyleSheet.absoluteFillObject}
           activeOpacity={1}
@@ -65,6 +65,7 @@ export default function TarotSettingsDrawer({
         <Animated.View
           style={[
             sharedUI.drawerContainer,
+            { maxHeight: "90%" },
             {
               transform: [
                 {
@@ -77,24 +78,26 @@ export default function TarotSettingsDrawer({
             },
           ]}
         >
-          <View style={styles.drawerHeader}>
-            <Text style={styles.drawerTitle}>Tarot Settings</Text>
+          <View style={sharedUI.drawerHeader}>
+            <Text style={sharedUI.drawerTitle}>Tarot Settings</Text>
             <TouchableOpacity
               onPress={onClose}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               accessibilityRole="button"
               accessibilityLabel="Close"
             >
-              <Text style={styles.closeButton}>✕</Text>
+              <Text style={sharedUI.drawerCloseText}>✕</Text>
             </TouchableOpacity>
           </View>
           <ScrollView
-            style={styles.drawerContent}
+            style={sharedUI.drawerContent}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Choose Your Deck</Text>
-              <Text style={styles.sectionText}>
+            <View style={sharedUI.drawerSection}>
+              <Text style={sharedUI.sectionTitle}>Choose Your Deck</Text>
+              <Text
+                style={[sharedUI.drawerSectionText, { marginBottom: 16 }]}
+              >
                 Select which tarot deck to use for readings and the card
                 reference.
               </Text>
@@ -102,7 +105,8 @@ export default function TarotSettingsDrawer({
                 <TouchableOpacity
                   key={deck.id}
                   style={[
-                    styles.deckOption,
+                    sharedUI.drawerMutedPanel,
+                    styles.deckOptionRow,
                     selectedDeck === deck.id && styles.deckOptionSelected,
                   ]}
                   onPress={() => setSelectedDeck(deck.id)}
@@ -130,55 +134,10 @@ export default function TarotSettingsDrawer({
 }
 
 const styles = StyleSheet.create({
-  drawerOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "flex-end",
-  },
-  drawerHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  drawerTitle: {
-    color: "#e6e6fa",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  closeButton: {
-    color: "#e6e6fa",
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  drawerContent: { padding: 20 },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#b19cd9",
-    marginBottom: 10,
-  },
-  sectionText: {
-    fontSize: 14,
-    color: "#8a8a8a",
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  deckOption: {
+  deckOptionRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#2a2a2a",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#444",
   },
   deckOptionSelected: {
     backgroundColor: "#4a2c7a",

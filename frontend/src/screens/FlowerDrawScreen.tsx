@@ -93,7 +93,6 @@ const flowerImages: { [key: string]: any } = {
 const cardBackImages = [
   require("../../assets/images/flowers/flowersCardBack1.png"),
   require("../../assets/images/flowers/flowersCardBack2.png"),
-  require("../../assets/images/flowers/flowersCardBack3.png"),
 ];
 
 // ============================================================================
@@ -161,7 +160,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
         subscription?.remove();
         // Note: Don't reset global accelerometer interval as it may interfere with other screens
       };
-    }, [hasLoadedInitialState])
+    }, [hasLoadedInitialState]),
   );
 
   // Auto-save draw state whenever cards change
@@ -313,7 +312,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
       const newY = touch.pageY - dragOffset.y;
 
       const updatedCards = cards.map((c: FlowerCardData) =>
-        c.id === cardId ? { ...c, x: newX, y: newY, isDragging: true } : c
+        c.id === cardId ? { ...c, x: newX, y: newY, isDragging: true } : c,
       );
       setCards(updatedCards);
     }
@@ -323,7 +322,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
     if (draggedCard === cardId) {
       setDraggedCard(null);
       const updatedCards = cards.map((c: FlowerCardData) =>
-        c.id === cardId ? { ...c, isDragging: false } : c
+        c.id === cardId ? { ...c, isDragging: false } : c,
       );
       setCards(updatedCards);
     }

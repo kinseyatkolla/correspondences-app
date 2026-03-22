@@ -264,7 +264,10 @@ const CORRESPONDENCES_IMAGES: Record<string, ImageSourcePropType> = {
 };
 
 const RWS_CARD_BACK = require("../../assets/images/tarot/rws/RWSa-X-RL.png");
-const CORRESPONDENCES_CARD_BACK = require("../../assets/images/tarot/correspondences/back.png");
+const CORRESPONDENCES_CARD_BACKS: ImageSourcePropType[] = [
+  require("../../assets/images/tarot/correspondences/back.png"),
+  require("../../assets/images/tarot/correspondences/back2.png"),
+];
 
 export function getTarotImages(
   deck: TarotDeckId,
@@ -272,6 +275,13 @@ export function getTarotImages(
   return deck === "correspondences" ? CORRESPONDENCES_IMAGES : RWS_IMAGES;
 }
 
+/** Card backs for the draw table: two variants for correspondences, one for RWS. */
+export function getTarotCardBackImages(deck: TarotDeckId): ImageSourcePropType[] {
+  return deck === "correspondences"
+    ? CORRESPONDENCES_CARD_BACKS
+    : [RWS_CARD_BACK];
+}
+
 export function getCardBackImage(deck: TarotDeckId): ImageSourcePropType {
-  return deck === "correspondences" ? CORRESPONDENCES_CARD_BACK : RWS_CARD_BACK;
+  return getTarotCardBackImages(deck)[0];
 }

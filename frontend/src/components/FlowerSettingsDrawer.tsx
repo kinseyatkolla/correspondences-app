@@ -52,7 +52,7 @@ export default function FlowerSettingsDrawer({
       onRequestClose={onClose}
     >
       <TouchableOpacity
-        style={styles.drawerOverlay}
+        style={sharedUI.drawerOverlay}
         activeOpacity={1}
         onPress={onClose}
       >
@@ -63,6 +63,7 @@ export default function FlowerSettingsDrawer({
           <Animated.View
             style={[
               sharedUI.drawerContainer,
+              { maxHeight: "90%" },
               {
                 transform: [
                   {
@@ -75,13 +76,13 @@ export default function FlowerSettingsDrawer({
               },
             ]}
           >
-            <View style={styles.drawerHeader}>
-              <Text style={styles.drawerTitle}>Flowers Settings</Text>
+            <View style={sharedUI.drawerHeader}>
+              <Text style={sharedUI.drawerTitle}>Flowers Settings</Text>
               <TouchableOpacity onPress={onClose}>
-                <Text style={styles.closeButton}>✕</Text>
+                <Text style={sharedUI.drawerCloseText}>✕</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.drawerContent}>
+            <View style={sharedUI.drawerContent}>
               <Text style={styles.placeholderText}>
                 Settings for this section will appear here.
               </Text>
@@ -94,30 +95,6 @@ export default function FlowerSettingsDrawer({
 }
 
 const styles = StyleSheet.create({
-  drawerOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "flex-end",
-  },
-  drawerHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  drawerTitle: {
-    color: "#e6e6fa",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  closeButton: {
-    color: "#e6e6fa",
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  drawerContent: { padding: 20 },
   placeholderText: {
     fontSize: 14,
     color: "#8a8a8a",

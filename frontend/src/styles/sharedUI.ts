@@ -405,6 +405,62 @@ export const sharedUI = StyleSheet.create({
     borderTopLeftRadius: 3,
     borderTopRightRadius: 3,
     paddingBottom: 40,
-    maxHeight: "90%",
+  },
+  drawerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "flex-end",
+  },
+  drawerOverlayLight: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  drawerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
+  },
+  drawerTitle: {
+    color: "#e6e6fa",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  drawerTitleCompact: {
+    color: "#e6e6fa",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  drawerCloseText: {
+    color: "#e6e6fa",
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  drawerCloseTextCompact: {
+    color: "#e6e6fa",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  drawerContent: {
+    padding: 20,
+  },
+  drawerSection: {
+    marginBottom: 24,
+  },
+  drawerSectionText: {
+    fontSize: 14,
+    color: "#8a8a8a",
+    lineHeight: 20,
+  },
+  drawerMutedPanel: {
+    backgroundColor: "#2a2a2a",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#444",
   },
 });
