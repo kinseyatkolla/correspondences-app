@@ -22,6 +22,7 @@ import {
 import DateTimePickerDrawer from "../components/DateTimePickerDrawer";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { apiService, BirthData, BirthChart } from "../services/api";
+import { navigationUI } from "../styles/navigationUI";
 import { sharedUI } from "../styles/sharedUI";
 import {
   usePhysisFont,
@@ -2537,8 +2538,8 @@ export default function AstrologyScreen({ navigation, route }: any) {
           </View>
 
           {/* Secondary Navigation Bar - Display Date */}
-          <TouchableOpacity style={styles.secondaryNavBar} onPress={openDrawer}>
-            <Text style={styles.secondaryNavText}>
+          <TouchableOpacity style={navigationUI.secondaryNavBar} onPress={openDrawer}>
+            <Text style={navigationUI.secondaryNavText}>
               {(() => {
                 const dateString = displayDate.toLocaleDateString("en-US", {
                   weekday: "short",
@@ -2554,7 +2555,7 @@ export default function AstrologyScreen({ navigation, route }: any) {
                 return `${dateString} ${timeString}`;
               })()}
             </Text>
-            <Text style={styles.arrowIcon}>▼</Text>
+            <Text style={navigationUI.arrowIcon}>▼</Text>
           </TouchableOpacity>
         </View>
       </GestureDetector>
@@ -2638,35 +2639,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#ff6b6b",
     fontWeight: "bold",
-  },
-  // Secondary Navigation Bar Styles
-  secondaryNavBar: {
-    position: "absolute",
-    bottom: 0, // Position directly above the tab bar
-    left: 0,
-    right: 0,
-    height: 40,
-    backgroundColor: "#000000",
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    zIndex: 9999,
-  },
-  secondaryNavText: {
-    color: "#e6e6fa",
-    fontSize: 14,
-    fontWeight: "bold",
-    letterSpacing: 4,
-    textAlign: "left",
-    textTransform: "uppercase",
-    flex: 1,
-  },
-  arrowIcon: {
-    color: "#e6e6fa",
-    fontSize: 16,
-    fontWeight: "bold",
-    marginLeft: 10,
   },
   // Loading styles
   loadingContainer: {
