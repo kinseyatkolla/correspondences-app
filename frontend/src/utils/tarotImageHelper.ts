@@ -4,7 +4,7 @@ export type TarotDeckId = "rws" | "correspondences";
 
 export const TAROT_DECKS: { id: TarotDeckId; label: string }[] = [
   { id: "rws", label: "Rider-Waite-Smith" },
-  { id: "correspondences", label: "Correspondences deck" },
+  { id: "correspondences", label: "Correspondences Deck" },
 ];
 
 /** API `imageName` → bundled RWS filename; same keys used by `getTarotImages` / draw screen. */
@@ -276,7 +276,9 @@ export function getTarotImages(
 }
 
 /** Card backs for the draw table: two variants for correspondences, one for RWS. */
-export function getTarotCardBackImages(deck: TarotDeckId): ImageSourcePropType[] {
+export function getTarotCardBackImages(
+  deck: TarotDeckId,
+): ImageSourcePropType[] {
   return deck === "correspondences"
     ? CORRESPONDENCES_CARD_BACKS
     : [RWS_CARD_BACK];
