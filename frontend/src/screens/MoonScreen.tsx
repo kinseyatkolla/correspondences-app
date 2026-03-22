@@ -863,7 +863,8 @@ export default function MoonScreen({ navigation, route }: any) {
             utcDateTime: phase.utcDateTime!,
             localDateTime: phase.localDateTime!,
             title: phaseName,
-            moonPosition: phase.moonPosition,
+            moonPosition:
+              "moonPosition" in phase ? phase.moonPosition : undefined,
             isEclipse: isEclipse || false,
             eclipseType: isEclipse ? eclipseInfo!.type : undefined,
           };
@@ -1129,201 +1130,53 @@ export default function MoonScreen({ navigation, route }: any) {
   }
 
   // ============================================================================
-  // TEMPLATE (JSX)
+  // Sun / Moon aspects table (UI hidden; helper keeps types narrow)
   // ============================================================================
-  return (
-    <GestureHandlerRootView style={styles.container}>
-      <OnboardingOverlay screenKey="MOON" />
-      <GestureDetector gesture={panGesture}>
-        <View style={styles.container}>
-          <ScrollView
-            ref={scrollViewRef}
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Background image that scrolls with content */}
-            <ImageBackground
-              source={require("../../assets/images/moon-gradient.png")}
-              style={styles.backgroundImage}
-              resizeMode="cover"
-            >
-              {/* Moon Degree/Zodiac Sign - Top Right */}
-              {activeChart?.planets?.moon &&
-                !activeChart.planets.moon.error && (
-                  <View style={styles.scrollingMoonDegree}>
-                    <Text
-                      style={[
-                        styles.stickySubtitle,
-                        getZodiacColorStyle(
-                          activeChart.planets.moon.zodiacSignName
-                        ),
-                      ]}
-                    >
-                      {activeChart.planets.moon.degreeFormatted}{" "}
-                      <Text
-                        style={[
-                          getPhysisSymbolStyle(fontLoaded, "large"),
-                          getZodiacColorStyle(
-                            activeChart.planets.moon.zodiacSignName
-                          ),
-                        ]}
-                      >
-                        {
-                          getZodiacKeysFromNames()[
-                            activeChart.planets.moon.zodiacSignName
-                          ]
-                        }
-                      </Text>
-                    </Text>
-                  </View>
-                )}
+  function renderSunMoonAspectsTable(): React.ReactNode {
+    const chart = activeChart;
+    if (chart == null) return null;
+    if (!chart.planets?.sun || !chart.planets?.moon) return null;
+    if (chart.planets.sun.error || chart.planets.moon.error) return null;
+    return (
+                        <View style={styles.aspectsContainer}>
+                          <Text style={styles.aspectsTitle}>Aspects</Text>
 
-              <View style={styles.moonSvgContainer}>
-                <MoonSvgImporter
-                  svgName={currentMoonPhase.toString()}
-                  width={240}
-                  height={240}
-                  style={styles.moonPhaseSvg}
-                />
-                {currentDateEclipse?.isEclipse && (
-                  <View style={styles.eclipseOverlay} />
-                )}
-              </View>
+                          {(() => {
+                            const moonPlanet = chart.planets.moon;
 
-              {activeChart && (
-                <>
-                  <Text style={styles.title}>
-                    {(() => {
-                      const moonTithi = moonTithiMap.find(
-                        (tithi) => tithi.number === currentTithi
-                      );
-                      return moonTithi ? (
-                        <TouchableOpacity
-                          onPress={() =>
-                            navigation.navigate("TithiInfo", {
-                              selectedDate: displayDate,
-                            })
-                          }
-                          style={styles.tithiNameButton}
-                        >
-                          <Text
-                            style={[
-                              styles.tithiNameText,
-                              { color: moonTithi.color.toLowerCase() },
-                            ]}
-                          >
-                            {moonTithi.name}{" "}
-                          </Text>
-                        </TouchableOpacity>
-                      ) : null;
-                    })()}
-                    {activeChart.planets.moon?.zodiacSignName} Moon
-                  </Text>
+                            // Define consistent planet order (excluding moon)
+                            const planetOrder = [
+                              "sun",
+                              "mercury",
+                              "venus",
+                              "mars",
+                              "jupiter",
+                              "saturn",
+                              "uranus",
+                              "neptune",
+                              "pluto",
+                              "northNode",
+                            ];
 
-                  {/* Eclipse label */}
-                  {currentDateEclipse?.isEclipse && (
-                    <Text style={styles.eclipseLabel}>
-                      🔴 (
-                      {currentDateEclipse.eclipseType === "solar"
-                        ? "Solar"
-                        : "Lunar"}{" "}
-                      Eclipse)
-                    </Text>
-                  )}
-
-                  {/* Moon degree and zodiac sign */}
-                  {currentTithi && (
-                    <Text style={styles.subtitle}>
-                      {currentTithi <= 15 ? "Waxing Moon" : "Waning Moon"}
-                    </Text>
-                  )}
-
-                  {/* Essential Dignities */}
-                  {activeChart.planets.moon &&
-                    !activeChart.planets.moon.error && (
-                      <View style={styles.dignityContainer}>
-                        {(() => {
-                          const moonDignities = checkEssentialDignities(
-                            activeChart.planets.moon,
-                            "moon"
-                          );
-
-                          if (!moonDignities.hasDignity) {
-                            return null;
-                          }
-
-                          return moonDignities.dignities.map(
-                            (dignity, index) => (
-                              <Text
-                                key={index}
-                                style={[
-                                  styles.dignityText,
-                                  dignity.type === "domicile"
-                                    ? styles.domicileColor
-                                    : dignity.type === "exaltation"
-                                    ? styles.exaltationColor
-                                    : dignity.type === "detriment"
-                                    ? styles.detrimentColor
-                                    : dignity.type === "fall"
-                                    ? styles.fallColor
-                                    : styles.dignityText,
-                                ]}
-                              >
-                                Moon in {dignity.type} ({dignity.sign})
-                              </Text>
+                            // Get all planets except moon for comparison, sorted by planet order
+                            const otherPlanets = Object.entries(
+                              chart.planets
                             )
-                          );
-                        })()}
-                      </View>
-                    )}
+                              .filter(
+                                ([name, planet]) =>
+                                  name !== "moon" && planet && !planet.error
+                              )
+                              .sort(([nameA], [nameB]) => {
+                                const indexA = planetOrder.indexOf(nameA);
+                                const indexB = planetOrder.indexOf(nameB);
+                                // If planet not in order list, put it at the end
+                                const sortA = indexA === -1 ? 999 : indexA;
+                                const sortB = indexB === -1 ? 999 : indexB;
+                                return sortA - sortB;
+                              });
 
-                  {/* Aspects between Sun and Moon */}
-                  {/* HIDDEN: Aspects table commented out per user request */}
-                  {false &&
-                    activeChart?.planets?.sun &&
-                    activeChart?.planets?.moon &&
-                    !activeChart.planets.sun.error &&
-                    !activeChart.planets.moon.error && (
-                      <View style={styles.aspectsContainer}>
-                        <Text style={styles.aspectsTitle}>Aspects</Text>
-
-                        {(() => {
-                          const moonPlanet = activeChart.planets.moon;
-
-                          // Define consistent planet order (excluding moon)
-                          const planetOrder = [
-                            "sun",
-                            "mercury",
-                            "venus",
-                            "mars",
-                            "jupiter",
-                            "saturn",
-                            "uranus",
-                            "neptune",
-                            "pluto",
-                            "northNode",
-                          ];
-
-                          // Get all planets except moon for comparison, sorted by planet order
-                          const otherPlanets = Object.entries(
-                            activeChart.planets
-                          )
-                            .filter(
-                              ([name, planet]) =>
-                                name !== "moon" && planet && !planet.error
-                            )
-                            .sort(([nameA], [nameB]) => {
-                              const indexA = planetOrder.indexOf(nameA);
-                              const indexB = planetOrder.indexOf(nameB);
-                              // If planet not in order list, put it at the end
-                              const sortA = indexA === -1 ? 999 : indexA;
-                              const sortB = indexB === -1 ? 999 : indexB;
-                              return sortA - sortB;
-                            });
-
-                          return (
-                            <View style={styles.aspectsList}>
+                            return (
+                              <View style={styles.aspectsList}>
                               {/* Data rows */}
                               {otherPlanets
                                 .filter(([planetName, planet]) => {
@@ -1550,11 +1403,166 @@ export default function MoonScreen({ navigation, route }: any) {
                                     </View>
                                   );
                                 })}
-                            </View>
+                              </View>
+                            );
+                          })()}
+                        </View>
+    );
+  }
+
+  // TEMPLATE (JSX)
+  // ============================================================================
+  return (
+    <GestureHandlerRootView style={styles.container}>
+      <OnboardingOverlay screenKey="MOON" />
+      <GestureDetector gesture={panGesture}>
+        <View style={styles.container}>
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Background image that scrolls with content */}
+            <ImageBackground
+              source={require("../../assets/images/moon-gradient.png")}
+              style={styles.backgroundImage}
+              resizeMode="cover"
+            >
+              {/* Moon Degree/Zodiac Sign - Top Right */}
+              {activeChart?.planets?.moon &&
+                !activeChart.planets.moon.error && (
+                  <View style={styles.scrollingMoonDegree}>
+                    <Text
+                      style={[
+                        styles.stickySubtitle,
+                        getZodiacColorStyle(
+                          activeChart.planets.moon.zodiacSignName
+                        ),
+                      ]}
+                    >
+                      {activeChart.planets.moon.degreeFormatted}{" "}
+                      <Text
+                        style={[
+                          getPhysisSymbolStyle(fontLoaded, "large"),
+                          getZodiacColorStyle(
+                            activeChart.planets.moon.zodiacSignName
+                          ),
+                        ]}
+                      >
+                        {
+                          getZodiacKeysFromNames()[
+                            activeChart.planets.moon.zodiacSignName
+                          ]
+                        }
+                      </Text>
+                    </Text>
+                  </View>
+                )}
+
+              <View style={styles.moonSvgContainer}>
+                <MoonSvgImporter
+                  svgName={currentMoonPhase.toString()}
+                  width={240}
+                  height={240}
+                  style={styles.moonPhaseSvg}
+                />
+                {currentDateEclipse?.isEclipse && (
+                  <View style={styles.eclipseOverlay} />
+                )}
+              </View>
+
+              {activeChart && (
+                <>
+                  <Text style={styles.title}>
+                    {(() => {
+                      const moonTithi = moonTithiMap.find(
+                        (tithi) => tithi.number === currentTithi
+                      );
+                      return moonTithi ? (
+                        <TouchableOpacity
+                          onPress={() =>
+                            navigation.navigate("TithiInfo", {
+                              selectedDate: displayDate,
+                            })
+                          }
+                          style={styles.tithiNameButton}
+                        >
+                          <Text
+                            style={[
+                              styles.tithiNameText,
+                              { color: moonTithi.color.toLowerCase() },
+                            ]}
+                          >
+                            {moonTithi.name}{" "}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : null;
+                    })()}
+                    {activeChart.planets.moon?.zodiacSignName} Moon
+                  </Text>
+
+                  {/* Eclipse label */}
+                  {currentDateEclipse?.isEclipse && (
+                    <Text style={styles.eclipseLabel}>
+                      🔴 (
+                      {currentDateEclipse.eclipseType === "solar"
+                        ? "Solar"
+                        : "Lunar"}{" "}
+                      Eclipse)
+                    </Text>
+                  )}
+
+                  {/* Moon degree and zodiac sign */}
+                  {currentTithi && (
+                    <Text style={styles.subtitle}>
+                      {currentTithi <= 15 ? "Waxing Moon" : "Waning Moon"}
+                    </Text>
+                  )}
+
+                  {/* Essential Dignities */}
+                  {activeChart.planets.moon &&
+                    !activeChart.planets.moon.error && (
+                      <View style={styles.dignityContainer}>
+                        {(() => {
+                          const moonDignities = checkEssentialDignities(
+                            activeChart.planets.moon,
+                            "moon"
+                          );
+
+                          if (!moonDignities.hasDignity) {
+                            return null;
+                          }
+
+                          return moonDignities.dignities.map(
+                            (dignity, index) => (
+                              <Text
+                                key={index}
+                                style={[
+                                  styles.dignityText,
+                                  dignity.type === "domicile"
+                                    ? styles.domicileColor
+                                    : dignity.type === "exaltation"
+                                    ? styles.exaltationColor
+                                    : dignity.type === "detriment"
+                                    ? styles.detrimentColor
+                                    : dignity.type === "fall"
+                                    ? styles.fallColor
+                                    : styles.dignityText,
+                                ]}
+                              >
+                                Moon in {dignity.type} ({dignity.sign})
+                              </Text>
+                            )
                           );
                         })()}
                       </View>
                     )}
+
+                  {/* Aspects between Sun and Moon */}
+                  {/* HIDDEN: Aspects table commented out per user request */}
+                  {false && renderSunMoonAspectsTable()}
+
 
                   {/* Upcoming Lunar Phases Section */}
                   <View style={styles.lunarPhasesContainer}>
