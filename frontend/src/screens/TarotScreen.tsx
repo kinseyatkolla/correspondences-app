@@ -42,7 +42,7 @@ export default function TarotScreen({ navigation, route }: any) {
 
   // ===== LIFECYCLE =====
   useEffect(() => {
-    filterTarotCards(searchQuery, selectedCategory);
+    filterTarotCards(searchQuery, selectedCategory ?? "");
   }, [allTarotCards, searchQuery, selectedCategory]);
 
   // Handle navigation params (e.g., from Book of Shadows)
@@ -53,7 +53,7 @@ export default function TarotScreen({ navigation, route }: any) {
 
       // Find and open the matching card
       const matchingCard = allTarotCards.find(
-        (card) => card.name.toLowerCase() === query.toLowerCase()
+        (card) => card.name.toLowerCase() === query.toLowerCase(),
       );
 
       if (matchingCard) {
@@ -95,7 +95,7 @@ export default function TarotScreen({ navigation, route }: any) {
         setFilteredCards([]);
       }
     },
-    [allTarotCards]
+    [allTarotCards],
   );
 
   // ===== EVENT HANDLERS =====
@@ -104,7 +104,7 @@ export default function TarotScreen({ navigation, route }: any) {
   };
 
   const handleSearch = () => {
-    filterTarotCards(searchQuery, selectedCategory);
+    filterTarotCards(searchQuery, selectedCategory ?? "");
   };
 
   const handleClearSearch = () => {
@@ -158,7 +158,7 @@ export default function TarotScreen({ navigation, route }: any) {
     title: string,
     suit: string,
     emoji: string,
-    description: string
+    description: string,
   ) => (
     <TouchableOpacity
       style={sharedUI.categoryCard}
@@ -177,7 +177,7 @@ export default function TarotScreen({ navigation, route }: any) {
           "Major Arcana",
           "Major Arcana",
           "🔮",
-          "22 cards of the major journey"
+          "22 cards of the major journey",
         )}
       </View>
       <View style={sharedUI.categoryRow}>
@@ -185,13 +185,13 @@ export default function TarotScreen({ navigation, route }: any) {
           "Cups",
           "Cups",
           "🏆",
-          "Emotions & relationships"
+          "Emotions & relationships",
         )}
         {renderCategorySection(
           "Pentacles",
           "Pentacles",
           "🪙",
-          "Material & practical"
+          "Material & practical",
         )}
       </View>
       <View style={sharedUI.categoryRow}>
@@ -199,7 +199,7 @@ export default function TarotScreen({ navigation, route }: any) {
           "Swords",
           "Swords",
           "⚔️",
-          "Mind & communication"
+          "Mind & communication",
         )}
         {renderCategorySection("Wands", "Wands", "🪄", "Energy & creativity")}
       </View>
@@ -337,9 +337,7 @@ export default function TarotScreen({ navigation, route }: any) {
                     </View>
 
                     <View style={sharedUI.modalSection}>
-                      <Text style={sharedUI.sectionTitle}>
-                        Description
-                      </Text>
+                      <Text style={sharedUI.sectionTitle}>Description</Text>
                       <Text style={sharedUI.sectionText}>
                         {selectedCard.description}
                       </Text>
@@ -355,9 +353,7 @@ export default function TarotScreen({ navigation, route }: any) {
                     </View>
 
                     <View style={sharedUI.modalSection}>
-                      <Text style={sharedUI.sectionTitle}>
-                        Upright Meaning
-                      </Text>
+                      <Text style={sharedUI.sectionTitle}>Upright Meaning</Text>
                       <Text style={sharedUI.sectionText}>
                         {selectedCard.uprightMeaning}
                       </Text>

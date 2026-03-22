@@ -9,8 +9,6 @@ const tarotCardRoutes = require("./routes/tarotCards");
 const astrologyRoutes = require("./routes/astrology");
 const libraryRoutes = require("./routes/library");
 const bookOfShadowsRoutes = require("./routes/bookOfShadows");
-const wikipediaRoutes = require("./routes/wikipedia");
-
 const app = express();
 const PORT = config.PORT;
 
@@ -98,9 +96,6 @@ app.use("/api/library", libraryRoutes);
 
 // Use book of shadows routes
 app.use("/api/book-of-shadows", bookOfShadowsRoutes);
-
-// Use wikipedia routes
-app.use("/api/wikipedia", wikipediaRoutes);
 
 // Start server
 app.listen(PORT, () => {

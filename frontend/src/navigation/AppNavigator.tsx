@@ -21,12 +21,6 @@ import TarotScreen from "../screens/TarotScreen";
 import TarotDrawScreen from "../screens/TarotDrawScreen";
 import FlowersScreen from "../screens/FlowersScreen";
 import FlowerDrawScreen from "../screens/FlowerDrawScreen";
-import BookScreen from "../screens/BookScreen";
-import BookEntriesScreen from "../screens/BookEntriesScreen";
-import GlossaryScreen from "../screens/GlossaryScreen";
-import BibliographyScreen from "../screens/BibliographyScreen";
-import LibraryScreen from "../screens/LibraryScreen";
-import AdminScreen from "../screens/AdminScreen";
 import AstrologyScreen from "../screens/AstrologyScreen";
 import BirthChartCalculatorScreen from "../screens/BirthChartCalculatorScreen";
 import PlanetaryHoursScreen from "../screens/PlanetaryHoursScreen";
@@ -67,11 +61,6 @@ function FlowersStack() {
         component={FlowersScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen
-        name="Admin"
-        component={AdminScreen}
-        options={{ headerShown: false }}
-      />
     </Stack.Navigator>
   );
 }
@@ -106,11 +95,6 @@ function TarotStack() {
       <Stack.Screen
         name="TarotList"
         component={TarotScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Admin"
-        component={AdminScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
@@ -151,11 +135,6 @@ function AstrologyStack() {
         component={PlanetaryHoursScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen
-        name="Admin"
-        component={AdminScreen}
-        options={{ headerShown: false }}
-      />
     </Stack.Navigator>
   );
 }
@@ -189,64 +168,6 @@ function MoonStack() {
         component={TithiInfoScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen
-        name="Admin"
-        component={AdminScreen}
-        options={{ headerShown: false }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Book Stack Navigator (kept for future use, not currently in navigation)
-function BookStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: "#000000",
-          borderBottomWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: "white",
-        headerTitleStyle: {
-          fontWeight: "bold",
-          letterSpacing: 8,
-        },
-        headerTitle: "CORRESPONDENCES",
-      }}
-    >
-      <Stack.Screen
-        name="BookMain"
-        component={BookScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="BookEntries"
-        component={BookEntriesScreen as any}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Glossary"
-        component={GlossaryScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Bibliography"
-        component={BibliographyScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Library"
-        component={LibraryScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Admin"
-        component={AdminScreen}
-        options={{ headerShown: false }}
-      />
     </Stack.Navigator>
   );
 }
@@ -275,11 +196,6 @@ function CalendarStack() {
         <Stack.Screen
           name="CalendarMain"
           component={CalendarScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Admin"
-          component={AdminScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
@@ -343,18 +259,7 @@ function AppNavigatorContent() {
               letterSpacing: 8,
             },
             headerTitle: () => (
-              <TouchableOpacity
-                onPress={() => {
-                  const state = navigation.getState();
-                  const currentRoute = state.routes[state.index];
-                  (navigation as any).navigate(currentRoute.name, {
-                    screen: "Admin",
-                  });
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={headerStyles.headerTitle}>CORRESPONDENCES</Text>
-              </TouchableOpacity>
+              <Text style={headerStyles.headerTitle}>CORRESPONDENCES</Text>
             ),
             headerRight: () => (
               <TouchableOpacity
