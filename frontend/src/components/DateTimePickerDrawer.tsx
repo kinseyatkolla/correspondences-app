@@ -191,12 +191,7 @@ export default function DateTimePickerDrawer({
           ]}
         >
           <View>
-            <View
-              style={[
-                sharedUI.drawerHeader,
-                { borderBottomColor: "#444" },
-              ]}
-            >
+            <View style={[sharedUI.drawerHeader]}>
               <Text style={sharedUI.drawerTitleCompact}>{title}</Text>
               <TouchableOpacity onPress={handleClose}>
                 <Text style={sharedUI.drawerCloseTextCompact}>✕</Text>
@@ -208,16 +203,16 @@ export default function DateTimePickerDrawer({
               showsVerticalScrollIndicator={false}
             >
               {/* Date Picker */}
-              <View style={styles.pickerSection}>
-                <Text style={styles.pickerLabel}>Date</Text>
+              <View>
+                <Text style={styles.datetimeTitleLabel}>Date</Text>
                 <TouchableOpacity
-                  style={styles.pickerButton}
+                  style={styles.datetimeDropdown}
                   onPress={() => {
                     setShowDatePicker(true);
                     setShowTimePicker(false);
                   }}
                 >
-                  <Text style={styles.pickerButtonText}>
+                  <Text style={styles.datetimeDropdownText}>
                     {tempDate.toLocaleDateString("en-US", {
                       weekday: "long",
                       year: "numeric",
@@ -225,12 +220,12 @@ export default function DateTimePickerDrawer({
                       day: "numeric",
                     })}
                   </Text>
-                  <Text style={styles.pickerArrow}>▼</Text>
+                  <Text style={styles.datetimePickerArrow}>▼</Text>
                 </TouchableOpacity>
 
                 {/* Inline Date Picker */}
                 {showDatePicker && (
-                  <View style={styles.inlinePickerContainer}>
+                  <View style={styles.spinningDateSelectArea}>
                     <DateTimePicker
                       value={tempDate}
                       mode="date"
@@ -247,10 +242,10 @@ export default function DateTimePickerDrawer({
               </View>
 
               {/* Time Picker */}
-              <View style={styles.pickerSection}>
-                <Text style={styles.pickerLabel}>Time</Text>
+              <View>
+                <Text style={styles.datetimeTitleLabel}>Time</Text>
                 <TouchableOpacity
-                  style={styles.pickerButton}
+                  style={styles.datetimeDropdown}
                   onPress={() => {
                     // Increment key when opening time picker to ensure fresh render
                     timePickerKeyRef.current += 1;
@@ -258,19 +253,19 @@ export default function DateTimePickerDrawer({
                     setShowDatePicker(false);
                   }}
                 >
-                  <Text style={styles.pickerButtonText}>
+                  <Text style={styles.datetimeDropdownText}>
                     {tempDate.toLocaleTimeString("en-US", {
                       hour: "numeric",
                       minute: "2-digit",
                       hour12: true,
                     })}
                   </Text>
-                  <Text style={styles.pickerArrow}>▼</Text>
+                  <Text style={styles.datetimePickerArrow}>▼</Text>
                 </TouchableOpacity>
 
                 {/* Inline Time Picker */}
                 {showTimePicker && (
-                  <View style={styles.inlinePickerContainer}>
+                  <View style={styles.spinningDateSelectArea}>
                     <DateTimePicker
                       key={`time-picker-${timePickerKeyRef.current}`}
                       value={tempDate}
@@ -286,21 +281,21 @@ export default function DateTimePickerDrawer({
               </View>
 
               {/* Action Buttons */}
-              <View style={styles.actionButtons}>
+              <View style={styles.drawerBtnsContainer}>
                 <TouchableOpacity
-                  style={styles.currentTimeButton}
+                  style={[sharedUI.secondaryButton, { flex: 1 }]}
                   onPress={handleFollowCurrentTime}
                 >
-                  <Text style={styles.currentTimeButtonText}>
+                  <Text style={sharedUI.secondaryButtonText}>
                     Follow Current Time
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.applyButton}
+                  style={[sharedUI.primaryButton, { flex: 1 }]}
                   onPress={handleApply}
                 >
-                  <Text style={styles.applyButtonText}>Apply</Text>
+                  <Text style={sharedUI.primaryButtonText}>Apply</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -315,69 +310,41 @@ export default function DateTimePickerDrawer({
 // STYLES
 // ============================================================================
 const styles = StyleSheet.create({
-  pickerSection: {
-    marginBottom: 20,
-  },
-  pickerLabel: {
+  datetimeTitleLabel: {
     color: "#e6e6fa",
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 8,
   },
-  pickerButton: {
+  datetimeDropdown: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#3a3a3a",
+    backgroundColor: "#222",
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 3,
     borderWidth: 1,
-    borderColor: "#555",
+    borderColor: "#000",
   },
-  pickerButtonText: {
+  datetimeDropdownText: {
     color: "#e6e6fa",
     fontSize: 16,
   },
-  pickerArrow: {
+  datetimePickerArrow: {
     color: "#e6e6fa",
     fontSize: 14,
   },
-  actionButtons: {
+  drawerBtnsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 20,
+    marginTop: 60,
     gap: 10,
   },
-  currentTimeButton: {
-    flex: 1,
-    backgroundColor: "#4a4a4a",
-    padding: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#666",
-  },
-  currentTimeButtonText: {
-    color: "#e6e6fa",
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  applyButton: {
-    flex: 1,
-    backgroundColor: "#6f7782",
-    padding: 15,
-    borderRadius: 10,
-  },
-  applyButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  inlinePickerContainer: {
+  spinningDateSelectArea: {
     backgroundColor: "#1a1a1a",
     marginTop: 8,
-    borderRadius: 10,
+    marginBottom: 12,
+    borderRadius: 3,
     padding: 8,
     borderWidth: 1,
     borderColor: "#444",

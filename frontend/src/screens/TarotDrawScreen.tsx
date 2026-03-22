@@ -12,7 +12,6 @@ import React, {
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   Image,
   Dimensions,
@@ -24,7 +23,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Accelerometer } from "expo-sensors";
 import { TarotCard } from "../services/api";
 import { useTarot, CardData } from "../contexts/TarotContext";
-import { sharedUI } from "../styles/sharedUI";
+import { drawCardsUI } from "../styles/drawCardsUI";
 import {
   getTarotImages,
   getTarotCardBackImages,
@@ -437,7 +436,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       <View
         key={card.id}
         style={[
-          styles.card,
+          drawCardsUI.card,
           {
             left: card.x,
             top: card.y,
@@ -488,7 +487,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
           }}
         >
           <TouchableOpacity
-            style={styles.cardTouchable}
+            style={drawCardsUI.cardTouchable}
             onPress={() => {
               if (!card.isDragging) {
                 handleCardPress(card.id);
@@ -513,7 +512,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
                       (card.cardBackIndex ?? 0) % cardBackImages.length
                     ]
               }
-              style={styles.cardImage}
+              style={drawCardsUI.cardImage}
               resizeMode="contain"
             />
           </TouchableOpacity>
@@ -525,10 +524,10 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   // ===== LOADING STATE =====
   if (tarotLoading || allTarotCards.length === 0) {
     return (
-      <View style={styles.container}>
+      <View style={drawCardsUI.container}>
         <StatusBar hidden={true} />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>
+        <View style={drawCardsUI.loadingContainer}>
+          <Text style={drawCardsUI.loadingText}>
             {tarotLoading
               ? "Loading tarot cards..."
               : "No tarot cards available"}
@@ -540,115 +539,26 @@ export default function TarotDrawScreen({ navigation, route }: any) {
 
   // ===== MAIN TEMPLATE =====
   return (
-    <View style={styles.container}>
+    <View style={drawCardsUI.container}>
       <StatusBar hidden={true} />
       {/* Back gesture area */}
       <TouchableOpacity
-        style={styles.backGestureArea}
+        style={drawCardsUI.backGestureArea}
         onPress={() => navigation.goBack()}
         activeOpacity={1}
       />
       {/* Cards Container - Full Screen */}
-      <View style={styles.cardsContainer}>{cards.map(renderCard)}</View>
+      <View style={drawCardsUI.cardsContainer}>{cards.map(renderCard)}</View>
       {/* Search Navigation Bar - Moved to bottom */}
       {/* TODO: Uncomment when ready to implement search functionality */}
       {/* <TouchableOpacity
-        style={styles.searchNavBar}
+        style={drawCardsUI.searchNavBar}
         onPress={() => navigation.navigate("TarotList")}
         activeOpacity={0.8}
       >
-        <Text style={styles.searchNavText}>SEARCH TAROT CARDS</Text>
-        <Text style={styles.searchNavArrow}>›</Text>
+        <Text style={drawCardsUI.searchNavText}>SEARCH TAROT CARDS</Text>
+        <Text style={drawCardsUI.searchNavArrow}>›</Text>
       </TouchableOpacity> */}
     </View>
   );
 }
-
-// ============================================================================
-// STYLES
-// ============================================================================
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0e2515",
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  backGestureArea: {
-    position: "absolute",
-    top: 40,
-    left: 0,
-    right: 0,
-    height: 50,
-    zIndex: 9999,
-  },
-  searchNavBar: {
-    position: "absolute",
-    bottom: 0, // Position directly above the tab bar
-    left: 0,
-    right: 0,
-    height: 40,
-    backgroundColor: "#000000",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    zIndex: 9999,
-  },
-  searchNavText: {
-    color: "#e6e6fa",
-    fontSize: 14,
-    fontWeight: "bold",
-    letterSpacing: 4,
-  },
-  searchNavArrow: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#0e2515",
-  },
-  loadingText: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  cardsContainer: {
-    flex: 1,
-    position: "relative",
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-    marginTop: 50, // Account for back gesture area only (50)
-    marginBottom: 0, // Search nav bar is hidden for now
-  },
-  card: {
-    position: "absolute",
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-  },
-  cardTouchable: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 12,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
-  },
-  cardImage: {
-    width: "100%",
-    height: "100%",
-  },
-});

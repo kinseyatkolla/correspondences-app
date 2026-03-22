@@ -5,7 +5,6 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   Image,
   Dimensions,
@@ -17,7 +16,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Accelerometer } from "expo-sensors";
 import { FlowerEssence } from "../services/api";
 import { useFlowers, FlowerCardData } from "../contexts/FlowersContext";
-import { sharedUI } from "../styles/sharedUI";
+import { drawCardsUI } from "../styles/drawCardsUI";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -341,7 +340,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
       <View
         key={card.id}
         style={[
-          styles.card,
+          drawCardsUI.card,
           {
             left: card.x,
             top: card.y,
@@ -398,7 +397,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
           }}
         >
           <TouchableOpacity
-            style={styles.cardTouchable}
+            style={drawCardsUI.cardTouchable}
             onPress={() => handleCardPress(card.id)}
             onLongPress={() => handleFlipCard(card.id)}
             activeOpacity={1}
@@ -411,7 +410,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
                     flowerImages["default.jpg"]
                   : cardBackImages[card.cardBackIndex]
               }
-              style={styles.cardImage}
+              style={drawCardsUI.cardImage}
               resizeMode="contain"
             />
           </TouchableOpacity>
@@ -423,10 +422,10 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
   // ===== LOADING STATE =====
   if (flowersLoading) {
     return (
-      <View style={styles.container}>
+      <View style={drawCardsUI.container}>
         <StatusBar hidden={true} />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading flowers...</Text>
+        <View style={drawCardsUI.loadingContainer}>
+          <Text style={drawCardsUI.loadingText}>Loading flowers...</Text>
         </View>
       </View>
     );
@@ -434,115 +433,26 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
 
   // ===== MAIN TEMPLATE =====
   return (
-    <View style={styles.container}>
+    <View style={drawCardsUI.container}>
       <StatusBar hidden={true} />
       {/* Back gesture area */}
       <TouchableOpacity
-        style={styles.backGestureArea}
+        style={drawCardsUI.backGestureArea}
         onPress={() => navigation.goBack()}
         activeOpacity={1}
       />
       {/* Cards Container - Full Screen */}
-      <View style={styles.cardsContainer}>{cards.map(renderCard)}</View>
+      <View style={drawCardsUI.cardsContainer}>{cards.map(renderCard)}</View>
       {/* Search Navigation Bar - Moved to bottom */}
       {/* TODO: Uncomment when ready to implement search functionality */}
       {/* <TouchableOpacity
-        style={styles.searchNavBar}
+        style={drawCardsUI.searchNavBar}
         onPress={() => navigation.navigate("FlowersList")}
         activeOpacity={0.8}
       >
-        <Text style={styles.searchNavText}>SEARCH FLOWER ESSENCES</Text>
-        <Text style={styles.searchNavArrow}>›</Text>
+        <Text style={drawCardsUI.searchNavText}>SEARCH FLOWER ESSENCES</Text>
+        <Text style={drawCardsUI.searchNavArrow}>›</Text>
       </TouchableOpacity> */}
     </View>
   );
 }
-
-// ============================================================================
-// STYLES
-// ============================================================================
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0e2515",
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  backGestureArea: {
-    position: "absolute",
-    top: 40,
-    left: 0,
-    right: 0,
-    height: 50,
-    zIndex: 9999,
-  },
-  searchNavBar: {
-    position: "absolute",
-    bottom: 0, // Position directly above the tab bar
-    left: 0,
-    right: 0,
-    height: 40,
-    backgroundColor: "#000000",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    zIndex: 9999,
-  },
-  searchNavText: {
-    color: "#e6e6fa",
-    fontSize: 14,
-    fontWeight: "bold",
-    letterSpacing: 4,
-  },
-  searchNavArrow: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#0e2515",
-  },
-  loadingText: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  cardsContainer: {
-    flex: 1,
-    position: "relative",
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-    marginTop: 50, // Account for back gesture area only (50)
-    marginBottom: 0, // Search nav bar is hidden for now
-  },
-  card: {
-    position: "absolute",
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-  },
-  cardTouchable: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 12,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  cardImage: {
-    width: "100%",
-    height: "100%",
-  },
-});

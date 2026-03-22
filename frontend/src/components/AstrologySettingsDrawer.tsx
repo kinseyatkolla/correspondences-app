@@ -270,17 +270,13 @@ export default function AstrologySettingsDrawer({
               </Text>
             </View>
             {(locationName || (latitude && longitude)) && (
-              <View
-                style={[sharedUI.drawerMutedPanel, { marginBottom: 20 }]}
-              >
-                <Text style={styles.locationNameLabel}>
-                  📍 Current Location
-                </Text>
+              <View style={[sharedUI.drawerMutedPanel, { marginBottom: 20 }]}>
+                <Text style={sharedUI.drawerNameLabel}>📍 Current Location</Text>
                 {locationName && (
-                  <Text style={styles.locationName}>{locationName}</Text>
+                  <Text style={sharedUI.drawerName}>{locationName}</Text>
                 )}
                 {latitude && longitude && (
-                  <Text style={styles.locationCoordinates}>
+                  <Text style={sharedUI.drawerSmallTitle}>
                     {parseFloat(latitude).toFixed(4)},{" "}
                     {parseFloat(longitude).toFixed(4)}
                   </Text>
@@ -297,18 +293,19 @@ export default function AstrologySettingsDrawer({
             <View style={sharedUI.drawerSection}>
               <TouchableOpacity
                 style={[
-                  styles.button,
-                  styles.saveButton,
-                  (loading || isCurrentLocation) && styles.buttonDisabled,
+                  sharedUI.drawerButton,
+                  sharedUI.drawerPrimaryButton,
+                  (loading || isCurrentLocation) && sharedUI.drawerButtonDisabled,
                 ]}
                 onPress={handleUseCurrentLocation}
                 disabled={loading || isCurrentLocation}
               >
                 <Text
                   style={[
-                    styles.buttonText,
-                    styles.saveButtonText,
-                    (loading || isCurrentLocation) && styles.buttonTextDisabled,
+                    sharedUI.drawerButtonText,
+                    sharedUI.drawerPrimaryButtonText,
+                    (loading || isCurrentLocation) &&
+                      sharedUI.drawerButtonTextDisabled,
                   ]}
                 >
                   {loading
@@ -327,50 +324,6 @@ export default function AstrologySettingsDrawer({
 }
 
 const styles = StyleSheet.create({
-  button: {
-    backgroundColor: "#2a2a2a",
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  buttonText: {
-    color: "#e6e6fa",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  saveButton: {
-    backgroundColor: "#4a2c7a",
-    borderColor: "#6b4c9a",
-  },
-  saveButtonText: { color: "#fff" },
-  buttonDisabled: {
-    opacity: 0.5,
-    backgroundColor: "#2a2a2a",
-    borderColor: "#333",
-  },
-  buttonTextDisabled: { color: "#8a8a8a" },
-  locationNameLabel: {
-    fontSize: 12,
-    color: "#8a8a8a",
-    marginBottom: 4,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  locationName: {
-    fontSize: 16,
-    color: "#e6e6fa",
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  locationCoordinates: {
-    fontSize: 12,
-    color: "#8a8a8a",
-    fontFamily: "monospace",
-  },
   geocodingContainer: { padding: 12, marginBottom: 20 },
   geocodingText: {
     fontSize: 14,
