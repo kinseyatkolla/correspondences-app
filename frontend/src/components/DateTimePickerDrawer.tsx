@@ -242,7 +242,7 @@ export default function DateTimePickerDrawer({
               </View>
 
               {/* Time Picker */}
-              <View>
+              <View style={styles.timePickerSection}>
                 <Text style={styles.datetimeTitleLabel}>Time</Text>
                 <TouchableOpacity
                   style={styles.datetimeDropdown}
@@ -310,6 +310,9 @@ export default function DateTimePickerDrawer({
 // STYLES
 // ============================================================================
 const styles = StyleSheet.create({
+  timePickerSection: {
+    marginTop: 12,
+  },
   datetimeTitleLabel: {
     color: "#e6e6fa",
     fontSize: 16,
@@ -322,7 +325,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#222",
     padding: 15,
-    borderRadius: 3,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#000",
   },
@@ -337,14 +340,14 @@ const styles = StyleSheet.create({
   drawerBtnsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 60,
+    marginTop: 38,
     gap: 10,
   },
   spinningDateSelectArea: {
     backgroundColor: "#1a1a1a",
     marginTop: 8,
     marginBottom: 12,
-    borderRadius: 3,
+    borderRadius: 10,
     padding: 8,
     borderWidth: 1,
     borderColor: "#444",

@@ -119,7 +119,7 @@ export default function PlanetaryHoursScreen({
           date,
           locationLat,
           locationLng,
-          date // Use the selected date/time as the reference time
+          date, // Use the selected date/time as the reference time
         );
 
         setPlanetaryHoursData(planetaryData);
@@ -283,7 +283,7 @@ export default function PlanetaryHoursScreen({
 
   // State for layered background transitions
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState(() =>
-    getTimeOfDayForDate(selectedDate)
+    getTimeOfDayForDate(selectedDate),
   );
   const previousTimeOfDayRef = useRef<string | null>(null);
 
@@ -331,7 +331,7 @@ export default function PlanetaryHoursScreen({
         }),
       ]).start();
     },
-    [nightOpacity, dayOpacity, duskOpacity, dawnOpacity]
+    [nightOpacity, dayOpacity, duskOpacity, dawnOpacity],
   );
 
   // ===== DYNAMIC BACKGROUND CALCULATION =====
@@ -342,7 +342,7 @@ export default function PlanetaryHoursScreen({
       dusk: require("../../assets/images/dusk-gradient.png"),
       night: require("../../assets/images/night-gradient.png"),
     }),
-    []
+    [],
   );
 
   // Initialize gradient opacities on mount
@@ -354,15 +354,15 @@ export default function PlanetaryHoursScreen({
   // Use specific sunrise/sunset values instead of the whole object to prevent loops
   const sunriseTime = useMemo(
     () => planetaryHoursData?.sunrise?.getTime(),
-    [planetaryHoursData?.sunrise?.getTime()]
+    [planetaryHoursData?.sunrise?.getTime()],
   );
   const sunsetTime = useMemo(
     () => planetaryHoursData?.sunset?.getTime(),
-    [planetaryHoursData?.sunset?.getTime()]
+    [planetaryHoursData?.sunset?.getTime()],
   );
   const selectedDateTime = useMemo(
     () => selectedDate.getTime(),
-    [selectedDateKey]
+    [selectedDateKey],
   );
 
   useEffect(() => {
@@ -374,7 +374,7 @@ export default function PlanetaryHoursScreen({
     const newTimeOfDay = getTimeOfDayForDate(
       selectedDate,
       planetaryHoursData.sunrise,
-      planetaryHoursData.sunset
+      planetaryHoursData.sunset,
     );
 
     // Only update if time of day actually changed from the previous value
@@ -537,7 +537,7 @@ export default function PlanetaryHoursScreen({
               // Get planet colors (convert to lowercase for color lookup)
               const dayRulerColor = getPlanetColor(dayRuler.toLowerCase());
               const hourPlanetColor = getPlanetColor(
-                currentHourPlanet.toLowerCase()
+                currentHourPlanet.toLowerCase(),
               );
 
               // Use greyish-blue text color (#6b6b8a) when background is yellow/gold (Jupiter or Sun)
@@ -687,7 +687,7 @@ export default function PlanetaryHoursScreen({
               const getHourHeight = (
                 position: number, // 1-24 position in the sequence
                 maxHeight: number,
-                minHeight: number
+                minHeight: number,
               ) => {
                 const patternValue = all24PatternValues[position - 1];
 
@@ -734,7 +734,7 @@ export default function PlanetaryHoursScreen({
                       let height = getHourHeight(
                         hour.position, // Use position (1-24) for the smooth curve
                         maxBarHeight,
-                        minBarHeight
+                        minBarHeight,
                       );
                       const isDayRulerHour = hour.planet === dayRuler;
                       const isCurrentHour =
@@ -822,7 +822,7 @@ export default function PlanetaryHoursScreen({
                       backgroundColorStyle = {
                         backgroundColor: colorToRgba(
                           dayRulerColor,
-                          isCurrentHour ? 1.0 : 0.5
+                          isCurrentHour ? 1.0 : 0.5,
                         ),
                       };
                     }
@@ -913,22 +913,25 @@ export default function PlanetaryHoursScreen({
                       backgroundColorStyle = {
                         backgroundColor: colorToRgba(
                           dayRulerColor,
-                          isCurrentHour ? 1.0 : 0.5
+                          isCurrentHour ? 1.0 : 0.5,
                         ),
                       };
                     }
 
-                    // Use greyish-blue text color (#6b6b8a) when background is yellow/gold (Jupiter or Sun)
-                    const isJupiterOrSunBackground =
+                    // Dark text on bright yellow (Sun) or gold (Jupiter) row backgrounds
+                    const isSunYellowBackground =
                       (isCurrentHour &&
-                        (currentHourPlanet?.toLowerCase() === "jupiter" ||
-                          currentHourPlanet?.toLowerCase() === "sun")) ||
-                      (isDayRulerHour &&
-                        (dayRuler.toLowerCase() === "jupiter" ||
-                          dayRuler.toLowerCase() === "sun"));
-                    const textColor = isJupiterOrSunBackground
-                      ? "#6b6b8a"
-                      : "#ffffff";
+                        currentHourPlanet?.toLowerCase() === "sun") ||
+                      (isDayRulerHour && dayRuler.toLowerCase() === "sun");
+                    const isJupiterGoldBackground =
+                      (isCurrentHour &&
+                        currentHourPlanet?.toLowerCase() === "jupiter") ||
+                      (isDayRulerHour && dayRuler.toLowerCase() === "jupiter");
+                    const textColor = isSunYellowBackground
+                      ? "#222222"
+                      : isJupiterGoldBackground
+                        ? "#6b6b8a"
+                        : "#ffffff";
 
                     return (
                       <View
@@ -968,7 +971,7 @@ export default function PlanetaryHoursScreen({
             })()}
 
           {/* Explanation */}
-          <View style={styles.cardContainer}>
+          <View style={[styles.cardContainer, styles.aboutPlanetaryHoursCard]}>
             <Text style={styles.cardTitle}>About Planetary Hours</Text>
             <Text style={styles.infoText}>
               Planetary hours divide daylight and nighttime into 12 equal parts
@@ -1049,7 +1052,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     padding: 20,
-    paddingBottom: 80, // Account for nav bar and date picker bar
+    paddingBottom: 120, // Clear secondary date bar + comfortable scroll end
   },
   loadingOverlay: {
     flex: 1,
@@ -1149,6 +1152,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  aboutPlanetaryHoursCard: {
+    marginBottom: 60,
   },
   cardTitle: {
     fontSize: 18,

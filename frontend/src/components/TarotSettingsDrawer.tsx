@@ -95,9 +95,7 @@ export default function TarotSettingsDrawer({
           >
             <View style={sharedUI.drawerSection}>
               <Text style={sharedUI.sectionTitle}>Choose Your Deck</Text>
-              <Text
-                style={[sharedUI.drawerSectionText, { marginBottom: 16 }]}
-              >
+              <Text style={[sharedUI.drawerSectionText, { marginBottom: 16 }]}>
                 Select which tarot deck to use for readings and the card
                 reference.
               </Text>

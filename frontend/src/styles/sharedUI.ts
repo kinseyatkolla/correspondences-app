@@ -16,30 +16,30 @@ export const sharedUI = StyleSheet.create({
     textAlign: "center",
   },
 
-  // Buttons
+  // Buttons (primary: tarot deck selected purple; secondary: drawerMutedPanel grey)
   primaryButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 3,
-    padding: 15,
+    backgroundColor: "#4a2c7a",
+    borderRadius: 10,
+    padding: 12,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "#6b4c9a",
   },
   primaryButtonText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#e6e6fa",
+    color: "#fff",
   },
   secondaryButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderRadius: 3,
-    padding: 15,
+    backgroundColor: "#2a2a2a",
+    borderRadius: 10,
+    padding: 12,
     alignItems: "center",
     justifyContent: "center",
     minWidth: 50,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderColor: "#444",
   },
   secondaryButtonText: {
     color: "#e6e6fa",

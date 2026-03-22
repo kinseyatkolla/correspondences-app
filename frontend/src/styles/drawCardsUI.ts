@@ -2,10 +2,15 @@ import { Dimensions, StyleSheet } from "react-native";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
+/** Per-screen backdrop; shared layout lives in `drawCardsUI`. */
+export const drawCardBackgrounds = {
+  flower: "#0e2515",
+  tarot: "#302B37",
+} as const;
+
 export const drawCardsUI = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0e2515",
     position: "absolute",
     top: 0,
     left: 0,
@@ -48,7 +53,6 @@ export const drawCardsUI = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0e2515",
   },
   loadingText: {
     color: "#e6e6fa",

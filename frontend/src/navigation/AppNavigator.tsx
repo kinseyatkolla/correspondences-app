@@ -10,7 +10,6 @@ import { CalendarProvider } from "../contexts/CalendarContext";
 import { YearProvider, useYear } from "../contexts/YearContext";
 import { useAstrology } from "../contexts/AstrologyContext";
 import AstrologySettingsDrawer from "../components/AstrologySettingsDrawer";
-import FlowerSettingsDrawer from "../components/FlowerSettingsDrawer";
 import TarotSettingsDrawer from "../components/TarotSettingsDrawer";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -203,7 +202,7 @@ function CalendarStack() {
   );
 }
 
-type SettingsDrawerType = "astrology" | "flower" | "tarot" | null;
+type SettingsDrawerType = "astrology" | "tarot" | null;
 
 function AppNavigatorContent() {
   const [settingsDrawerType, setSettingsDrawerType] =
@@ -226,8 +225,7 @@ function AppNavigatorContent() {
   const openSettingsDrawer = (navigation: any) => {
     const state = navigation.getState();
     const currentTab = state?.routes?.[state?.index]?.name ?? null;
-    if (currentTab === "Flowers") setSettingsDrawerType("flower");
-    else if (currentTab === "Tarot") setSettingsDrawerType("tarot");
+    if (currentTab === "Tarot") setSettingsDrawerType("tarot");
     else if (["Moon", "Book", "Astrology"].includes(currentTab ?? ""))
       setSettingsDrawerType("astrology");
   };
@@ -237,7 +235,7 @@ function AppNavigatorContent() {
       <NavigationContainer>
         <Tab.Navigator
           initialRouteName="Moon"
-          screenOptions={({ navigation }) => ({
+          screenOptions={({ navigation, route }) => ({
             tabBarActiveTintColor: "#e6e6fa",
             tabBarInactiveTintColor: "#8a8a8a",
             tabBarStyle: {
@@ -261,20 +259,23 @@ function AppNavigatorContent() {
             headerTitle: () => (
               <Text style={headerStyles.headerTitle}>CORRESPONDENCES</Text>
             ),
-            headerRight: () => (
-              <TouchableOpacity
-                onPress={() => openSettingsDrawer(navigation)}
-                activeOpacity={0.7}
-                style={headerStyles.headerRightButton}
-              >
-                <GearIcon
-                  width={20}
-                  height={20}
-                  fill="#e6e6fa"
-                  color="#e6e6fa"
-                />
-              </TouchableOpacity>
-            ),
+            headerRight:
+              route.name === "Flowers"
+                ? () => null
+                : () => (
+                    <TouchableOpacity
+                      onPress={() => openSettingsDrawer(navigation)}
+                      activeOpacity={0.7}
+                      style={headerStyles.headerRightButton}
+                    >
+                      <GearIcon
+                        width={20}
+                        height={20}
+                        fill="#e6e6fa"
+                        color="#e6e6fa"
+                      />
+                    </TouchableOpacity>
+                  ),
           })}
         >
           <Tab.Screen
@@ -344,10 +345,6 @@ function AppNavigatorContent() {
         onClose={() => setSettingsDrawerType(null)}
         onSave={handleSaveLocation}
         currentLocation={currentChart?.location || null}
-      />
-      <FlowerSettingsDrawer
-        visible={settingsDrawerType === "flower"}
-        onClose={() => setSettingsDrawerType(null)}
       />
       <TarotSettingsDrawer
         visible={settingsDrawerType === "tarot"}

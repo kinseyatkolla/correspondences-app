@@ -23,7 +23,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Accelerometer } from "expo-sensors";
 import { TarotCard } from "../services/api";
 import { useTarot, CardData } from "../contexts/TarotContext";
-import { drawCardsUI } from "../styles/drawCardsUI";
+import { drawCardBackgrounds, drawCardsUI } from "../styles/drawCardsUI";
 import {
   getTarotImages,
   getTarotCardBackImages,
@@ -524,9 +524,19 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   // ===== LOADING STATE =====
   if (tarotLoading || allTarotCards.length === 0) {
     return (
-      <View style={drawCardsUI.container}>
+      <View
+        style={[
+          drawCardsUI.container,
+          { backgroundColor: drawCardBackgrounds.tarot },
+        ]}
+      >
         <StatusBar hidden={true} />
-        <View style={drawCardsUI.loadingContainer}>
+        <View
+          style={[
+            drawCardsUI.loadingContainer,
+            { backgroundColor: drawCardBackgrounds.tarot },
+          ]}
+        >
           <Text style={drawCardsUI.loadingText}>
             {tarotLoading
               ? "Loading tarot cards..."
@@ -539,7 +549,12 @@ export default function TarotDrawScreen({ navigation, route }: any) {
 
   // ===== MAIN TEMPLATE =====
   return (
-    <View style={drawCardsUI.container}>
+    <View
+      style={[
+        drawCardsUI.container,
+        { backgroundColor: drawCardBackgrounds.tarot },
+      ]}
+    >
       <StatusBar hidden={true} />
       {/* Back gesture area */}
       <TouchableOpacity

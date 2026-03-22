@@ -16,7 +16,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Accelerometer } from "expo-sensors";
 import { FlowerEssence } from "../services/api";
 import { useFlowers, FlowerCardData } from "../contexts/FlowersContext";
-import { drawCardsUI } from "../styles/drawCardsUI";
+import { drawCardBackgrounds, drawCardsUI } from "../styles/drawCardsUI";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -422,9 +422,19 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
   // ===== LOADING STATE =====
   if (flowersLoading) {
     return (
-      <View style={drawCardsUI.container}>
+      <View
+        style={[
+          drawCardsUI.container,
+          { backgroundColor: drawCardBackgrounds.flower },
+        ]}
+      >
         <StatusBar hidden={true} />
-        <View style={drawCardsUI.loadingContainer}>
+        <View
+          style={[
+            drawCardsUI.loadingContainer,
+            { backgroundColor: drawCardBackgrounds.flower },
+          ]}
+        >
           <Text style={drawCardsUI.loadingText}>Loading flowers...</Text>
         </View>
       </View>
@@ -433,7 +443,12 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
 
   // ===== MAIN TEMPLATE =====
   return (
-    <View style={drawCardsUI.container}>
+    <View
+      style={[
+        drawCardsUI.container,
+        { backgroundColor: drawCardBackgrounds.flower },
+      ]}
+    >
       <StatusBar hidden={true} />
       {/* Back gesture area */}
       <TouchableOpacity
