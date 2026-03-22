@@ -17,7 +17,6 @@ import {
 } from "react-native";
 import { FlowerEssence } from "../services/api";
 import { getFlowerEmoji } from "../utils/imageHelper";
-import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 import { useFlowers } from "../contexts/FlowersContext";
 import OnboardingOverlay from "../components/OnboardingOverlay";
@@ -241,28 +240,28 @@ export default function FlowersScreen({ navigation }: any) {
           transparent={true}
           onRequestClose={() => setModalVisible(false)}
         >
-          <View style={overlayStyles.modalOverlay}>
-            <View style={overlayStyles.modalContent}>
-              <ScrollView style={overlayStyles.modalScroll}>
+          <View style={sharedUI.modalOverlay}>
+            <View style={sharedUI.modalContent}>
+              <ScrollView style={sharedUI.modalScroll}>
                 {selectedFlower && (
                   <>
-                    <View style={overlayStyles.modalHeader}>
-                      <Text style={overlayStyles.modalTitle}>
+                    <View style={sharedUI.modalHeader}>
+                      <Text style={sharedUI.modalTitle}>
                         {selectedFlower.commonName}
                       </Text>
-                      <Text style={overlayStyles.modalSubtitle}>
+                      <Text style={sharedUI.modalSubtitle}>
                         {selectedFlower.latinName}
                       </Text>
                       <TouchableOpacity
-                        style={overlayStyles.closeButton}
+                        style={sharedUI.modalCloseButton}
                         onPress={() => setModalVisible(false)}
                       >
-                        <Text style={overlayStyles.closeButtonText}>✕</Text>
+                        <Text style={sharedUI.modalCloseButtonText}>✕</Text>
                       </TouchableOpacity>
                     </View>
 
                     {/* Flower Image */}
-                    <View style={overlayStyles.imageContainer}>
+                    <View style={sharedUI.modalImageContainer}>
                       <TouchableOpacity
                         onPress={handleImageFlip}
                         activeOpacity={0.8}
@@ -286,55 +285,55 @@ export default function FlowersScreen({ navigation }: any) {
                                 ? flowerImages[selectedFlower.imageName]
                                 : flowerImages["default.jpg"]
                             }
-                            style={overlayStyles.flowerImage}
+                            style={sharedUI.modalFlowerImage}
                             resizeMode="contain"
                           />
                         </Animated.View>
                       </TouchableOpacity>
                     </View>
 
-                    <View style={overlayStyles.section}>
-                      <Text style={overlayStyles.sectionTitle}>
+                    <View style={sharedUI.modalSection}>
+                      <Text style={sharedUI.sectionTitle}>
                         Description
                       </Text>
-                      <Text style={overlayStyles.sectionText}>
+                      <Text style={sharedUI.sectionText}>
                         {selectedFlower.description}
                       </Text>
                     </View>
 
-                    <View style={overlayStyles.section}>
-                      <Text style={overlayStyles.sectionTitle}>
+                    <View style={sharedUI.modalSection}>
+                      <Text style={sharedUI.sectionTitle}>
                         Positive Qualities
                       </Text>
                       {selectedFlower.positiveQualities.map(
                         (quality, index) => (
-                          <Text key={index} style={overlayStyles.listItem}>
+                          <Text key={index} style={sharedUI.modalListItem}>
                             • {quality}
                           </Text>
                         )
                       )}
                     </View>
 
-                    <View style={overlayStyles.section}>
-                      <Text style={overlayStyles.sectionTitle}>
+                    <View style={sharedUI.modalSection}>
+                      <Text style={sharedUI.sectionTitle}>
                         Patterns of Imbalance
                       </Text>
                       {selectedFlower.patternsOfImbalance.map(
                         (pattern, index) => (
-                          <Text key={index} style={overlayStyles.listItem}>
+                          <Text key={index} style={sharedUI.modalListItem}>
                             • {pattern}
                           </Text>
                         )
                       )}
                     </View>
 
-                    <View style={overlayStyles.section}>
-                      <Text style={overlayStyles.sectionTitle}>
+                    <View style={sharedUI.modalSection}>
+                      <Text style={sharedUI.sectionTitle}>
                         Cross References
                       </Text>
                       {selectedFlower.crossReferences.map(
                         (reference, index) => (
-                          <Text key={index} style={overlayStyles.listItem}>
+                          <Text key={index} style={sharedUI.modalListItem}>
                             • {reference}
                           </Text>
                         )

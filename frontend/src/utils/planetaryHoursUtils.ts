@@ -101,7 +101,7 @@ function parseApiTime(timeString: string, date: Date): Date {
 export async function fetchSunTimes(
   date: Date,
   latitude: number,
-  longitude: number
+  longitude: number,
 ): Promise<{ sunrise: Date; sunset: Date }> {
   // Create cache key
   const dateString = date.toISOString().split("T")[0]; // Format: YYYY-MM-DD
@@ -201,7 +201,7 @@ export async function fetchSunTimes(
 export function calculateSunTimesFallback(
   date: Date,
   latitude: number,
-  longitude: number
+  longitude: number,
 ): { sunrise: Date; sunset: Date } {
   // Convert to radians
   const latRad = (latitude * Math.PI) / 180;
@@ -210,7 +210,7 @@ export function calculateSunTimesFallback(
   const startOfYear = new Date(date.getFullYear(), 0, 1);
   const dayOfYear =
     Math.floor(
-      (date.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24)
+      (date.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24),
     ) + 1;
 
   // Solar declination in radians (more accurate formula)
@@ -233,7 +233,7 @@ export function calculateSunTimesFallback(
     Math.floor(sunriseMinutes / 60),
     Math.floor(sunriseMinutes % 60),
     0,
-    0
+    0,
   );
 
   const sunset = new Date(date);
@@ -241,7 +241,7 @@ export function calculateSunTimesFallback(
     Math.floor(sunsetMinutes / 60),
     Math.floor(sunsetMinutes % 60),
     0,
-    0
+    0,
   );
 
   return { sunrise, sunset };
@@ -258,7 +258,7 @@ export async function calculatePlanetaryHours(
   date: Date,
   latitude: number,
   longitude: number,
-  referenceTime?: Date
+  referenceTime?: Date,
 ): Promise<PlanetaryHoursData> {
   const { sunrise, sunset } = await fetchSunTimes(date, latitude, longitude);
 
@@ -315,7 +315,7 @@ export async function calculatePlanetaryHours(
   const currentTime = referenceTime || new Date();
   const allHours = [...dayHours, ...nightHours];
   const currentHour = allHours.find(
-    (hour) => currentTime >= hour.startTime && currentTime < hour.endTime
+    (hour) => currentTime >= hour.startTime && currentTime < hour.endTime,
   );
 
   return {
@@ -366,7 +366,7 @@ export async function testManitouSpringsCalculations(): Promise<void> {
     const planetaryData = await calculatePlanetaryHours(
       testDate,
       latitude,
-      longitude
+      longitude,
     );
 
     console.log("Sunrise:", formatTime(planetaryData.sunrise));
@@ -379,7 +379,7 @@ export async function testManitouSpringsCalculations(): Promise<void> {
       console.log(
         "First Day Hour:",
         planetaryData.dayHours[0].planet,
-        formatTime(planetaryData.dayHours[0].startTime)
+        formatTime(planetaryData.dayHours[0].startTime),
       );
     }
 
@@ -390,7 +390,7 @@ export async function testManitouSpringsCalculations(): Promise<void> {
         planetaryData.currentHour.planet,
         formatTime(planetaryData.currentHour.startTime),
         "-",
-        formatTime(planetaryData.currentHour.endTime)
+        formatTime(planetaryData.currentHour.endTime),
       );
     }
   } catch (error) {

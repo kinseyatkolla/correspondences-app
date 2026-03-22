@@ -13,7 +13,6 @@ import {
   Alert,
 } from "react-native";
 import { apiService, ISBNBookData } from "../services/api";
-import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 
 // ============================================================================
@@ -102,8 +101,8 @@ export default function AdminScreen({ navigation }: AdminScreenProps) {
     if (!lookupResults || lookupResults.length === 0) return null;
 
     return (
-      <View style={overlayStyles.section}>
-        <Text style={overlayStyles.sectionTitle}>
+      <View style={sharedUI.modalSection}>
+        <Text style={sharedUI.sectionTitle}>
           📖{" "}
           {lookupResults.length === 1
             ? "Book Found"
@@ -154,8 +153,8 @@ export default function AdminScreen({ navigation }: AdminScreenProps) {
         </View>
 
         {/* Book Search Section */}
-        <View style={overlayStyles.section}>
-          <Text style={overlayStyles.sectionTitle}>🔍 Search for Books</Text>
+        <View style={sharedUI.modalSection}>
+          <Text style={sharedUI.sectionTitle}>🔍 Search for Books</Text>
 
           {/* Title Input */}
           <View style={styles.inputContainer}>

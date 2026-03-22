@@ -313,4 +313,98 @@ export const sharedUI = StyleSheet.create({
     fontWeight: "bold",
     letterSpacing: 4,
   },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#1a1a2e",
+    borderRadius: 20,
+    width: "90%",
+    maxHeight: "80%",
+    borderWidth: 2,
+    borderColor: "#4a2c7a",
+  },
+  modalScroll: {
+    maxHeight: "100%",
+  },
+  modalHeader: {
+    padding: 20,
+    position: "relative",
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#e6e6fa",
+    marginBottom: 5,
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    color: "#b19cd9",
+    fontStyle: "italic",
+    marginBottom: 5,
+  },
+  modalElement: {
+    fontSize: 14,
+    color: "#8a8a8a",
+  },
+  modalCloseButton: {
+    position: "absolute",
+    top: 15,
+    right: 15,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#4a2c7a",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+    elevation: 5,
+  },
+  modalCloseButtonText: {
+    color: "#e6e6fa",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  modalSection: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2d1b69",
+  },
+  modalListItem: {
+    fontSize: 16,
+    color: "#e6e6fa",
+    marginBottom: 5,
+    lineHeight: 22,
+  },
+  modalImageContainer: {
+    width: "100%",
+    marginBottom: 0,
+  },
+  modalCardImageContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  modalCardImage: {
+    width: 200,
+    height: 300,
+    borderRadius: 8,
+  },
+  modalFlowerImage: {
+    width: "100%",
+    height: undefined,
+    aspectRatio: 1,
+  },
+
+  drawerContainer: {
+    backgroundColor: "#111111",
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+    paddingBottom: 40,
+    maxHeight: "90%",
+  },
 });

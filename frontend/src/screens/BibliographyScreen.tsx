@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
-import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 
 // ============================================================================
@@ -37,8 +36,8 @@ export default function BibliographyScreen({
         <View style={{ width: 18 }} />
       </TouchableOpacity>
       <ScrollView style={styles.scrollView}>
-        <View style={overlayStyles.section}>
-          <Text style={overlayStyles.sectionTitle}>Primary Sources</Text>
+        <View style={sharedUI.modalSection}>
+          <Text style={sharedUI.sectionTitle}>Primary Sources</Text>
           <Text style={styles.bibliographyItem}>
             Cunningham, Scott.{" "}
             <Text style={styles.bibliographyTitle}>
@@ -60,8 +59,8 @@ export default function BibliographyScreen({
           </Text>
         </View>
 
-        <View style={overlayStyles.section}>
-          <Text style={overlayStyles.sectionTitle}>Historical Sources</Text>
+        <View style={sharedUI.modalSection}>
+          <Text style={sharedUI.sectionTitle}>Historical Sources</Text>
           <Text style={styles.bibliographyItem}>
             Agrippa, Heinrich Cornelius.{" "}
             <Text style={styles.bibliographyTitle}>
@@ -75,8 +74,8 @@ export default function BibliographyScreen({
           </Text>
         </View>
 
-        <View style={overlayStyles.section}>
-          <Text style={overlayStyles.sectionTitle}>Modern References</Text>
+        <View style={sharedUI.modalSection}>
+          <Text style={sharedUI.sectionTitle}>Modern References</Text>
           <Text style={styles.bibliographyItem}>
             Conway, D.J.{" "}
             <Text style={styles.bibliographyTitle}>Crystal Enchantments</Text>.

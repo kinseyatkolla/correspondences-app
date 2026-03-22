@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Animated,
 } from "react-native";
+import { sharedUI } from "../styles/sharedUI";
 
 interface FlowerSettingsDrawerProps {
   visible: boolean;
@@ -55,10 +56,13 @@ export default function FlowerSettingsDrawer({
         activeOpacity={1}
         onPress={onClose}
       >
-        <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={(e) => e.stopPropagation()}
+        >
           <Animated.View
             style={[
-              styles.drawerContainer,
+              sharedUI.drawerContainer,
               {
                 transform: [
                   {
@@ -94,13 +98,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "flex-end",
-  },
-  drawerContainer: {
-    backgroundColor: "#1a1a1a",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 40,
-    maxHeight: "90%",
   },
   drawerHeader: {
     flexDirection: "row",

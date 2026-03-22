@@ -21,7 +21,6 @@ import {
   getTarotImages,
   resolveTarotFaceFromMap,
 } from "../utils/tarotImageHelper";
-import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 import OnboardingOverlay from "../components/OnboardingOverlay";
 
@@ -302,83 +301,83 @@ export default function TarotScreen({ navigation, route }: any) {
           transparent={true}
           onRequestClose={() => setModalVisible(false)}
         >
-          <View style={overlayStyles.modalOverlay}>
-            <View style={overlayStyles.modalContent}>
-              <ScrollView style={overlayStyles.modalScroll}>
+          <View style={sharedUI.modalOverlay}>
+            <View style={sharedUI.modalContent}>
+              <ScrollView style={sharedUI.modalScroll}>
                 {selectedCard && (
                   <>
-                    <View style={overlayStyles.modalHeader}>
-                      <Text style={overlayStyles.modalTitle}>
+                    <View style={sharedUI.modalHeader}>
+                      <Text style={sharedUI.modalTitle}>
                         {selectedCard.name}
                       </Text>
-                      <Text style={overlayStyles.modalSubtitle}>
+                      <Text style={sharedUI.modalSubtitle}>
                         {selectedCard.suit}{" "}
                         {selectedCard.number > 0 && `#${selectedCard.number}`}
                       </Text>
                       {selectedCard.element && (
-                        <Text style={overlayStyles.modalElement}>
+                        <Text style={sharedUI.modalElement}>
                           {getElementEmoji(selectedCard.element)}{" "}
                           {selectedCard.element}
                         </Text>
                       )}
                       <TouchableOpacity
-                        style={overlayStyles.closeButton}
+                        style={sharedUI.modalCloseButton}
                         onPress={() => setModalVisible(false)}
                       >
-                        <Text style={overlayStyles.closeButtonText}>✕</Text>
+                        <Text style={sharedUI.modalCloseButtonText}>✕</Text>
                       </TouchableOpacity>
                     </View>
 
-                    <View style={overlayStyles.cardImageContainer}>
+                    <View style={sharedUI.modalCardImageContainer}>
                       <Image
                         source={getCardImageSource(selectedCard)}
-                        style={overlayStyles.cardImage}
+                        style={sharedUI.modalCardImage}
                         resizeMode="contain"
                       />
                     </View>
 
-                    <View style={overlayStyles.section}>
-                      <Text style={overlayStyles.sectionTitle}>
+                    <View style={sharedUI.modalSection}>
+                      <Text style={sharedUI.sectionTitle}>
                         Description
                       </Text>
-                      <Text style={overlayStyles.sectionText}>
+                      <Text style={sharedUI.sectionText}>
                         {selectedCard.description}
                       </Text>
                     </View>
 
-                    <View style={overlayStyles.section}>
-                      <Text style={overlayStyles.sectionTitle}>Keywords</Text>
+                    <View style={sharedUI.modalSection}>
+                      <Text style={sharedUI.sectionTitle}>Keywords</Text>
                       {selectedCard.keywords.map((keyword, index) => (
-                        <Text key={index} style={overlayStyles.listItem}>
+                        <Text key={index} style={sharedUI.modalListItem}>
                           • {keyword}
                         </Text>
                       ))}
                     </View>
 
-                    <View style={overlayStyles.section}>
-                      <Text style={overlayStyles.sectionTitle}>
+                    <View style={sharedUI.modalSection}>
+                      <Text style={sharedUI.sectionTitle}>
                         Upright Meaning
                       </Text>
-                      <Text style={overlayStyles.sectionText}>
+                      <Text style={sharedUI.sectionText}>
                         {selectedCard.uprightMeaning}
                       </Text>
                     </View>
 
-                    <View style={overlayStyles.section}>
-                      <Text style={overlayStyles.sectionTitle}>
+                    <View style={sharedUI.modalSection}>
+                      <Text style={sharedUI.sectionTitle}>
                         Reversed Meaning
                       </Text>
-                      <Text style={overlayStyles.sectionText}>
+                      <Text style={sharedUI.sectionText}>
                         {selectedCard.reversedMeaning}
                       </Text>
                     </View>
 
                     {selectedCard.astrologicalCorrespondence && (
-                      <View style={overlayStyles.section}>
-                        <Text style={overlayStyles.sectionTitle}>
+                      <View style={sharedUI.modalSection}>
+                        <Text style={sharedUI.sectionTitle}>
                           Astrological Correspondence
                         </Text>
-                        <Text style={overlayStyles.sectionText}>
+                        <Text style={sharedUI.sectionText}>
                           {selectedCard.astrologicalCorrespondence}
                         </Text>
                       </View>

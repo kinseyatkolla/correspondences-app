@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { sharedUI } from "../styles/sharedUI";
 
 interface AstrologySettingsDrawerProps {
   visible: boolean;
@@ -95,7 +96,7 @@ export default function AstrologySettingsDrawer({
       const tolerance = 0.0001;
       setIsCurrentLocation(
         Math.abs(savedLocation.latitude - currentLat) < tolerance &&
-          Math.abs(savedLocation.longitude - currentLng) < tolerance
+          Math.abs(savedLocation.longitude - currentLng) < tolerance,
       );
     } catch (error) {
       console.error("Error checking current location:", error);
@@ -114,13 +115,13 @@ export default function AstrologySettingsDrawer({
         if (!location.name && location.latitude && location.longitude) {
           const name = await reverseGeocode(
             location.latitude,
-            location.longitude
+            location.longitude,
           );
           if (name) {
             try {
               await AsyncStorage.setItem(
                 SAVED_LOCATION_KEY,
-                JSON.stringify({ ...location, name })
+                JSON.stringify({ ...location, name }),
               );
             } catch (saveError) {
               console.error("Error saving location name:", saveError);
@@ -138,7 +139,7 @@ export default function AstrologySettingsDrawer({
         ) {
           await reverseGeocode(
             currentLocation.latitude,
-            currentLocation.longitude
+            currentLocation.longitude,
           );
         }
       }
@@ -155,7 +156,7 @@ export default function AstrologySettingsDrawer({
         ) {
           await reverseGeocode(
             currentLocation.latitude,
-            currentLocation.longitude
+            currentLocation.longitude,
           );
         }
       }
@@ -195,7 +196,7 @@ export default function AstrologySettingsDrawer({
       if (status !== "granted") {
         Alert.alert(
           "Permission Denied",
-          "Location permission is required to use your current location."
+          "Location permission is required to use your current location.",
         );
         setLoading(false);
         return;
@@ -206,7 +207,11 @@ export default function AstrologySettingsDrawer({
       setLatitude(lat.toString());
       setLongitude(lng.toString());
       const name = await reverseGeocode(lat, lng);
-      const locationToSave = { latitude: lat, longitude: lng, name: name || "" };
+      const locationToSave = {
+        latitude: lat,
+        longitude: lng,
+        name: name || "",
+      };
       onSave(locationToSave);
       Alert.alert("Success", "Location saved successfully!");
       onClose();
@@ -234,7 +239,7 @@ export default function AstrologySettingsDrawer({
       >
         <Animated.View
           style={[
-            styles.drawerContainer,
+            sharedUI.drawerContainer,
             {
               transform: [
                 {
@@ -306,8 +311,8 @@ export default function AstrologySettingsDrawer({
                   {loading
                     ? "Getting Location..."
                     : isCurrentLocation
-                    ? "📍 Current Location Already Saved"
-                    : "📍 Use Current Location"}
+                      ? "📍 Current Location Already Saved"
+                      : "📍 Use Current Location"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -323,13 +328,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "flex-end",
-  },
-  drawerContainer: {
-    backgroundColor: "#1a1a1a",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 40,
-    maxHeight: "90%",
   },
   drawerHeader: {
     flexDirection: "row",

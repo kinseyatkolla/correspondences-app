@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useTarot } from "../contexts/TarotContext";
 import { TAROT_DECKS } from "../utils/tarotImageHelper";
+import { sharedUI } from "../styles/sharedUI";
 
 interface TarotSettingsDrawerProps {
   visible: boolean;
@@ -63,7 +64,7 @@ export default function TarotSettingsDrawer({
         />
         <Animated.View
           style={[
-            styles.drawerContainer,
+            sharedUI.drawerContainer,
             {
               transform: [
                 {
@@ -133,13 +134,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "flex-end",
-  },
-  drawerContainer: {
-    backgroundColor: "#1a1a1a",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 40,
-    maxHeight: "90%",
   },
   drawerHeader: {
     flexDirection: "row",

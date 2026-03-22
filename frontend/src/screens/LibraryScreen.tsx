@@ -16,7 +16,6 @@ import {
   Linking,
 } from "react-native";
 import { apiService, LibraryItem } from "../services/api";
-import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 
 // ============================================================================
@@ -200,27 +199,27 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
         onRequestClose={handleCloseModal}
       >
         <TouchableOpacity
-          style={overlayStyles.modalOverlay}
+          style={sharedUI.modalOverlay}
           activeOpacity={1}
           onPress={handleCloseModal}
         >
           <TouchableOpacity
-            style={overlayStyles.modalContent}
+            style={sharedUI.modalContent}
             activeOpacity={1}
             onPress={() => {}}
           >
             <TouchableOpacity
-              style={overlayStyles.closeButton}
+              style={sharedUI.modalCloseButton}
               onPress={handleCloseModal}
               activeOpacity={0.7}
             >
-              <Text style={overlayStyles.closeButtonText}>✕</Text>
+              <Text style={sharedUI.modalCloseButtonText}>✕</Text>
             </TouchableOpacity>
 
-            <ScrollView style={overlayStyles.modalScroll}>
+            <ScrollView style={sharedUI.modalScroll}>
               {/* Book Cover */}
               {selectedBook.image && (
-                <View style={overlayStyles.cardImageContainer}>
+                <View style={sharedUI.modalCardImageContainer}>
                   <Image
                     source={{ uri: selectedBook.image }}
                     style={styles.modalBookCover}
@@ -230,22 +229,22 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
               )}
 
               {/* Title and Author */}
-              <View style={overlayStyles.modalHeader}>
-                <Text style={overlayStyles.modalTitle}>
+              <View style={sharedUI.modalHeader}>
+                <Text style={sharedUI.modalTitle}>
                   {selectedBook.name}
                 </Text>
                 {selectedBook.author && (
-                  <Text style={overlayStyles.modalSubtitle}>
+                  <Text style={sharedUI.modalSubtitle}>
                     by {selectedBook.author}
                   </Text>
                 )}
                 {selectedBook.year && (
-                  <Text style={overlayStyles.modalElement}>
+                  <Text style={sharedUI.modalElement}>
                     Published: {selectedBook.year}
                   </Text>
                 )}
                 {selectedBook.publisher && (
-                  <Text style={overlayStyles.modalElement}>
+                  <Text style={sharedUI.modalElement}>
                     Publisher: {selectedBook.publisher}
                   </Text>
                 )}
@@ -253,9 +252,9 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
 
               {/* Description */}
               {selectedBook.description && (
-                <View style={overlayStyles.section}>
-                  <Text style={overlayStyles.sectionTitle}>Description</Text>
-                  <Text style={overlayStyles.sectionText}>
+                <View style={sharedUI.modalSection}>
+                  <Text style={sharedUI.sectionTitle}>Description</Text>
+                  <Text style={sharedUI.sectionText}>
                     {selectedBook.description}
                   </Text>
                 </View>
@@ -263,9 +262,9 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
 
               {/* ISBN */}
               {selectedBook.isbn && (
-                <View style={overlayStyles.section}>
-                  <Text style={overlayStyles.sectionTitle}>ISBN</Text>
-                  <Text style={overlayStyles.sectionText}>
+                <View style={sharedUI.modalSection}>
+                  <Text style={sharedUI.sectionTitle}>ISBN</Text>
+                  <Text style={sharedUI.sectionText}>
                     {selectedBook.isbn}
                   </Text>
                 </View>
@@ -273,7 +272,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
 
               {/* Link */}
               {selectedBook.sourceUrl && (
-                <View style={overlayStyles.section}>
+                <View style={sharedUI.modalSection}>
                   <TouchableOpacity
                     onPress={() => handleOpenLink(selectedBook.sourceUrl)}
                     style={styles.linkButton}

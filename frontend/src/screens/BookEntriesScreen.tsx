@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { apiService, BookOfShadowsEntry } from "../services/api";
-import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 import WikipediaSection from "../components/WikipediaSection";
 
@@ -188,31 +187,31 @@ export default function BookEntriesScreen({ navigation, route }: any) {
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={overlayStyles.modalOverlay}>
-          <View style={overlayStyles.modalContent}>
-            <ScrollView style={overlayStyles.modalScroll}>
+        <View style={sharedUI.modalOverlay}>
+          <View style={sharedUI.modalContent}>
+            <ScrollView style={sharedUI.modalScroll}>
               {selectedEntry && (
                 <>
-                  <View style={overlayStyles.modalHeader}>
-                    <Text style={overlayStyles.modalTitle}>
+                  <View style={sharedUI.modalHeader}>
+                    <Text style={sharedUI.modalTitle}>
                       {selectedEntry.name}
                     </Text>
                     <TouchableOpacity
-                      style={overlayStyles.closeButton}
+                      style={sharedUI.modalCloseButton}
                       onPress={() => setModalVisible(false)}
                     >
-                      <Text style={overlayStyles.closeButtonText}>✕</Text>
+                      <Text style={sharedUI.modalCloseButtonText}>✕</Text>
                     </TouchableOpacity>
                   </View>
 
                   {/* Description */}
                   {selectedEntry.description &&
                     selectedEntry.description.trim() !== "" && (
-                      <View style={overlayStyles.section}>
-                        <Text style={overlayStyles.sectionTitle}>
+                      <View style={sharedUI.modalSection}>
+                        <Text style={sharedUI.sectionTitle}>
                           Description
                         </Text>
-                        <Text style={overlayStyles.sectionText}>
+                        <Text style={sharedUI.sectionText}>
                           {selectedEntry.description}
                         </Text>
                       </View>
@@ -220,7 +219,7 @@ export default function BookEntriesScreen({ navigation, route }: any) {
 
                   {/* Tarot Link */}
                   {selectedEntry.category === "tarotCard" && (
-                    <View style={overlayStyles.section}>
+                    <View style={sharedUI.modalSection}>
                       <TouchableOpacity
                         style={styles.tarotLinkButton}
                         onPress={handleViewInTarot}
@@ -244,8 +243,8 @@ export default function BookEntriesScreen({ navigation, route }: any) {
                   {/* Correspondences */}
                   {selectedEntry.correspondences &&
                     selectedEntry.correspondences.length > 0 && (
-                      <View style={overlayStyles.section}>
-                        <Text style={overlayStyles.sectionTitle}>
+                      <View style={sharedUI.modalSection}>
+                        <Text style={sharedUI.sectionTitle}>
                           Correspondences & Associations
                         </Text>
                         {loadingCorrespondence && (
@@ -279,9 +278,9 @@ export default function BookEntriesScreen({ navigation, route }: any) {
                     !selectedEntry.content.match(
                       /^Correspondences and associations for .+$/i
                     ) && (
-                      <View style={overlayStyles.section}>
-                        <Text style={overlayStyles.sectionTitle}>Details</Text>
-                        <Text style={overlayStyles.sectionText}>
+                      <View style={sharedUI.modalSection}>
+                        <Text style={sharedUI.sectionTitle}>Details</Text>
+                        <Text style={sharedUI.sectionText}>
                           {selectedEntry.content}
                         </Text>
                       </View>
@@ -290,10 +289,10 @@ export default function BookEntriesScreen({ navigation, route }: any) {
                   {/* Keywords */}
                   {selectedEntry.keywords &&
                     selectedEntry.keywords.length > 0 && (
-                      <View style={overlayStyles.section}>
-                        <Text style={overlayStyles.sectionTitle}>Keywords</Text>
+                      <View style={sharedUI.modalSection}>
+                        <Text style={sharedUI.sectionTitle}>Keywords</Text>
                         {selectedEntry.keywords.map((keyword, index) => (
-                          <Text key={index} style={overlayStyles.listItem}>
+                          <Text key={index} style={sharedUI.modalListItem}>
                             • {keyword}
                           </Text>
                         ))}
@@ -303,12 +302,12 @@ export default function BookEntriesScreen({ navigation, route }: any) {
                   {/* References */}
                   {selectedEntry.references &&
                     selectedEntry.references.length > 0 && (
-                      <View style={overlayStyles.section}>
-                        <Text style={overlayStyles.sectionTitle}>
+                      <View style={sharedUI.modalSection}>
+                        <Text style={sharedUI.sectionTitle}>
                           Related Entries
                         </Text>
                         {selectedEntry.references.map((reference, index) => (
-                          <Text key={index} style={overlayStyles.listItem}>
+                          <Text key={index} style={sharedUI.modalListItem}>
                             • {reference.name}
                           </Text>
                         ))}

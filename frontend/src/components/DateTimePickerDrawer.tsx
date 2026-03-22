@@ -13,6 +13,7 @@ import {
   ScrollView,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { sharedUI } from "../styles/sharedUI";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -175,7 +176,7 @@ export default function DateTimePickerDrawer({
       >
         <Animated.View
           style={[
-            styles.drawerContainer,
+            sharedUI.drawerContainer,
             {
               transform: [
                 {
@@ -312,13 +313,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "flex-end",
-  },
-  drawerContainer: {
-    backgroundColor: "#2a2a2a",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 40,
-    maxHeight: 500,
   },
   drawerHeader: {
     flexDirection: "row",

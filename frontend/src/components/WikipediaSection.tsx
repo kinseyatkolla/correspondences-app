@@ -7,7 +7,7 @@ import {
   Linking,
 } from "react-native";
 import { apiService } from "../services/api";
-import { overlayStyles } from "../styles/overlayStyles";
+import { sharedUI } from "../styles/sharedUI";
 
 interface WikipediaData {
   title: string;
@@ -89,8 +89,8 @@ export default function WikipediaSection({
 
   if (loading) {
     return (
-      <View style={overlayStyles.section}>
-        <Text style={overlayStyles.sectionTitle}>Wikipedia</Text>
+      <View style={sharedUI.modalSection}>
+        <Text style={sharedUI.sectionTitle}>Wikipedia</Text>
         <View
           style={{
             flexDirection: "row",
@@ -99,7 +99,7 @@ export default function WikipediaSection({
           }}
         >
           <ActivityIndicator size="small" color="#b19cd9" />
-          <Text style={[overlayStyles.sectionText, { marginLeft: 10 }]}>
+          <Text style={[sharedUI.sectionText, { marginLeft: 10 }]}>
             Loading Wikipedia data...
           </Text>
         </View>
@@ -112,7 +112,7 @@ export default function WikipediaSection({
   }
 
   return (
-    <View style={overlayStyles.section}>
+    <View style={sharedUI.modalSection}>
       <View
         style={{
           flexDirection: "row",
@@ -121,7 +121,7 @@ export default function WikipediaSection({
           marginBottom: 10,
         }}
       >
-        <Text style={overlayStyles.sectionTitle}>Wikipedia</Text>
+        <Text style={sharedUI.sectionTitle}>Wikipedia</Text>
         <TouchableOpacity
           style={{
             backgroundColor: "#b19cd9",
@@ -141,7 +141,7 @@ export default function WikipediaSection({
       {wikipediaData.description && (
         <Text
           style={[
-            overlayStyles.sectionText,
+            sharedUI.sectionText,
             {
               fontSize: 14,
               color: "#b19cd9",
@@ -156,11 +156,11 @@ export default function WikipediaSection({
 
       {/* Show section-specific content if available, otherwise show expanded or general extract */}
       {wikipediaData.section ? (
-        <Text style={overlayStyles.sectionText}>
+        <Text style={sharedUI.sectionText}>
           {wikipediaData.section.content}
         </Text>
       ) : (
-        <Text style={overlayStyles.sectionText}>
+        <Text style={sharedUI.sectionText}>
           {wikipediaData.expandedExtract || wikipediaData.extract}
         </Text>
       )}
@@ -169,7 +169,7 @@ export default function WikipediaSection({
       {wikipediaData.coordinates && (
         <Text
           style={[
-            overlayStyles.sectionText,
+            sharedUI.sectionText,
             {
               fontSize: 12,
               color: "#8a8a8a",
@@ -184,7 +184,7 @@ export default function WikipediaSection({
 
       <Text
         style={[
-          overlayStyles.sectionText,
+          sharedUI.sectionText,
           {
             fontSize: 12,
             color: "#8a8a8a",

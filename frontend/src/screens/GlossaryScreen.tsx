@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
-import { overlayStyles } from "../styles/overlayStyles";
 import { sharedUI } from "../styles/sharedUI";
 
 // ============================================================================
@@ -35,7 +34,7 @@ export default function GlossaryScreen({ navigation }: GlossaryScreenProps) {
         <View style={{ width: 18 }} />
       </TouchableOpacity>
       <ScrollView style={styles.scrollView}>
-        <View style={overlayStyles.section}>
+        <View style={sharedUI.modalSection}>
           <Text style={styles.glossaryTerm}>Correspondence</Text>
           <Text style={styles.glossaryDefinition}>
             A symbolic relationship between different elements in magic, such as
@@ -44,7 +43,7 @@ export default function GlossaryScreen({ navigation }: GlossaryScreenProps) {
           </Text>
         </View>
 
-        <View style={overlayStyles.section}>
+        <View style={sharedUI.modalSection}>
           <Text style={styles.glossaryTerm}>Elemental</Text>
           <Text style={styles.glossaryDefinition}>
             Relating to the four classical elements: Earth, Air, Fire, and
@@ -53,7 +52,7 @@ export default function GlossaryScreen({ navigation }: GlossaryScreenProps) {
           </Text>
         </View>
 
-        <View style={overlayStyles.section}>
+        <View style={sharedUI.modalSection}>
           <Text style={styles.glossaryTerm}>Ephemeris</Text>
           <Text style={styles.glossaryDefinition}>
             A table showing the positions of celestial bodies at specific times.
@@ -61,7 +60,7 @@ export default function GlossaryScreen({ navigation }: GlossaryScreenProps) {
           </Text>
         </View>
 
-        <View style={overlayStyles.section}>
+        <View style={sharedUI.modalSection}>
           <Text style={styles.glossaryTerm}>Natal Chart</Text>
           <Text style={styles.glossaryDefinition}>
             An astrological chart showing the positions of planets at the time
@@ -69,7 +68,7 @@ export default function GlossaryScreen({ navigation }: GlossaryScreenProps) {
           </Text>
         </View>
 
-        <View style={overlayStyles.section}>
+        <View style={sharedUI.modalSection}>
           <Text style={styles.glossaryTerm}>Physis</Text>
           <Text style={styles.glossaryDefinition}>
             A custom font containing astrological and magical symbols used
