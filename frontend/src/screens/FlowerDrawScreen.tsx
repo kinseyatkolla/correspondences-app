@@ -387,12 +387,8 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
               lastPinchDistance.current = currentDistance;
             }
           }}
-          onTouchEnd={(event: any) => {
-            const touches = event.nativeEvent.touches;
-            if (touches.length === 1) {
-              // Single finger - end drag
-              handleDragEnd(card.id);
-            }
+          onTouchEnd={() => {
+            handleDragEnd(card.id);
             lastPinchDistance.current = 0;
           }}
         >

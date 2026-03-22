@@ -6,6 +6,7 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useCallback,
   ReactNode,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -18,6 +19,8 @@ import type { TarotDeckId } from "../utils/tarotImageHelper";
 const TAROT_CACHE_KEY = "tarot_cache";
 const TAROT_DRAW_STATE_KEY = "tarot_draw_state";
 const TAROT_DECK_KEY = "tarot_deck";
+const TAROT_DRAW_REF_SYMBOLS_KEY = "tarot_draw_ref_symbols_enabled";
+const TAROT_DRAW_REF_KEYWORDS_KEY = "tarot_draw_ref_keywords_enabled";
 const CACHE_EXPIRY_HOURS = 24; // Cache for 24 hours
 
 export type { TarotDeckId };
@@ -49,6 +52,17 @@ interface TarotContextType {
   selectedDeck: TarotDeckId;
   setSelectedDeck: (deck: TarotDeckId) => void;
   saveSelectedDeck: (deck: TarotDeckId) => Promise<void>;
+  /** Optional reference images on the draw table (default off). */
+  drawRefSymbolsEnabled: boolean;
+  setDrawRefSymbolsEnabled: (value: boolean) => void;
+  drawRefKeywordsEnabled: boolean;
+  setDrawRefKeywordsEnabled: (value: boolean) => void;
+  /** Bump to re-center the symbols reference on the draw screen. */
+  drawRefSymbolsResetNonce: number;
+  requestDrawRefSymbolsCenter: () => void;
+  /** Bump to re-center the keywords reference on the draw screen. */
+  drawRefKeywordsResetNonce: number;
+  requestDrawRefKeywordsCenter: () => void;
   // Tarot draw state management
   drawState: CardData[];
   setDrawState: (cards: CardData[]) => void;
@@ -80,13 +94,48 @@ export function TarotProvider({ children }: TarotProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
-  const [selectedDeck, setSelectedDeckState] = useState<TarotDeckId>("rws");
+  const [selectedDeck, setSelectedDeckState] =
+    useState<TarotDeckId>("correspondences");
   const [drawState, setDrawState] = useState<CardData[]>([]);
+  const [drawRefSymbolsEnabled, setDrawRefSymbolsEnabledState] =
+    useState(false);
+  const [drawRefKeywordsEnabled, setDrawRefKeywordsEnabledState] =
+    useState(false);
+  const [drawRefSymbolsResetNonce, setDrawRefSymbolsResetNonce] = useState(0);
+  const [drawRefKeywordsResetNonce, setDrawRefKeywordsResetNonce] = useState(0);
+
+  const setDrawRefSymbolsEnabled = (value: boolean) => {
+    setDrawRefSymbolsEnabledState(value);
+    AsyncStorage.setItem(
+      TAROT_DRAW_REF_SYMBOLS_KEY,
+      value ? "true" : "false",
+    ).catch((err) =>
+      console.error("Error saving draw ref symbols preference:", err),
+    );
+  };
+
+  const setDrawRefKeywordsEnabled = (value: boolean) => {
+    setDrawRefKeywordsEnabledState(value);
+    AsyncStorage.setItem(
+      TAROT_DRAW_REF_KEYWORDS_KEY,
+      value ? "true" : "false",
+    ).catch((err) =>
+      console.error("Error saving draw ref keywords preference:", err),
+    );
+  };
+
+  const requestDrawRefSymbolsCenter = useCallback(() => {
+    setDrawRefSymbolsResetNonce((n) => n + 1);
+  }, []);
+
+  const requestDrawRefKeywordsCenter = useCallback(() => {
+    setDrawRefKeywordsResetNonce((n) => n + 1);
+  }, []);
 
   const setSelectedDeck = (deck: TarotDeckId) => {
     setSelectedDeckState(deck);
     AsyncStorage.setItem(TAROT_DECK_KEY, deck).catch((err) =>
-      console.error("Error saving tarot deck:", err)
+      console.error("Error saving tarot deck:", err),
     );
   };
 
@@ -110,7 +159,7 @@ export function TarotProvider({ children }: TarotProviderProps) {
         console.log(
           "TarotContext - Cache found with",
           parsedCache.data.length,
-          "cards"
+          "cards",
         );
         if (
           isCacheValid(parsedCache.timestamp) &&
@@ -150,7 +199,7 @@ export function TarotProvider({ children }: TarotProviderProps) {
     try {
       await AsyncStorage.setItem(
         TAROT_DRAW_STATE_KEY,
-        JSON.stringify(drawState)
+        JSON.stringify(drawState),
       );
       console.log("Tarot draw state saved");
     } catch (err) {
@@ -194,7 +243,7 @@ export function TarotProvider({ children }: TarotProviderProps) {
         console.log(
           "TarotContext - Loaded from cache:",
           cachedTarotCards.length,
-          "cards"
+          "cards",
         );
         setTarotCards(cachedTarotCards);
         setLastUpdated(new Date());
@@ -209,7 +258,7 @@ export function TarotProvider({ children }: TarotProviderProps) {
       console.log(
         "TarotContext - API response:",
         response.data.length,
-        "cards"
+        "cards",
       );
       console.log("TarotContext - Full response:", response);
       setTarotCards(response.data);
@@ -258,12 +307,18 @@ export function TarotProvider({ children }: TarotProviderProps) {
     await loadTarotCards();
   };
 
-  // Load selected deck from storage on mount
+  // Load selected deck and draw reference toggles from storage on mount
   useEffect(() => {
     AsyncStorage.getItem(TAROT_DECK_KEY).then((saved) => {
       if (saved === "rws" || saved === "correspondences") {
         setSelectedDeckState(saved);
       }
+    });
+    AsyncStorage.getItem(TAROT_DRAW_REF_SYMBOLS_KEY).then((v) => {
+      if (v === "true") setDrawRefSymbolsEnabledState(true);
+    });
+    AsyncStorage.getItem(TAROT_DRAW_REF_KEYWORDS_KEY).then((v) => {
+      if (v === "true") setDrawRefKeywordsEnabledState(true);
     });
   }, []);
 
@@ -300,6 +355,14 @@ export function TarotProvider({ children }: TarotProviderProps) {
     selectedDeck,
     setSelectedDeck,
     saveSelectedDeck,
+    drawRefSymbolsEnabled,
+    setDrawRefSymbolsEnabled,
+    drawRefKeywordsEnabled,
+    setDrawRefKeywordsEnabled,
+    drawRefSymbolsResetNonce,
+    requestDrawRefSymbolsCenter,
+    drawRefKeywordsResetNonce,
+    requestDrawRefKeywordsCenter,
     drawState,
     setDrawState,
     saveDrawState,

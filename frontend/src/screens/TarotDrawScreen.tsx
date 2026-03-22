@@ -15,13 +15,11 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
-  Alert,
   StatusBar,
   Vibration,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Accelerometer } from "expo-sensors";
-import { TarotCard } from "../services/api";
 import { useTarot, CardData } from "../contexts/TarotContext";
 import { drawCardBackgrounds, drawCardsUI } from "../styles/drawCardsUI";
 import {
@@ -44,6 +42,16 @@ const INITIAL_CARD_COUNT = 24; // Only render what's visible initially
 const MAX_CARD_COUNT = 78; // Total cards we can have (full tarot deck)
 const CARDS_TO_ADD_THRESHOLD = 5; // Add more cards when this many or fewer face-down cards remain
 
+const DRAW_REF_SYMBOLS_IMAGE = require("../../assets/images/tarot/correspondences/symbols.png");
+const DRAW_REF_KEYWORDS_IMAGE = require("../../assets/images/tarot/correspondences/keywords.png");
+
+function centerReferenceCardPosition() {
+  return {
+    x: (SCREEN_WIDTH - CARD_WIDTH) / 2,
+    y: (SCREEN_HEIGHT - CARD_HEIGHT) / 2,
+  };
+}
+
 /** Half the cards get an extra 180° so asymmetric back art (e.g. wear) varies; then slight tilt ±30°. */
 function randomFaceDownRotation(): number {
   const flipBack = Math.random() < 0.5 ? 180 : 0;
@@ -59,6 +67,10 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     tarotCards: allTarotCards,
     loading: tarotLoading,
     selectedDeck,
+    drawRefSymbolsEnabled,
+    drawRefKeywordsEnabled,
+    drawRefSymbolsResetNonce,
+    drawRefKeywordsResetNonce,
     drawState: cards,
     setDrawState: setCards,
     saveDrawState,
@@ -82,6 +94,30 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   );
   // Shuffle key to force immediate re-render on shuffle
   const [shuffleKey, setShuffleKey] = useState(0);
+
+  const [refSymbolsPos, setRefSymbolsPos] = useState(() =>
+    centerReferenceCardPosition(),
+  );
+  const [refKeywordsPos, setRefKeywordsPos] = useState(() =>
+    centerReferenceCardPosition(),
+  );
+  const [refTop, setRefTop] = useState<"symbols" | "keywords">("symbols");
+  const [draggedRef, setDraggedRef] = useState<null | "symbols" | "keywords">(
+    null,
+  );
+  const refDragOffsetRef = useRef({ x: 0, y: 0 });
+  const refSymbolsPosRef = useRef(refSymbolsPos);
+  const refKeywordsPosRef = useRef(refKeywordsPos);
+  refSymbolsPosRef.current = refSymbolsPos;
+  refKeywordsPosRef.current = refKeywordsPos;
+
+  useEffect(() => {
+    setRefSymbolsPos(centerReferenceCardPosition());
+  }, [drawRefSymbolsResetNonce]);
+
+  useEffect(() => {
+    setRefKeywordsPos(centerReferenceCardPosition());
+  }, [drawRefKeywordsResetNonce]);
 
   // ===== LIFECYCLE =====
   useFocusEffect(
@@ -430,6 +466,94 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     return Math.sqrt(dx * dx + dy * dy);
   };
 
+  const refBaseZ = maxZIndex + 160;
+  const refSymbolsZ =
+    refBaseZ + (refTop === "symbols" ? 2 : 0);
+  const refKeywordsZ =
+    refBaseZ + (refTop === "keywords" ? 2 : 0);
+
+  const handleRefDragStart = (kind: "symbols" | "keywords", event: any) => {
+    const touches = event.nativeEvent.touches;
+    if (touches.length !== 1) return;
+    const touch = touches[0];
+    setRefTop(kind);
+    setDraggedRef(kind);
+    const pos =
+      kind === "symbols"
+        ? refSymbolsPosRef.current
+        : refKeywordsPosRef.current;
+    refDragOffsetRef.current = {
+      x: touch.pageX - pos.x,
+      y: touch.pageY - pos.y,
+    };
+  };
+
+  const handleRefDragMove = (kind: "symbols" | "keywords", event: any) => {
+    if (draggedRef !== kind) return;
+    const touches = event.nativeEvent.touches;
+    if (touches.length !== 1) return;
+    const t = touches[0];
+    const nx = t.pageX - refDragOffsetRef.current.x;
+    const ny = t.pageY - refDragOffsetRef.current.y;
+    if (kind === "symbols") {
+      setRefSymbolsPos({ x: nx, y: ny });
+    } else {
+      setRefKeywordsPos({ x: nx, y: ny });
+    }
+  };
+
+  const handleRefDragEnd = (kind: "symbols" | "keywords") => {
+    if (draggedRef === kind) {
+      setDraggedRef(null);
+    }
+  };
+
+  const renderDrawReferenceCard = (
+    kind: "symbols" | "keywords",
+    pos: { x: number; y: number },
+    zStyle: number,
+    source: typeof DRAW_REF_SYMBOLS_IMAGE,
+  ) => (
+    <View
+      key={`draw-ref-${kind}`}
+      style={[
+        drawCardsUI.card,
+        {
+          left: pos.x,
+          top: pos.y,
+          transform: [{ rotate: "0deg" }],
+          zIndex: zStyle,
+          elevation: zStyle,
+        },
+      ]}
+    >
+        <View
+          onTouchStart={(e: any) => {
+            const touches = e.nativeEvent.touches;
+            if (touches.length === 1) {
+              handleRefDragStart(kind, e);
+            }
+          }}
+          onTouchMove={(e: any) => {
+            const touches = e.nativeEvent.touches;
+            if (touches.length === 1) {
+              handleRefDragMove(kind, e);
+            }
+          }}
+          onTouchEnd={() => handleRefDragEnd(kind)}
+        >
+          {/* Plain View: avoids nested Pressability with parent touch handlers (trackedTouchCount). */}
+          <View style={drawCardsUI.cardTouchable}>
+            <Image
+              source={source}
+              style={drawCardsUI.cardImage}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
+    </View>
+  );
+
   // ===== RENDER CARD =====
   const renderCard = (card: CardData) => {
     return (
@@ -477,12 +601,9 @@ export default function TarotDrawScreen({ navigation, route }: any) {
               lastPinchDistance.current = currentDistance;
             }
           }}
-          onTouchEnd={(event: any) => {
-            const touches = event.nativeEvent.touches;
-            if (touches.length === 1) {
-              // Single finger - end drag
-              handleDragEnd(card.id);
-            }
+          onTouchEnd={() => {
+            // Always end drag on finger-up; touches.length is often 0 here, not 1.
+            handleDragEnd(card.id);
             lastPinchDistance.current = 0;
           }}
         >
@@ -563,7 +684,23 @@ export default function TarotDrawScreen({ navigation, route }: any) {
         activeOpacity={1}
       />
       {/* Cards Container - Full Screen */}
-      <View style={drawCardsUI.cardsContainer}>{cards.map(renderCard)}</View>
+      <View style={drawCardsUI.cardsContainer}>
+        {cards.map(renderCard)}
+        {drawRefKeywordsEnabled &&
+          renderDrawReferenceCard(
+            "keywords",
+            refKeywordsPos,
+            refKeywordsZ,
+            DRAW_REF_KEYWORDS_IMAGE,
+          )}
+        {drawRefSymbolsEnabled &&
+          renderDrawReferenceCard(
+            "symbols",
+            refSymbolsPos,
+            refSymbolsZ,
+            DRAW_REF_SYMBOLS_IMAGE,
+          )}
+      </View>
       {/* Search Navigation Bar - Moved to bottom */}
       {/* TODO: Uncomment when ready to implement search functionality */}
       {/* <TouchableOpacity

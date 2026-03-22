@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Animated,
   ScrollView,
+  Switch,
 } from "react-native";
 import { useTarot } from "../contexts/TarotContext";
 import { TAROT_DECKS } from "../utils/tarotImageHelper";
@@ -24,7 +25,16 @@ export default function TarotSettingsDrawer({
   visible,
   onClose,
 }: TarotSettingsDrawerProps) {
-  const { selectedDeck, setSelectedDeck } = useTarot();
+  const {
+    selectedDeck,
+    setSelectedDeck,
+    drawRefSymbolsEnabled,
+    setDrawRefSymbolsEnabled,
+    drawRefKeywordsEnabled,
+    setDrawRefKeywordsEnabled,
+    requestDrawRefSymbolsCenter,
+    requestDrawRefKeywordsCenter,
+  } = useTarot();
   const drawerAnimation = useRef(new Animated.Value(0)).current;
   const prevVisibleRef = useRef(visible);
 
@@ -124,6 +134,48 @@ export default function TarotSettingsDrawer({
                 </TouchableOpacity>
               ))}
             </View>
+
+            <View style={styles.refSection}>
+              <Text style={[sharedUI.sectionTitle, { marginBottom: 12 }]}>
+                Reference Cards
+              </Text>
+              <View style={styles.refRow}>
+                <Text style={styles.refLabel}>
+                  Astrological & elemental symbols
+                </Text>
+                <Switch
+                  value={drawRefSymbolsEnabled}
+                  onValueChange={setDrawRefSymbolsEnabled}
+                  trackColor={{ false: "#444", true: "#6b4c9a" }}
+                  thumbColor={drawRefSymbolsEnabled ? "#e6e6fa" : "#8a8a8a"}
+                />
+                <TouchableOpacity
+                  style={styles.resetBtn}
+                  onPress={requestDrawRefSymbolsCenter}
+                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                >
+                  <Text style={styles.resetBtnText}>RESET</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.refRow}>
+                <Text style={styles.refLabel}>
+                  Numerical & elemental keywords
+                </Text>
+                <Switch
+                  value={drawRefKeywordsEnabled}
+                  onValueChange={setDrawRefKeywordsEnabled}
+                  trackColor={{ false: "#444", true: "#6b4c9a" }}
+                  thumbColor={drawRefKeywordsEnabled ? "#e6e6fa" : "#8a8a8a"}
+                />
+                <TouchableOpacity
+                  style={styles.resetBtn}
+                  onPress={requestDrawRefKeywordsCenter}
+                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                >
+                  <Text style={styles.resetBtnText}>RESET</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </ScrollView>
         </Animated.View>
       </View>
@@ -132,6 +184,38 @@ export default function TarotSettingsDrawer({
 }
 
 const styles = StyleSheet.create({
+  refSection: {
+    marginTop: 8,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.12)",
+  },
+  refRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    gap: 10,
+  },
+  refLabel: {
+    flex: 1,
+    fontSize: 15,
+    color: "#e6e6fa",
+    fontWeight: "500",
+  },
+  resetBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "rgba(230,230,250,0.35)",
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  resetBtnText: {
+    color: "#b19cd9",
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
   deckOptionRow: {
     flexDirection: "row",
     alignItems: "center",
