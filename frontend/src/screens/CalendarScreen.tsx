@@ -1614,23 +1614,23 @@ export default function CalendarScreen({ navigation }: any) {
       {/* Year Navigation Header - Centered with toggle button on left and Today button on right */}
       <View style={styles.headerContainer}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity
-            style={styles.viewModeToggleButton}
-            onPress={() => {
-              if (isToggleDisabled) return;
-              setIsToggleDisabled(true);
-              setViewMode(viewMode === "LIST" ? "LINES" : "LIST");
-              setTimeout(() => {
-                setIsToggleDisabled(false);
-              }, 500);
-            }}
-            activeOpacity={0.7}
-            disabled={isToggleDisabled}
-          >
-            <Text style={styles.viewModeToggleButtonText}>
-              {viewMode === "LIST" ? "LINES" : "LIST"}
-            </Text>
-          </TouchableOpacity>
+          {viewMode === "LIST" && (
+            <TouchableOpacity
+              style={styles.viewModeToggleButton}
+              onPress={() => {
+                if (isToggleDisabled) return;
+                setIsToggleDisabled(true);
+                setViewMode("LINES");
+                setTimeout(() => {
+                  setIsToggleDisabled(false);
+                }, 500);
+              }}
+              activeOpacity={0.7}
+              disabled={isToggleDisabled}
+            >
+              <Text style={styles.viewModeToggleButtonText}>LINES</Text>
+            </TouchableOpacity>
+          )}
         </View>
         <View style={styles.headerCenter}>
           <TouchableOpacity
@@ -1668,6 +1668,23 @@ export default function CalendarScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
         <View style={styles.headerRight}>
+          {viewMode === "LINES" && (
+            <TouchableOpacity
+              style={styles.viewModeToggleButton}
+              onPress={() => {
+                if (isToggleDisabled) return;
+                setIsToggleDisabled(true);
+                setViewMode("LIST");
+                setTimeout(() => {
+                  setIsToggleDisabled(false);
+                }, 500);
+              }}
+              activeOpacity={0.7}
+              disabled={isToggleDisabled}
+            >
+              <Text style={styles.viewModeToggleButtonText}>LIST</Text>
+            </TouchableOpacity>
+          )}
           {(viewMode !== "LINES" ||
             selectedYear !== new Date().getFullYear()) && (
             <TouchableOpacity

@@ -54,6 +54,7 @@ function FlowersStack() {
         options={{
           headerShown: false,
           presentation: "modal",
+          gestureEnabled: false,
         }}
       />
       <Stack.Screen
@@ -101,6 +102,7 @@ function TarotStack() {
         options={{
           headerShown: false,
           presentation: "modal",
+          gestureEnabled: false,
         }}
       />
     </Stack.Navigator>

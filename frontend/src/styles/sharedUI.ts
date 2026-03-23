@@ -46,22 +46,6 @@ export const sharedUI = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-  smallButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 3,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
-    flex: 1,
-    marginHorizontal: 4,
-    alignItems: "center",
-  },
-  smallButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#e6e6fa",
-  },
   backButton: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderRadius: 8,
@@ -214,17 +198,6 @@ export const sharedUI = StyleSheet.create({
     fontSize: 14,
   },
 
-  // Categories container
-  categoriesContainer: {
-    paddingTop: 10,
-    paddingBottom: 20,
-  },
-  categoryRow: {
-    flexDirection: "row",
-    marginBottom: 15,
-    justifyContent: "space-between",
-  },
-
   // Results container
   resultsContainer: {
     marginTop: 20,
@@ -255,14 +228,6 @@ export const sharedUI = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 20,
   },
-  section: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
@@ -273,45 +238,6 @@ export const sharedUI = StyleSheet.create({
     fontSize: 16,
     color: "#e6e6fa",
     lineHeight: 24,
-  },
-
-  // Physis font styles
-  physisSymbolLarge: {
-    fontFamily: "Physis",
-    fontSize: 36,
-  },
-  physisSymbolMedium: {
-    fontFamily: "Physis",
-    fontSize: 24,
-  },
-  physisSymbolSmall: {
-    fontFamily: "Physis",
-    fontSize: 18,
-  },
-  physisSymbolExtraSmall: {
-    fontFamily: "Physis",
-    fontSize: 16,
-  },
-
-  // Navigation bar styles (black bar with white all-caps text)
-  navBar: {
-    height: 40,
-    backgroundColor: "#000000",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  navBarArrow: {
-    color: "#e6e6fa",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  navBarText: {
-    color: "#e6e6fa",
-    fontSize: 14,
-    fontWeight: "bold",
-    letterSpacing: 4,
   },
 
   modalOverlay: {

@@ -17,14 +17,6 @@ export const drawCardsUI = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  backGestureArea: {
-    position: "absolute",
-    top: 40,
-    left: 0,
-    right: 0,
-    height: 50,
-    zIndex: 9999,
-  },
   searchNavBar: {
     position: "absolute",
     bottom: 0,

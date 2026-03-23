@@ -446,12 +446,6 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
       ]}
     >
       <StatusBar hidden={true} />
-      {/* Back gesture area */}
-      <TouchableOpacity
-        style={drawCardsUI.backGestureArea}
-        onPress={() => navigation.goBack()}
-        activeOpacity={1}
-      />
       {/* Cards Container - Full Screen */}
       <View style={drawCardsUI.cardsContainer}>{cards.map(renderCard)}</View>
       {/* Search Navigation Bar - Moved to bottom */}

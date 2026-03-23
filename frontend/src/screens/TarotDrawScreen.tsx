@@ -422,6 +422,19 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     flipCard(cardId);
   };
 
+  const handleCardLongPress = (card: CardData) => {
+    if (card.isDragging) return;
+
+    // Front image: open detail page for this assigned tarot card.
+    if (card.isFlipped && card.tarotCard?._id) {
+      navigation.navigate("TarotCardDetail", { cardId: card.tarotCard._id });
+      return;
+    }
+
+    // Back image: keep existing behavior (flip card).
+    handleCardFlip(card.id);
+  };
+
   const handleDragStart = (cardId: string, event: any) => {
     const touch = event.nativeEvent.touches[0];
     const card = cards.find((c) => c.id === cardId);
@@ -611,9 +624,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
               }
             }}
             onLongPress={() => {
-              if (!card.isDragging) {
-                handleCardFlip(card.id);
-              }
+              handleCardLongPress(card);
             }}
             activeOpacity={1}
           >
@@ -673,12 +684,6 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       ]}
     >
       <StatusBar hidden={true} />
-      {/* Back gesture area */}
-      <TouchableOpacity
-        style={drawCardsUI.backGestureArea}
-        onPress={() => navigation.goBack()}
-        activeOpacity={1}
-      />
       {/* Cards Container - Full Screen */}
       <View style={drawCardsUI.cardsContainer}>
         {cards.map(renderCard)}

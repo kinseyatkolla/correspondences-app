@@ -161,7 +161,7 @@ export default function TarotCardDetailScreen() {
         activeOpacity={0.8}
       >
         <Text style={styles.bottomNavArrow}>‹</Text>
-        <Text style={styles.bottomNavText}>BACK TO LIST</Text>
+        <Text style={styles.bottomNavText}>BACK</Text>
       </TouchableOpacity>
     </View>
   );

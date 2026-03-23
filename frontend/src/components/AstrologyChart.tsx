@@ -109,12 +109,40 @@ const degreesToRadians = (degrees: number): number => {
 };
 
 /**
+ * Get two points aligned with the radial direction from chart center.
+ * inner is closer to center, outer is farther from center.
+ */
+const getRadialLabelPairPositions = (
+  labelX: number,
+  labelY: number,
+  separation = 16,
+) => {
+  const dx = labelX - CENTER_X;
+  const dy = labelY - CENTER_Y;
+  const length = Math.sqrt(dx * dx + dy * dy) || 1;
+  const unitX = dx / length;
+  const unitY = dy / length;
+  const halfSeparation = separation / 2;
+
+  return {
+    inner: {
+      x: labelX - unitX * halfSeparation,
+      y: labelY - unitY * halfSeparation,
+    },
+    outer: {
+      x: labelX + unitX * halfSeparation,
+      y: labelY + unitY * halfSeparation,
+    },
+  };
+};
+
+/**
  * Convert longitude to chart position (adjusting for chart orientation)
  */
 const longitudeToPosition = (
   longitude: number,
   radius: number,
-  ascendantSign?: string
+  ascendantSign?: string,
 ) => {
   // Calculate rotation offset based on ascendant sign
   // We want the ascendant's zodiac sign to be positioned at the left side, just below horizontal
@@ -175,26 +203,82 @@ const getZodiacSignColor = (signName: string): string => {
 };
 
 /**
+ * When several planets are close in longitude, nudge each label a few degrees
+ * along the circle (CW/CCW from the cluster center) so glyphs don't stack.
+ * True longitudes are unchanged for aspect lines and wheel markers.
+ */
+const computeLabelLongitudeOffsets = (
+  planetEntries: Array<[string, ApiPlanetPosition]>,
+): Record<string, number> => {
+  const LABEL_CLUSTER_THRESHOLD_DEG = 8;
+  /** Degrees between adjacent labels in a cluster (symmetric around cluster middle). */
+  const LABEL_SPREAD_STEP_DEG = 3;
+
+  const offsets: Record<string, number> = {};
+  if (planetEntries.length === 0) return offsets;
+
+  const sorted = [...planetEntries].sort(
+    (a, b) => a[1].longitude - b[1].longitude,
+  );
+
+  const flushCluster = (cluster: Array<[string, ApiPlanetPosition]>) => {
+    if (cluster.length <= 1) {
+      if (cluster.length === 1) offsets[cluster[0][0]] = 0;
+      return;
+    }
+    const n = cluster.length;
+    const mid = (n - 1) / 2;
+    cluster.forEach(([name], index) => {
+      offsets[name] = (index - mid) * LABEL_SPREAD_STEP_DEG;
+    });
+  };
+
+  let cluster: Array<[string, ApiPlanetPosition]> = [];
+  for (let i = 0; i < sorted.length; i++) {
+    const entry = sorted[i];
+    if (cluster.length === 0) {
+      cluster.push(entry);
+      continue;
+    }
+    const prevLon = cluster[cluster.length - 1][1].longitude;
+    const lon = entry[1].longitude;
+    if (Math.abs(lon - prevLon) <= LABEL_CLUSTER_THRESHOLD_DEG) {
+      cluster.push(entry);
+    } else {
+      flushCluster(cluster);
+      cluster = [entry];
+    }
+  }
+  flushCluster(cluster);
+
+  return offsets;
+};
+
+/**
  * Get planet positions for the chart
  */
 const getPlanetPositions = (
   planets: Record<string, ApiPlanetPosition>,
   fontLoaded: boolean,
-  ascendantSign?: string
+  ascendantSign?: string,
 ): ChartPlanetPosition[] => {
   const planetKeys = getPlanetKeysFromNames();
   const zodiacKeys = getZodiacKeysFromNames();
+  const planetEntries = Object.entries(planets);
+  const labelLongitudeOffsets = computeLabelLongitudeOffsets(planetEntries);
 
-  return Object.entries(planets).map(([planetName, planet]) => {
+  return planetEntries.map(([planetName, planet]) => {
     const aspectPosition = longitudeToPosition(
       planet.longitude,
       PLANETS_RADIUS,
-      ascendantSign
+      ascendantSign,
     );
+    const labelLongitude =
+      planet.longitude + (labelLongitudeOffsets[planetName] ?? 0);
     const labelPosition = longitudeToPosition(
-      planet.longitude,
+      labelLongitude,
       PLANET_LABELS_RADIUS,
-      ascendantSign
+      ascendantSign,
     );
     const capitalizedName =
       planetName.charAt(0).toUpperCase() + planetName.slice(1);
@@ -220,7 +304,7 @@ const getPlanetPositions = (
  */
 const getAspectLines = (
   planets: ChartPlanetPosition[],
-  ascendantSign?: string
+  ascendantSign?: string,
 ) => {
   const lines: Array<{
     x1: number;
@@ -241,27 +325,27 @@ const getAspectLines = (
       const conjunct = checkForConjunct(
         { longitude: planet1.degree, zodiacSignName: planet1.sign } as any,
         { longitude: planet2.degree, zodiacSignName: planet2.sign } as any,
-        7
+        7,
       );
       const opposition = checkForOpposition(
         { longitude: planet1.degree, zodiacSignName: planet1.sign } as any,
         { longitude: planet2.degree, zodiacSignName: planet2.sign } as any,
-        7
+        7,
       );
       const square = checkForSquare(
         { longitude: planet1.degree, zodiacSignName: planet1.sign } as any,
         { longitude: planet2.degree, zodiacSignName: planet2.sign } as any,
-        7
+        7,
       );
       const trine = checkForTrine(
         { longitude: planet1.degree, zodiacSignName: planet1.sign } as any,
         { longitude: planet2.degree, zodiacSignName: planet2.sign } as any,
-        7
+        7,
       );
       const sextile = checkForSextile(
         { longitude: planet1.degree, zodiacSignName: planet1.sign } as any,
         { longitude: planet2.degree, zodiacSignName: planet2.sign } as any,
-        7
+        7,
       );
 
       // Helper function to determine stroke width based on orb
@@ -276,12 +360,12 @@ const getAspectLines = (
       const planet1AspectPos = longitudeToPosition(
         planet1.degree,
         ASPECT_LINES_RADIUS,
-        ascendantSign
+        ascendantSign,
       );
       const planet2AspectPos = longitudeToPosition(
         planet2.degree,
         ASPECT_LINES_RADIUS,
-        ascendantSign
+        ascendantSign,
       );
 
       if (conjunct.hasAspect) {
@@ -393,7 +477,7 @@ export default function AstrologyChart({
   const planetPositions = getPlanetPositions(
     planets,
     fontLoaded,
-    ascendantSign
+    ascendantSign,
   );
   const aspectLines = getAspectLines(planetPositions, ascendantSign);
 
@@ -433,12 +517,12 @@ export default function AstrologyChart({
             const ascendantPosition = longitudeToPosition(
               houses.ascendant,
               PLANETS_RADIUS,
-              ascendantSign
+              ascendantSign,
             );
             const ascendantLabelPosition = longitudeToPosition(
               houses.ascendant,
               PLANET_LABELS_RADIUS,
-              ascendantSign
+              ascendantSign,
             );
             const ascendantSignColor = getZodiacSignColor(houses.ascendantSign);
 
@@ -469,12 +553,12 @@ export default function AstrologyChart({
             const mcPosition = longitudeToPosition(
               houses.mc,
               PLANETS_RADIUS,
-              ascendantSign
+              ascendantSign,
             );
             const mcLabelPosition = longitudeToPosition(
               houses.mc,
               PLANET_LABELS_RADIUS,
-              ascendantSign
+              ascendantSign,
             );
             const mcSignColor = getZodiacSignColor(houses.mcSign);
 
@@ -501,7 +585,7 @@ export default function AstrologyChart({
           const position = longitudeToPosition(
             signCenterLongitude,
             ZODIAC_RADIUS,
-            ascendantSign
+            ascendantSign,
           );
 
           // Calculate the start and end angles for the pie slice
@@ -512,12 +596,12 @@ export default function AstrologyChart({
           const startPos = longitudeToPosition(
             startAngle,
             ZODIAC_RADIUS,
-            ascendantSign
+            ascendantSign,
           );
           const endPos = longitudeToPosition(
             endAngle,
             ZODIAC_RADIUS,
-            ascendantSign
+            ascendantSign,
           );
 
           return (
@@ -570,13 +654,17 @@ export default function AstrologyChart({
         {/* Planets */}
         {testPlanetPositions.map((planet, index) => {
           const signColor = getZodiacSignColor(planet.sign);
+          const radialLabelPositions = getRadialLabelPairPositions(
+            planet.labelX,
+            planet.labelY,
+          );
           return (
             <G key={planet.name}>
               {/* Planet symbol with Physis font */}
               <SvgText
-                x={planet.labelX - 8}
-                y={planet.labelY + 5}
-                fontSize="16"
+                x={radialLabelPositions.inner.x}
+                y={radialLabelPositions.inner.y + 5}
+                fontSize="20"
                 fill={signColor}
                 stroke={signColor}
                 strokeWidth="0.6"
@@ -588,9 +676,9 @@ export default function AstrologyChart({
               </SvgText>
               {/* Planet degree with system font */}
               <SvgText
-                x={planet.labelX + 8}
-                y={planet.labelY + 5}
-                fontSize="12"
+                x={radialLabelPositions.outer.x}
+                y={radialLabelPositions.outer.y + 5}
+                fontSize="15"
                 fill={signColor}
                 textAnchor="middle"
                 fontFamily="System"
@@ -623,19 +711,23 @@ export default function AstrologyChart({
               const ascendantLabelPosition = longitudeToPosition(
                 houses.ascendant,
                 PLANET_LABELS_RADIUS,
-                ascendantSign
+                ascendantSign,
+              );
+              const radialLabelPositions = getRadialLabelPairPositions(
+                ascendantLabelPosition.x,
+                ascendantLabelPosition.y,
               );
               const ascendantSignColor = getZodiacSignColor(
-                houses.ascendantSign
+                houses.ascendantSign,
               );
 
               return (
                 <>
                   {/* Ascendant symbol with Physis font */}
                   <SvgText
-                    x={ascendantLabelPosition.x - 8}
-                    y={ascendantLabelPosition.y + 5}
-                    fontSize="14"
+                    x={radialLabelPositions.inner.x}
+                    y={radialLabelPositions.inner.y + 5}
+                    fontSize="18"
                     fill={ascendantSignColor}
                     stroke={ascendantSignColor}
                     strokeWidth="0.6"
@@ -647,9 +739,9 @@ export default function AstrologyChart({
                   </SvgText>
                   {/* Ascendant degree with system font */}
                   <SvgText
-                    x={ascendantLabelPosition.x + 8}
-                    y={ascendantLabelPosition.y + 5}
-                    fontSize="12"
+                    x={radialLabelPositions.outer.x}
+                    y={radialLabelPositions.outer.y + 5}
+                    fontSize="15"
                     fill={ascendantSignColor}
                     textAnchor="middle"
                     fontFamily="System"
@@ -670,7 +762,11 @@ export default function AstrologyChart({
               const mcLabelPosition = longitudeToPosition(
                 houses.mc,
                 PLANET_LABELS_RADIUS,
-                ascendantSign
+                ascendantSign,
+              );
+              const radialLabelPositions = getRadialLabelPairPositions(
+                mcLabelPosition.x,
+                mcLabelPosition.y,
               );
               const mcSignColor = getZodiacSignColor(houses.mcSign);
 
@@ -678,9 +774,9 @@ export default function AstrologyChart({
                 <>
                   {/* Midheaven symbol with Physis font */}
                   <SvgText
-                    x={mcLabelPosition.x - 8}
-                    y={mcLabelPosition.y + 5}
-                    fontSize="14"
+                    x={radialLabelPositions.inner.x}
+                    y={radialLabelPositions.inner.y + 5}
+                    fontSize="18"
                     fill={mcSignColor}
                     stroke={mcSignColor}
                     strokeWidth="0.6"
@@ -692,9 +788,9 @@ export default function AstrologyChart({
                   </SvgText>
                   {/* Midheaven degree with system font */}
                   <SvgText
-                    x={mcLabelPosition.x + 8}
-                    y={mcLabelPosition.y + 5}
-                    fontSize="12"
+                    x={radialLabelPositions.outer.x}
+                    y={radialLabelPositions.outer.y + 5}
+                    fontSize="15"
                     fill={mcSignColor}
                     textAnchor="middle"
                     fontFamily="System"
