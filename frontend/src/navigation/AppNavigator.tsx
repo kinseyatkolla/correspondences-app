@@ -18,6 +18,7 @@ import MoonScreen from "../screens/MoonScreen";
 import TithiInfoScreen from "../screens/TithiInfoScreen";
 import TarotScreen from "../screens/TarotScreen";
 import TarotDrawScreen from "../screens/TarotDrawScreen";
+import TarotCardDetailScreen from "../screens/TarotCardDetailScreen";
 import FlowersScreen from "../screens/FlowersScreen";
 import FlowerDrawScreen from "../screens/FlowerDrawScreen";
 import AstrologyScreen from "../screens/AstrologyScreen";
@@ -64,10 +65,11 @@ function FlowersStack() {
   );
 }
 
-// Tarot Stack Navigator
+// Tarot Stack Navigator — TarotList is the browse/search screen; TarotDraw is the default tab landing.
 function TarotStack() {
   return (
     <Stack.Navigator
+      initialRouteName="TarotDraw"
       screenOptions={{
         headerStyle: {
           backgroundColor: "#000000",
@@ -84,17 +86,22 @@ function TarotStack() {
       }}
     >
       <Stack.Screen
+        name="TarotList"
+        component={TarotScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="TarotCardDetail"
+        component={TarotCardDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="TarotDraw"
         component={TarotDrawScreen}
         options={{
           headerShown: false,
           presentation: "modal",
         }}
-      />
-      <Stack.Screen
-        name="TarotList"
-        component={TarotScreen}
-        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

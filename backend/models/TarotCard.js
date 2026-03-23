@@ -14,7 +14,7 @@ const tarotCardSchema = new mongoose.Schema(
     suit: {
       type: String,
       required: true,
-      enum: ["Major Arcana", "Cups", "Wands", "Swords", "Pentacles"],
+      enum: ["Major Arcana", "Cups", "Wands", "Swords", "Coins"],
     },
     keywords: [
       {
@@ -22,14 +22,12 @@ const tarotCardSchema = new mongoose.Schema(
         trim: true,
       },
     ],
-    uprightMeaning: {
+    esotericTitle: {
       type: String,
-      required: true,
       trim: true,
     },
-    reversedMeaning: {
+    decanKeyword: {
       type: String,
-      required: true,
       trim: true,
     },
     description: {
@@ -43,7 +41,15 @@ const tarotCardSchema = new mongoose.Schema(
     },
     element: {
       type: String,
-      enum: ["Fire", "Water", "Air", "Earth", "Spirit"],
+      enum: ["Fire", "Water", "Air", "Earth"],
+    },
+    dates: {
+      type: String,
+      trim: true,
+    },
+    decan: {
+      type: String,
+      trim: true,
     },
     imageName: {
       type: String,
@@ -56,15 +62,17 @@ const tarotCardSchema = new mongoose.Schema(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
-  }
+  },
 );
 
 // Create indexes for better search performance
 tarotCardSchema.index({
   name: "text",
   description: "text",
-  uprightMeaning: "text",
-  reversedMeaning: "text",
+  esotericTitle: "text",
+  decanKeyword: "text",
+  dates: "text",
+  decan: "text",
 });
 tarotCardSchema.index({ name: 1 });
 tarotCardSchema.index({ suit: 1 });

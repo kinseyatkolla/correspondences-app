@@ -121,11 +121,17 @@ export interface TarotCard {
   number: number;
   suit: string;
   keywords: string[];
-  uprightMeaning: string;
-  reversedMeaning: string;
+  /** Thoth-style or traditional esoteric title */
+  esotericTitle?: string;
+  /** Decan / minor arcana keyword line */
+  decanKeyword?: string;
   description: string;
   astrologicalCorrespondence?: string;
   element?: string;
+  /** Seasonal or zodiac date range as free text */
+  dates?: string;
+  /** Decan label (e.g. first third of a sign) */
+  decan?: string;
   imageName?: string;
   isMajorArcana: boolean;
   createdAt: string;

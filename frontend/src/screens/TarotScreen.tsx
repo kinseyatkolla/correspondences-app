@@ -6,65 +6,31 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TextInput,
   TouchableOpacity,
-  Modal,
   ScrollView,
   ActivityIndicator,
-  Alert,
-  Image,
 } from "react-native";
 import { TarotCard } from "../services/api";
 import { useTarot } from "../contexts/TarotContext";
-import {
-  getTarotImages,
-  resolveTarotFaceFromMap,
-} from "../utils/tarotImageHelper";
 import { sharedUI } from "../styles/sharedUI";
+import { drawCardBackgrounds } from "../styles/drawCardsUI";
 import OnboardingOverlay from "../components/OnboardingOverlay";
 
 // ============================================================================
 // COMPONENT
 // ============================================================================
-export default function TarotScreen({ navigation, route }: any) {
-  const {
-    tarotCards: allTarotCards,
-    loading: tarotLoading,
-    selectedDeck,
-  } = useTarot();
+export default function TarotScreen({ navigation }: any) {
+  const { tarotCards: allTarotCards, loading: tarotLoading } = useTarot();
   const [tarotCards, setTarotCards] = useState<TarotCard[]>([]);
   const [filteredCards, setFilteredCards] = useState<TarotCard[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCard, setSelectedCard] = useState<TarotCard | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   // ===== LIFECYCLE =====
   useEffect(() => {
     filterTarotCards(searchQuery, selectedCategory ?? "");
   }, [allTarotCards, searchQuery, selectedCategory]);
-
-  // Handle navigation params (e.g., from Book of Shadows)
-  useEffect(() => {
-    if (route?.params?.searchQuery && allTarotCards.length > 0) {
-      const query = route.params.searchQuery;
-      setSearchQuery(query);
-
-      // Find and open the matching card
-      const matchingCard = allTarotCards.find(
-        (card) => card.name.toLowerCase() === query.toLowerCase(),
-      );
-
-      if (matchingCard) {
-        setSelectedCard(matchingCard);
-        setModalVisible(true);
-      }
-
-      // Clear the param after processing
-      navigation.setParams({ searchQuery: undefined });
-    }
-  }, [route?.params?.searchQuery, allTarotCards]);
 
   // ===== FILTERING FUNCTIONS =====
   const filterTarotCards = useCallback(
@@ -75,13 +41,23 @@ export default function TarotScreen({ navigation, route }: any) {
         return;
       }
 
+      const q = search.toLowerCase();
+      const hay = (s?: string) => (s ?? "").toLowerCase().includes(q);
+
       const filtered = allTarotCards.filter((card) => {
+        const keywordMatch =
+          (card.keywords ?? []).some((k) => k.toLowerCase().includes(q)) ||
+          false;
         const matchesSearch =
           !search.trim() ||
-          card.name.toLowerCase().includes(search.toLowerCase()) ||
-          card.uprightMeaning.toLowerCase().includes(search.toLowerCase()) ||
-          card.reversedMeaning.toLowerCase().includes(search.toLowerCase()) ||
-          card.description.toLowerCase().includes(search.toLowerCase());
+          card.name.toLowerCase().includes(q) ||
+          hay(card.description) ||
+          hay(card.esotericTitle) ||
+          hay(card.decanKeyword) ||
+          hay(card.dates) ||
+          hay(card.decan) ||
+          hay(card.astrologicalCorrespondence) ||
+          keywordMatch;
 
         const matchesSuit = !suit || card.suit === suit;
 
@@ -126,32 +102,10 @@ export default function TarotScreen({ navigation, route }: any) {
   };
 
   const handleCardPress = (card: TarotCard) => {
-    setSelectedCard(card);
-    setModalVisible(true);
-  };
-
-  const getElementEmoji = (element?: string) => {
-    switch (element) {
-      case "Fire":
-        return "🔥";
-      case "Water":
-        return "💧";
-      case "Air":
-        return "💨";
-      case "Earth":
-        return "🌍";
-      case "Spirit":
-        return "✨";
-      default:
-        return "";
+    if (card._id) {
+      navigation.navigate("TarotCardDetail", { cardId: card._id });
     }
   };
-
-  // ===== DATA & CONSTANTS =====
-  const tarotFaceImages = getTarotImages(selectedDeck ?? "rws");
-
-  const getCardImageSource = (card: TarotCard) =>
-    resolveTarotFaceFromMap(tarotFaceImages, card.imageName);
 
   // ===== RENDER HELPERS =====
   const renderCategorySection = (
@@ -209,7 +163,12 @@ export default function TarotScreen({ navigation, route }: any) {
   // ===== LOADING STATES =====
   if (tarotLoading) {
     return (
-      <View style={[sharedUI.loadingContainer, { backgroundColor: "#0f1a3f" }]}>
+      <View
+        style={[
+          sharedUI.loadingContainer,
+          { backgroundColor: drawCardBackgrounds.tarot },
+        ]}
+      >
         <ActivityIndicator size="large" color="#b19cd9" />
         <Text style={sharedUI.loadingText}>Loading tarot cards...</Text>
       </View>
@@ -272,6 +231,7 @@ export default function TarotScreen({ navigation, route }: any) {
                 key={card._id}
                 style={sharedUI.listItem}
                 onPress={() => handleCardPress(card)}
+                activeOpacity={0.7}
               >
                 <View style={sharedUI.listItemContent}>
                   <Text style={sharedUI.listItemTitle}>{card.name}</Text>
@@ -294,106 +254,15 @@ export default function TarotScreen({ navigation, route }: any) {
         )}
 
         {renderCategories()}
-
-        <Modal
-          visible={modalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={sharedUI.modalOverlay}>
-            <View style={sharedUI.modalContent}>
-              <ScrollView style={sharedUI.modalScroll}>
-                {selectedCard && (
-                  <>
-                    <View style={sharedUI.modalHeader}>
-                      <Text style={sharedUI.modalTitle}>
-                        {selectedCard.name}
-                      </Text>
-                      <Text style={sharedUI.modalSubtitle}>
-                        {selectedCard.suit}{" "}
-                        {selectedCard.number > 0 && `#${selectedCard.number}`}
-                      </Text>
-                      {selectedCard.element && (
-                        <Text style={sharedUI.modalElement}>
-                          {getElementEmoji(selectedCard.element)}{" "}
-                          {selectedCard.element}
-                        </Text>
-                      )}
-                      <TouchableOpacity
-                        style={sharedUI.modalCloseButton}
-                        onPress={() => setModalVisible(false)}
-                      >
-                        <Text style={sharedUI.modalCloseButtonText}>✕</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    <View style={sharedUI.modalCardImageContainer}>
-                      <Image
-                        source={getCardImageSource(selectedCard)}
-                        style={sharedUI.modalCardImage}
-                        resizeMode="contain"
-                      />
-                    </View>
-
-                    <View style={sharedUI.modalSection}>
-                      <Text style={sharedUI.sectionTitle}>Description</Text>
-                      <Text style={sharedUI.sectionText}>
-                        {selectedCard.description}
-                      </Text>
-                    </View>
-
-                    <View style={sharedUI.modalSection}>
-                      <Text style={sharedUI.sectionTitle}>Keywords</Text>
-                      {selectedCard.keywords.map((keyword, index) => (
-                        <Text key={index} style={sharedUI.modalListItem}>
-                          • {keyword}
-                        </Text>
-                      ))}
-                    </View>
-
-                    <View style={sharedUI.modalSection}>
-                      <Text style={sharedUI.sectionTitle}>Upright Meaning</Text>
-                      <Text style={sharedUI.sectionText}>
-                        {selectedCard.uprightMeaning}
-                      </Text>
-                    </View>
-
-                    <View style={sharedUI.modalSection}>
-                      <Text style={sharedUI.sectionTitle}>
-                        Reversed Meaning
-                      </Text>
-                      <Text style={sharedUI.sectionText}>
-                        {selectedCard.reversedMeaning}
-                      </Text>
-                    </View>
-
-                    {selectedCard.astrologicalCorrespondence && (
-                      <View style={sharedUI.modalSection}>
-                        <Text style={sharedUI.sectionTitle}>
-                          Astrological Correspondence
-                        </Text>
-                        <Text style={sharedUI.sectionText}>
-                          {selectedCard.astrologicalCorrespondence}
-                        </Text>
-                      </View>
-                    )}
-                  </>
-                )}
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
       </ScrollView>
 
-      {/* Draw Navigation Bar - Moved to bottom */}
       <TouchableOpacity
         style={styles.drawNavBar}
         onPress={() => navigation.navigate("TarotDraw")}
         activeOpacity={0.8}
       >
         <Text style={styles.drawNavArrow}>‹</Text>
-        <Text style={styles.drawNavText}>DRAW A RANDOM CARD</Text>
+        <Text style={styles.drawNavText}>BACK TO DRAW</Text>
       </TouchableOpacity>
     </View>
   );
@@ -405,11 +274,11 @@ export default function TarotScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f1a3f",
+    backgroundColor: drawCardBackgrounds.tarot,
   },
   drawNavBar: {
     position: "absolute",
-    bottom: 0, // Position directly above the tab bar
+    bottom: 0,
     left: 0,
     right: 0,
     height: 40,
@@ -420,20 +289,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     zIndex: 9999,
   },
-  drawNavArrow: {
-    color: "#e6e6fa",
-    fontSize: 24,
-    fontWeight: "bold",
-  },
   drawNavText: {
     color: "#e6e6fa",
     fontSize: 14,
     fontWeight: "bold",
-    letterSpacing: 1,
+    letterSpacing: 4,
+  },
+  drawNavArrow: {
+    color: "#e6e6fa",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   scrollContainer: {
     flex: 1,
     padding: 20,
-    paddingBottom: 40, // Account for draw nav bar only (40)
+    paddingBottom: 40,
   },
 });

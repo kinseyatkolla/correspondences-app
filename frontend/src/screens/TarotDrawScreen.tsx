@@ -467,10 +467,8 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   };
 
   const refBaseZ = maxZIndex + 160;
-  const refSymbolsZ =
-    refBaseZ + (refTop === "symbols" ? 2 : 0);
-  const refKeywordsZ =
-    refBaseZ + (refTop === "keywords" ? 2 : 0);
+  const refSymbolsZ = refBaseZ + (refTop === "symbols" ? 2 : 0);
+  const refKeywordsZ = refBaseZ + (refTop === "keywords" ? 2 : 0);
 
   const handleRefDragStart = (kind: "symbols" | "keywords", event: any) => {
     const touches = event.nativeEvent.touches;
@@ -479,9 +477,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     setRefTop(kind);
     setDraggedRef(kind);
     const pos =
-      kind === "symbols"
-        ? refSymbolsPosRef.current
-        : refKeywordsPosRef.current;
+      kind === "symbols" ? refSymbolsPosRef.current : refKeywordsPosRef.current;
     refDragOffsetRef.current = {
       x: touch.pageX - pos.x,
       y: touch.pageY - pos.y,
@@ -527,30 +523,30 @@ export default function TarotDrawScreen({ navigation, route }: any) {
         },
       ]}
     >
-        <View
-          onTouchStart={(e: any) => {
-            const touches = e.nativeEvent.touches;
-            if (touches.length === 1) {
-              handleRefDragStart(kind, e);
-            }
-          }}
-          onTouchMove={(e: any) => {
-            const touches = e.nativeEvent.touches;
-            if (touches.length === 1) {
-              handleRefDragMove(kind, e);
-            }
-          }}
-          onTouchEnd={() => handleRefDragEnd(kind)}
-        >
-          {/* Plain View: avoids nested Pressability with parent touch handlers (trackedTouchCount). */}
-          <View style={drawCardsUI.cardTouchable}>
-            <Image
-              source={source}
-              style={drawCardsUI.cardImage}
-              resizeMode="contain"
-            />
-          </View>
+      <View
+        onTouchStart={(e: any) => {
+          const touches = e.nativeEvent.touches;
+          if (touches.length === 1) {
+            handleRefDragStart(kind, e);
+          }
+        }}
+        onTouchMove={(e: any) => {
+          const touches = e.nativeEvent.touches;
+          if (touches.length === 1) {
+            handleRefDragMove(kind, e);
+          }
+        }}
+        onTouchEnd={() => handleRefDragEnd(kind)}
+      >
+        {/* Plain View: avoids nested Pressability with parent touch handlers (trackedTouchCount). */}
+        <View style={drawCardsUI.cardTouchable}>
+          <Image
+            source={source}
+            style={drawCardsUI.cardImage}
+            resizeMode="contain"
+          />
         </View>
+      </View>
     </View>
   );
 
@@ -701,16 +697,14 @@ export default function TarotDrawScreen({ navigation, route }: any) {
             DRAW_REF_SYMBOLS_IMAGE,
           )}
       </View>
-      {/* Search Navigation Bar - Moved to bottom */}
-      {/* TODO: Uncomment when ready to implement search functionality */}
-      {/* <TouchableOpacity
+      <TouchableOpacity
         style={drawCardsUI.searchNavBar}
         onPress={() => navigation.navigate("TarotList")}
         activeOpacity={0.8}
       >
-        <Text style={drawCardsUI.searchNavText}>SEARCH TAROT CARDS</Text>
+        <Text style={drawCardsUI.searchNavText}>SEARCH</Text>
         <Text style={drawCardsUI.searchNavArrow}>›</Text>
-      </TouchableOpacity> */}
+      </TouchableOpacity>
     </View>
   );
 }

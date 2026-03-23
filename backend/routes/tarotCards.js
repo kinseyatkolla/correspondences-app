@@ -25,8 +25,11 @@ router.get("/", async (req, res) => {
         $or: [
           { name: { $regex: search, $options: "i" } },
           { description: { $regex: search, $options: "i" } },
-          { uprightMeaning: { $regex: search, $options: "i" } },
-          { reversedMeaning: { $regex: search, $options: "i" } },
+          { esotericTitle: { $regex: search, $options: "i" } },
+          { decanKeyword: { $regex: search, $options: "i" } },
+          { dates: { $regex: search, $options: "i" } },
+          { decan: { $regex: search, $options: "i" } },
+          { astrologicalCorrespondence: { $regex: search, $options: "i" } },
           { keywords: { $in: [new RegExp(search, "i")] } },
         ],
       };
