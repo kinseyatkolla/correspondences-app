@@ -36,16 +36,17 @@ export interface ProcessedYearData {
 // CONSTANTS
 // ============================================================================
 
-const CACHE_VERSION = 3; // Increment when cache format changes (v3: added lunationsData)
+const CACHE_VERSION = 4; // v4: add natal transit aspect fields in list events
 const MAX_CACHED_YEARS = 10; // Maximum number of years to cache (excluding current year)
 
 // Cache key format: "year-data-{year}-{lat}-{lng}"
 const getCacheKey = (
   year: number,
   latitude: number,
-  longitude: number
+  longitude: number,
+  natalCacheKey = "no-natal"
 ): string => {
-  return `year-data-${year}-${latitude}-${longitude}`;
+  return `year-data-${year}-${latitude}-${longitude}-${natalCacheKey}`;
 };
 
 // ============================================================================
@@ -229,10 +230,11 @@ function restoreDatesFromCache(data: any): ProcessedYearData | null {
 export async function loadYearDataFromCache(
   year: number,
   latitude: number,
-  longitude: number
+  longitude: number,
+  natalCacheKey = "no-natal"
 ): Promise<ProcessedYearData | null> {
   try {
-    const cacheKey = getCacheKey(year, latitude, longitude);
+    const cacheKey = getCacheKey(year, latitude, longitude, natalCacheKey);
     const cached = await AsyncStorage.getItem(cacheKey);
 
     if (!cached) {
@@ -294,7 +296,8 @@ export async function saveYearDataToCache(
   longitude: number,
   listEvents: CalendarEvent[],
   linesData: any,
-  lunationsData: LunationEvent[]
+  lunationsData: LunationEvent[],
+  natalCacheKey = "no-natal"
 ): Promise<void> {
   try {
     const today = new Date();
@@ -303,7 +306,7 @@ export async function saveYearDataToCache(
     // Check cache size and evict if needed (but never evict current year)
     const allKeys = await AsyncStorage.getAllKeys();
     const prefix = "year-data-";
-    const locationSuffix = `-${latitude}-${longitude}`;
+    const locationPrefix = `year-data-`;
 
     const cachedEntries: Array<{
       key: string;
@@ -312,7 +315,10 @@ export async function saveYearDataToCache(
     }> = [];
 
     for (const key of allKeys) {
-      if (key.startsWith(prefix) && key.endsWith(locationSuffix)) {
+      if (
+        key.startsWith(locationPrefix) &&
+        key.includes(`-${latitude}-${longitude}-`)
+      ) {
         try {
           const cached = await AsyncStorage.getItem(key);
           if (cached) {
@@ -360,7 +366,7 @@ export async function saveYearDataToCache(
     }
 
     // Save the new data
-    const cacheKey = getCacheKey(year, latitude, longitude);
+    const cacheKey = getCacheKey(year, latitude, longitude, natalCacheKey);
     const cacheData: ProcessedYearData = {
       year,
       latitude,
@@ -386,10 +392,11 @@ export async function saveYearDataToCache(
 export async function clearYearDataCache(
   year: number,
   latitude: number,
-  longitude: number
+  longitude: number,
+  natalCacheKey = "no-natal"
 ): Promise<void> {
   try {
-    const cacheKey = getCacheKey(year, latitude, longitude);
+    const cacheKey = getCacheKey(year, latitude, longitude, natalCacheKey);
     await AsyncStorage.removeItem(cacheKey);
     console.log(`🗑️ Cleared year data cache for year ${year}`);
   } catch (error) {

@@ -15,6 +15,8 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  useWindowDimensions,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAstrology } from "../contexts/AstrologyContext";
@@ -42,6 +44,12 @@ import {
   CalendarEventType,
 } from "../types/calendarTypes";
 import { LunarPhase } from "../types/moonTypes";
+
+type EventFilterType = CalendarEventType | "natalTransit";
+const SAVED_NATAL_CHART_KEY = "savedNatalChart";
+const OPEN_ASTROLOGY_SETTINGS_KEY = "openAstrologySettingsDrawer";
+const OPEN_ASTROLOGY_SETTINGS_SECTION_KEY = "openAstrologySettingsSection";
+const OPEN_ASTROLOGY_SETTINGS_RETURN_TAB_KEY = "openAstrologySettingsReturnTab";
 
 // ============================================================================
 // TYPES
@@ -160,80 +168,185 @@ function ZodiacHeaderRow() {
 function FilterRow({
   filterStates,
   toggleFilter,
+  useTwoRows,
 }: {
   filterStates: {
     lunation: boolean;
     aspect: boolean;
     ingress: boolean;
     station: boolean;
+    natalTransit: boolean;
   };
-  toggleFilter: (type: CalendarEventType) => void;
+  toggleFilter: (type: EventFilterType) => void;
+  useTwoRows: boolean;
 }) {
+  if (!useTwoRows) {
+    return (
+      <View style={[styles.filterRowFixed, styles.filterRowFixedSingle]}>
+        <TouchableOpacity
+          style={styles.filterCheckbox}
+          onPress={() => toggleFilter("lunation")}
+          activeOpacity={0.7}
+        >
+          <View
+            style={[
+              styles.checkbox,
+              filterStates.lunation && styles.checkboxChecked,
+            ]}
+          >
+            {filterStates.lunation && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.filterLabel}>Lunations</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.filterCheckbox}
+          onPress={() => toggleFilter("ingress")}
+          activeOpacity={0.7}
+        >
+          <View
+            style={[
+              styles.checkbox,
+              filterStates.ingress && styles.checkboxChecked,
+            ]}
+          >
+            {filterStates.ingress && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.filterLabel}>Ingresses</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.filterCheckbox}
+          onPress={() => toggleFilter("station")}
+          activeOpacity={0.7}
+        >
+          <View
+            style={[
+              styles.checkbox,
+              filterStates.station && styles.checkboxChecked,
+            ]}
+          >
+            {filterStates.station && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.filterLabel}>Stations</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.filterCheckbox}
+          onPress={() => toggleFilter("aspect")}
+          activeOpacity={0.7}
+        >
+          <View
+            style={[
+              styles.checkbox,
+              filterStates.aspect && styles.checkboxChecked,
+            ]}
+          >
+            {filterStates.aspect && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.filterLabel}>Aspects</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.filterCheckbox}
+          onPress={() => toggleFilter("natalTransit")}
+          activeOpacity={0.7}
+        >
+          <View
+            style={[
+              styles.checkbox,
+              filterStates.natalTransit && styles.checkboxChecked,
+            ]}
+          >
+            {filterStates.natalTransit && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.filterLabel}>Natal Transits</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.filterRowFixed}>
-      <TouchableOpacity
-        style={styles.filterCheckbox}
-        onPress={() => toggleFilter("lunation")}
-        activeOpacity={0.7}
-      >
-        <View
-          style={[
-            styles.checkbox,
-            filterStates.lunation && styles.checkboxChecked,
-          ]}
+      <View style={styles.filterRowLine}>
+        <TouchableOpacity
+          style={styles.filterCheckbox}
+          onPress={() => toggleFilter("lunation")}
+          activeOpacity={0.7}
         >
-          {filterStates.lunation && <Text style={styles.checkmark}>✓</Text>}
-        </View>
-        <Text style={styles.filterLabel}>Lunations</Text>
-      </TouchableOpacity>
+          <View
+            style={[
+              styles.checkbox,
+              filterStates.lunation && styles.checkboxChecked,
+            ]}
+          >
+            {filterStates.lunation && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.filterLabel}>Lunations</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.filterCheckbox}
-        onPress={() => toggleFilter("aspect")}
-        activeOpacity={0.7}
-      >
-        <View
-          style={[
-            styles.checkbox,
-            filterStates.aspect && styles.checkboxChecked,
-          ]}
+        <TouchableOpacity
+          style={styles.filterCheckbox}
+          onPress={() => toggleFilter("ingress")}
+          activeOpacity={0.7}
         >
-          {filterStates.aspect && <Text style={styles.checkmark}>✓</Text>}
-        </View>
-        <Text style={styles.filterLabel}>Aspects</Text>
-      </TouchableOpacity>
+          <View
+            style={[
+              styles.checkbox,
+              filterStates.ingress && styles.checkboxChecked,
+            ]}
+          >
+            {filterStates.ingress && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.filterLabel}>Ingresses</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.filterCheckbox}
-        onPress={() => toggleFilter("ingress")}
-        activeOpacity={0.7}
-      >
-        <View
-          style={[
-            styles.checkbox,
-            filterStates.ingress && styles.checkboxChecked,
-          ]}
+        <TouchableOpacity
+          style={styles.filterCheckbox}
+          onPress={() => toggleFilter("station")}
+          activeOpacity={0.7}
         >
-          {filterStates.ingress && <Text style={styles.checkmark}>✓</Text>}
-        </View>
-        <Text style={styles.filterLabel}>Ingresses</Text>
-      </TouchableOpacity>
+          <View
+            style={[
+              styles.checkbox,
+              filterStates.station && styles.checkboxChecked,
+            ]}
+          >
+            {filterStates.station && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.filterLabel}>Stations</Text>
+        </TouchableOpacity>
+      </View>
 
-      <TouchableOpacity
-        style={styles.filterCheckbox}
-        onPress={() => toggleFilter("station")}
-        activeOpacity={0.7}
-      >
-        <View
-          style={[
-            styles.checkbox,
-            filterStates.station && styles.checkboxChecked,
-          ]}
+      <View style={styles.filterRowLine}>
+        <TouchableOpacity
+          style={styles.filterCheckbox}
+          onPress={() => toggleFilter("aspect")}
+          activeOpacity={0.7}
         >
-          {filterStates.station && <Text style={styles.checkmark}>✓</Text>}
-        </View>
-        <Text style={styles.filterLabel}>Stations</Text>
-      </TouchableOpacity>
+          <View
+            style={[
+              styles.checkbox,
+              filterStates.aspect && styles.checkboxChecked,
+            ]}
+          >
+            {filterStates.aspect && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.filterLabel}>Aspects</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.filterCheckbox}
+          onPress={() => toggleFilter("natalTransit")}
+          activeOpacity={0.7}
+        >
+          <View
+            style={[
+              styles.checkbox,
+              filterStates.natalTransit && styles.checkboxChecked,
+            ]}
+          >
+            {filterStates.natalTransit && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.filterLabel}>Natal Transits</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -242,6 +355,7 @@ function FilterRow({
 // COMPONENT
 // ============================================================================
 export default function CalendarScreen({ navigation }: any) {
+  const { width: screenWidth } = useWindowDimensions();
   const { currentChart } = useAstrology();
   const { fontLoaded } = usePhysisFont();
   const { year: selectedYear, setYear: setSelectedYear } = useYear();
@@ -260,8 +374,47 @@ export default function CalendarScreen({ navigation }: any) {
     aspect: true,
     ingress: true,
     station: true,
+    natalTransit: true,
   });
   const [isToggleDisabled, setIsToggleDisabled] = useState(false);
+  const [hasSavedNatalChart, setHasSavedNatalChart] = useState(false);
+  const useTwoRowFilters = screenWidth < 500;
+  const checkHasSavedNatalChart = useCallback(async () => {
+    try {
+      const saved = await AsyncStorage.getItem(SAVED_NATAL_CHART_KEY);
+      if (!saved) {
+        setHasSavedNatalChart(false);
+        setFilterStates((prev) => ({ ...prev, natalTransit: false }));
+        return;
+      }
+      const natal = JSON.parse(saved);
+      const isValid =
+        natal?.year !== undefined &&
+        natal?.month !== undefined &&
+        natal?.day !== undefined &&
+        natal?.hour !== undefined &&
+        natal?.minute !== undefined &&
+        natal?.latitude !== undefined &&
+        natal?.longitude !== undefined;
+      setHasSavedNatalChart(Boolean(isValid));
+      if (!isValid) {
+        setFilterStates((prev) => ({ ...prev, natalTransit: false }));
+      }
+    } catch (error) {
+      console.error("Error checking saved natal chart:", error);
+      setHasSavedNatalChart(false);
+      setFilterStates((prev) => ({ ...prev, natalTransit: false }));
+    }
+  }, []);
+
+  useEffect(() => {
+    checkHasSavedNatalChart();
+    const unsubscribe = (navigation as any)?.addListener?.("focus", () => {
+      checkHasSavedNatalChart();
+    });
+    return unsubscribe;
+  }, [checkHasSavedNatalChart, navigation]);
+
 
   // Lines view state - now uses cached data from context when available
   const [linesData, setLinesData] = useState<any>(null);
@@ -324,10 +477,22 @@ export default function CalendarScreen({ navigation }: any) {
     return events;
   }, [lunationEvents, calendarEvents]);
 
+  const isEventVisible = useCallback(
+    (event: CalendarEvent) => {
+      if (event.type === "aspect") {
+        return event.isNatalTransit
+          ? filterStates.natalTransit
+          : filterStates.aspect;
+      }
+      return filterStates[event.type];
+    },
+    [filterStates]
+  );
+
   // Memoize filteredEvents to prevent recalculation on every render
   const filteredEvents = useMemo(() => {
-    return (allEvents || []).filter((event) => filterStates[event.type]);
-  }, [allEvents, filterStates]);
+    return (allEvents || []).filter((event) => isEventVisible(event));
+  }, [allEvents, isEventVisible]);
 
   // Maximum number of years to cache (excluding current year which is always kept)
   const MAX_CACHED_YEARS = 10;
@@ -751,8 +916,8 @@ export default function CalendarScreen({ navigation }: any) {
       ...(lunationEvents || []),
       ...(calendarEvents || []),
     ];
-    const currentFilteredEvents = currentAllEvents.filter(
-      (event) => filterStates[event.type]
+    const currentFilteredEvents = currentAllEvents.filter((event) =>
+      isEventVisible(event)
     );
     if (
       selectedYear === todayYear &&
@@ -767,8 +932,8 @@ export default function CalendarScreen({ navigation }: any) {
         if (!hasScrolledToToday.current) {
           // Call the scroll logic directly here to avoid dependency issues
           const safeAllEvents = currentAllEvents;
-          const currentFilteredEvents = safeAllEvents.filter(
-            (event) => filterStates[event.type]
+          const currentFilteredEvents = safeAllEvents.filter((event) =>
+            isEventVisible(event)
           );
           if (currentFilteredEvents && currentFilteredEvents.length > 0) {
             const todayDate = today.getDate();
@@ -841,8 +1006,8 @@ export default function CalendarScreen({ navigation }: any) {
       ...(lunationEvents || []),
       ...(calendarEvents || []),
     ];
-    const currentFilteredEvents = currentAllEvents.filter(
-      (event) => filterStates[event.type]
+    const currentFilteredEvents = currentAllEvents.filter((event) =>
+      isEventVisible(event)
     );
     if (
       previousViewMode.current === "LINES" &&
@@ -1320,12 +1485,37 @@ export default function CalendarScreen({ navigation }: any) {
   };
 
   // Toggle filter - memoized to prevent recreation
-  const toggleFilter = useCallback((type: CalendarEventType) => {
+  const toggleFilter = useCallback((type: EventFilterType) => {
+    if (type === "natalTransit" && !filterStates.natalTransit && !hasSavedNatalChart) {
+      Alert.alert(
+        "Natal Chart Needed",
+        "Add a natal birth time and location in Astrology Settings to enable Natal Transits.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Open Settings",
+            onPress: async () => {
+              await AsyncStorage.setItem(OPEN_ASTROLOGY_SETTINGS_KEY, "1");
+              await AsyncStorage.setItem(
+                OPEN_ASTROLOGY_SETTINGS_SECTION_KEY,
+                "natal"
+              );
+              await AsyncStorage.setItem(
+                OPEN_ASTROLOGY_SETTINGS_RETURN_TAB_KEY,
+                "Book"
+              );
+              (navigation as any).navigate("Astrology");
+            },
+          },
+        ]
+      );
+      return;
+    }
     setFilterStates((prev) => ({
       ...prev,
       [type]: !prev[type],
     }));
-  }, []);
+  }, [filterStates.natalTransit, hasSavedNatalChart, navigation]);
 
   // Debug logging
   React.useEffect(() => {
@@ -1356,8 +1546,8 @@ export default function CalendarScreen({ navigation }: any) {
     }
 
     // Always use current filteredEvents - recalculate on each call
-    const currentFilteredEvents = (allEvents || []).filter(
-      (event) => filterStates[event.type]
+    const currentFilteredEvents = (allEvents || []).filter((event) =>
+      isEventVisible(event)
     );
 
     if (
@@ -1700,7 +1890,11 @@ export default function CalendarScreen({ navigation }: any) {
 
       {/* Filter Row - Fixed below navigation, only shown in LIST view */}
       {viewMode === "LIST" && (
-        <FilterRow filterStates={filterStates} toggleFilter={toggleFilter} />
+        <FilterRow
+          filterStates={filterStates}
+          toggleFilter={toggleFilter}
+          useTwoRows={useTwoRowFilters}
+        />
       )}
 
       {/* Zodiac Header Row - Fixed below navigation, only shown in LINES view */}
@@ -1794,6 +1988,7 @@ export default function CalendarScreen({ navigation }: any) {
 
                 return filteredEvents.map((event, index) => {
                   const isTargetEvent = index === targetIndex;
+                  const eventKey = `${event.id}-${index}`;
 
                   // Render lunation event
                   if (event.type === "lunation") {
@@ -1805,7 +2000,7 @@ export default function CalendarScreen({ navigation }: any) {
                       : "";
                     return (
                       <TouchableOpacity
-                        key={event.id}
+                        key={eventKey}
                         ref={isTargetEvent ? todayItemRef : undefined}
                         onLayout={
                           isTargetEvent && !hasScrolledToToday.current
@@ -1910,7 +2105,7 @@ export default function CalendarScreen({ navigation }: any) {
                     const eventIsToday = isToday(event.localDateTime);
                     return (
                       <TouchableOpacity
-                        key={event.id}
+                        key={eventKey}
                         style={[
                           styles.eventItem,
                           eventIsToday && styles.eventItemToday,
@@ -1988,7 +2183,7 @@ export default function CalendarScreen({ navigation }: any) {
                     const eventIsToday = isToday(event.localDateTime);
                     return (
                       <TouchableOpacity
-                        key={event.id}
+                        key={eventKey}
                         ref={isTargetEvent ? todayItemRef : undefined}
                         onLayout={
                           isTargetEvent && !hasScrolledToToday.current
@@ -2085,7 +2280,7 @@ export default function CalendarScreen({ navigation }: any) {
                     const eventIsToday = isToday(event.localDateTime);
                     return (
                       <TouchableOpacity
-                        key={event.id}
+                        key={eventKey}
                         ref={isTargetEvent ? todayItemRef : undefined}
                         onLayout={
                           isTargetEvent && !hasScrolledToToday.current
@@ -2094,14 +2289,20 @@ export default function CalendarScreen({ navigation }: any) {
                         }
                         style={[
                           styles.eventItem,
+                          event.isNatalTransit && styles.eventItemNatalTransit,
                           eventIsToday && styles.eventItemToday,
+                          event.isNatalTransit &&
+                            eventIsToday &&
+                            styles.eventItemTodayNatalTransit,
                         ]}
                         onPress={() => handleEventPress(event)}
                         activeOpacity={0.7}
                       >
                         <View style={styles.eventLeftColumn}>
                           <Text style={styles.eventTitle}>
-                            {planet1Name} {aspectName} {planet2Name}
+                            {planet1Name} {aspectName}{" "}
+                            {event.isNatalTransit ? "Natal " : ""}
+                            {planet2Name}
                           </Text>
                           <Text style={styles.eventDate}>
                             {formatDate(event.localDateTime)} at{" "}
@@ -2295,16 +2496,28 @@ const styles = StyleSheet.create({
     lineHeight: 32,
   },
   filterRowFixed: {
-    height: 35, // Match zodiac header height
-    flexDirection: "row",
+    minHeight: 64,
+    flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#111",
     width: "100%",
     marginHorizontal: 0,
     paddingHorizontal: 15,
+    paddingVertical: 4,
+    gap: 6,
+  },
+  filterRowFixedSingle: {
+    minHeight: 35,
+    flexDirection: "row",
     paddingVertical: 0,
-    gap: 16, // Space between filter checkboxes
+    gap: 16,
+  },
+  filterRowLine: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 16,
   },
   headerContainer: {
     flexDirection: "row",
@@ -2460,10 +2673,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#333",
   },
+  eventItemNatalTransit: {
+    backgroundColor: "#242424",
+    borderColor: "#444",
+    borderLeftWidth: 4,
+    borderLeftColor: "#FFFFFF",
+  },
   eventItemToday: {
     borderColor: "#e6e6fa",
     borderWidth: 2,
     backgroundColor: "#222",
+  },
+  eventItemTodayNatalTransit: {
+    borderWidth: 4,
   },
   eventLeftColumn: {
     flex: 1,

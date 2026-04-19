@@ -704,6 +704,16 @@ class ApiService {
     latitude?: number,
     longitude?: number,
     sampleInterval?: number,
+    natalChart?: {
+      year: number;
+      month: number;
+      day: number;
+      hour: number;
+      minute: number;
+      second?: number;
+      latitude: number;
+      longitude: number;
+    },
   ): Promise<{
     success: boolean;
     data: {
@@ -736,6 +746,10 @@ class ApiService {
           degreeFormatted: string;
           zodiacSignName: string;
         };
+        isNatalTransit?: boolean;
+        natalTargetType?: "planet" | "angle";
+        natalTargetName?: string;
+        refinedByFailsafe?: boolean;
       }>;
       samples?: Array<{
         date: Date;
@@ -761,6 +775,7 @@ class ApiService {
     if (longitude !== undefined) requestBody.longitude = longitude;
     if (sampleInterval !== undefined)
       requestBody.sampleInterval = sampleInterval;
+    if (natalChart) requestBody.natalChart = natalChart;
 
     type YearEphemerisResponse = Awaited<
       ReturnType<ApiService["getYearEphemeris"]>

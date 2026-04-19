@@ -67,8 +67,16 @@ interface EphemerisCacheEntry {
   year: number;
 }
 
+interface NatalTransitCacheEntry {
+  events: CalendarEvent[];
+  timestamp: number;
+  year: number;
+}
+
 // In-memory cache for quick access (fast but cleared on app restart)
 const ephemerisCache = new Map<string, EphemerisCacheEntry>();
+const natalTransitCache = new Map<string, NatalTransitCacheEntry>();
+const SAVED_NATAL_CHART_KEY = "savedNatalChart";
 
 // Helper function to create cache key
 const getCacheKey = (
@@ -101,6 +109,117 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
   const [loading, setLoading] = useState(true); // Start as true to check cache first
   const [error, setError] = useState<string | null>(null);
 
+  const getTimeZoneOffsetMs = (date: Date, timeZone: string): number => {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hour12: false,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    const parts = formatter.formatToParts(date);
+    const getPart = (type: string) =>
+      Number(parts.find((p) => p.type === type)?.value || 0);
+    const asUtc = Date.UTC(
+      getPart("year"),
+      getPart("month") - 1,
+      getPart("day"),
+      getPart("hour"),
+      getPart("minute"),
+      getPart("second")
+    );
+    return asUtc - date.getTime();
+  };
+
+  const convertZonedLocalToUtc = (
+    year: number,
+    month: number,
+    day: number,
+    hour: number,
+    minute: number,
+    second: number,
+    timeZone: string
+  ): Date => {
+    const localAsIfUtc = Date.UTC(year, month - 1, day, hour, minute, second);
+    let guess = localAsIfUtc;
+    for (let i = 0; i < 3; i++) {
+      const offset = getTimeZoneOffsetMs(new Date(guess), timeZone);
+      guess = localAsIfUtc - offset;
+    }
+    return new Date(guess);
+  };
+
+  const loadSavedNatalChart = useCallback(async () => {
+    try {
+      const savedNatalChart = await AsyncStorage.getItem(SAVED_NATAL_CHART_KEY);
+      if (!savedNatalChart) return null;
+      const natal = JSON.parse(savedNatalChart);
+      if (
+        natal?.year === undefined ||
+        natal?.month === undefined ||
+        natal?.day === undefined ||
+        natal?.hour === undefined ||
+        natal?.minute === undefined ||
+        natal?.latitude === undefined ||
+        natal?.longitude === undefined
+      ) {
+        return null;
+      }
+
+      let utcYear = natal.utcYear;
+      let utcMonth = natal.utcMonth;
+      let utcDay = natal.utcDay;
+      let utcHour = natal.utcHour;
+      let utcMinute = natal.utcMinute;
+      let utcSecond = natal.utcSecond;
+
+      // Backward compatibility for older saved natal data that stored local time
+      // but did not persist explicit UTC components yet.
+      if (
+        utcYear === undefined ||
+        utcMonth === undefined ||
+        utcDay === undefined ||
+        utcHour === undefined ||
+        utcMinute === undefined
+      ) {
+        const tz =
+          natal.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+        const converted = convertZonedLocalToUtc(
+          Number(natal.year),
+          Number(natal.month),
+          Number(natal.day),
+          Number(natal.hour),
+          Number(natal.minute),
+          Number(natal.second || 0),
+          tz
+        );
+        utcYear = converted.getUTCFullYear();
+        utcMonth = converted.getUTCMonth() + 1;
+        utcDay = converted.getUTCDate();
+        utcHour = converted.getUTCHours();
+        utcMinute = converted.getUTCMinutes();
+        utcSecond = converted.getUTCSeconds();
+      }
+
+      return {
+        year: Number(utcYear),
+        month: Number(utcMonth),
+        day: Number(utcDay),
+        hour: Number(utcHour),
+        minute: Number(utcMinute),
+        second: Number(utcSecond !== undefined ? utcSecond : 0),
+        latitude: Number(natal.latitude),
+        longitude: Number(natal.longitude),
+      };
+    } catch (error) {
+      console.error("Error loading saved natal chart:", error);
+      return null;
+    }
+  }, []);
+
   // Track current cache key to detect changes
   const currentCacheKeyRef = useRef<string | null>(null);
 
@@ -109,7 +228,76 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
     year: number;
     latitude: number;
     longitude: number;
+    natalCacheKey: string;
   } | null>(null);
+
+  const getNatalTransitCacheKey = (
+    year: number,
+    latitude: number,
+    longitude: number,
+    natalCacheKey: string
+  ): string => {
+    return `natal-transits-${year}-${latitude}-${longitude}-${natalCacheKey}`;
+  };
+
+  const loadNatalTransitEventsFromCache = async (
+    year: number,
+    latitude: number,
+    longitude: number,
+    natalCacheKey: string
+  ): Promise<CalendarEvent[] | null> => {
+    try {
+      const cacheKey = getNatalTransitCacheKey(
+        year,
+        latitude,
+        longitude,
+        natalCacheKey
+      );
+      const memoryCache = natalTransitCache.get(cacheKey);
+      if (memoryCache) {
+        return memoryCache.events;
+      }
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (!cached) return null;
+      const parsed: NatalTransitCacheEntry = JSON.parse(cached);
+      const restored = restoreEventDatesFromCache(parsed.events);
+      natalTransitCache.set(cacheKey, {
+        events: restored,
+        timestamp: parsed.timestamp,
+        year: parsed.year,
+      });
+      return restored;
+    } catch (error) {
+      console.error("Error loading natal transit cache:", error);
+      return null;
+    }
+  };
+
+  const saveNatalTransitEventsToCache = async (
+    year: number,
+    latitude: number,
+    longitude: number,
+    natalCacheKey: string,
+    events: CalendarEvent[]
+  ) => {
+    try {
+      const cacheKey = getNatalTransitCacheKey(
+        year,
+        latitude,
+        longitude,
+        natalCacheKey
+      );
+      const entry: NatalTransitCacheEntry = {
+        events,
+        timestamp: Date.now(),
+        year,
+      };
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(entry));
+      natalTransitCache.set(cacheKey, entry);
+    } catch (error) {
+      console.error("Error saving natal transit cache:", error);
+    }
+  };
 
   // Load calendar events from AsyncStorage cache
   const loadEventsFromCache = async (
@@ -186,6 +374,10 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
         latitude: 40.7128,
         longitude: -74.006,
       };
+      const natalChart = await loadSavedNatalChart();
+      const natalCacheKey = natalChart
+        ? `${natalChart.year}-${natalChart.month}-${natalChart.day}-${natalChart.hour}-${natalChart.minute}-${natalChart.second}-${natalChart.latitude}-${natalChart.longitude}`
+        : "no-natal";
 
       // Check if we've already loaded this exact year/location combination
       const lastLoaded = lastLoadedRef.current;
@@ -193,7 +385,8 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
         lastLoaded &&
         lastLoaded.year === year &&
         lastLoaded.latitude === location.latitude &&
-        lastLoaded.longitude === location.longitude
+        lastLoaded.longitude === location.longitude &&
+        lastLoaded.natalCacheKey === natalCacheKey
       ) {
         // Already loaded this exact data, skip refetch
         console.log(
@@ -207,7 +400,14 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
       const cachedYearData = await loadYearDataFromCache(
         year,
         location.latitude,
-        location.longitude
+        location.longitude,
+        "no-natal"
+      );
+      const cachedNatalEvents = await loadNatalTransitEventsFromCache(
+        year,
+        location.latitude,
+        location.longitude,
+        natalCacheKey
       );
 
       if (cachedYearData) {
@@ -217,7 +417,14 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
           } events, ${cachedYearData.lunationsData?.length || 0} lunations)`
         );
         // Update state directly without showing loading state
-        setEvents(cachedYearData.listEvents);
+        const mundaneEvents = (cachedYearData.listEvents || []).filter(
+          (event) => !(event.type === "aspect" && event.isNatalTransit)
+        );
+        const mergedEvents = [
+          ...mundaneEvents,
+          ...(cachedNatalEvents || []),
+        ].sort((a, b) => a.utcDateTime.getTime() - b.utcDateTime.getTime());
+        setEvents(mergedEvents);
         setLinesData(cachedYearData.linesData);
         setLunationsData(cachedYearData.lunationsData || null);
         setLoading(false);
@@ -226,8 +433,13 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
           year,
           latitude: location.latitude,
           longitude: location.longitude,
+          natalCacheKey,
         };
-        return;
+        if (natalChart && !cachedNatalEvents) {
+          // Natal profile changed or cache miss - refresh just natal transits.
+        } else {
+          return;
+        }
       }
 
       // Only clear state and show loading if cache miss (need to fetch)
@@ -244,24 +456,31 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
       // Fetch year ephemeris - backend now returns events with exact timestamps
       // Use highest sample rate for best accuracy
       const sampleInterval = 6; // Sample every 6 hours for better detection
-      const response = await apiService.getYearEphemeris(
-        year,
-        location.latitude,
-        location.longitude,
-        sampleInterval
-      );
+      let mundaneEvents: CalendarEvent[] = [];
+      let processedLinesData = null;
+      if (!cachedYearData) {
+        const response = await apiService.getYearEphemeris(
+          year,
+          location.latitude,
+          location.longitude,
+          sampleInterval,
+          undefined
+        );
 
-      if (response.success && response.data?.events) {
-        // Backend now provides events with exact timestamps
-        const events = response.data.events
+        if (!(response.success && response.data?.events)) {
+          setError("Failed to fetch ephemeris data");
+          setEvents([]);
+          setLinesData(null);
+          setLunationsData(null);
+          return;
+        }
+
+        mundaneEvents = response.data.events
           .map((event: any) => {
-            // Parse UTC datetime - ensure it's treated as UTC
-            // Handle both string and Date object inputs (for cache restoration)
             let utcString: string;
             if (event.utcDateTime instanceof Date) {
               utcString = event.utcDateTime.toISOString();
             } else {
-              // If the string doesn't have 'Z' at the end, add it to ensure UTC parsing
               utcString =
                 typeof event.utcDateTime === "string" &&
                 event.utcDateTime.endsWith("Z")
@@ -269,12 +488,6 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
                   : event.utcDateTime + "Z";
             }
             const utcDateTime = new Date(utcString);
-
-            // For display, we want the local time representation
-            // JavaScript Date objects store time in UTC internally
-            // When we create a Date from a UTC string, it's already correctly stored
-            // The localDateTime is the same Date object - it will display in local time automatically
-            // But we'll create it explicitly to be clear about the intent
             const localDateTime = new Date(utcDateTime);
 
             if (event.type === "ingress") {
@@ -304,9 +517,10 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
                 degreeFormatted: event.degreeFormatted,
                 zodiacSignName: event.zodiacSignName,
               } as StationEvent;
-            } else if (event.type === "aspect") {
+            } else if (event.type === "aspect" && !event.isNatalTransit) {
+              const aspectScope = "mundane";
               return {
-                id: `aspect-${event.planet1}-${event.planet2}-${event.aspectName}-${event.utcDateTime}`,
+                id: `aspect-${aspectScope}-${event.planet1}-${event.planet2}-${event.aspectName}-${event.utcDateTime}`,
                 type: "aspect" as const,
                 planet1: event.planet1,
                 planet2: event.planet2,
@@ -317,30 +531,14 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
                 orb: event.orb,
                 planet1Position: event.planet1Position,
                 planet2Position: event.planet2Position,
+                isNatalTransit: false,
               } as AspectEvent;
             }
             return null;
           })
           .filter((event): event is CalendarEvent => event !== null);
 
-        const eventCounts = events.reduce((acc, event) => {
-          acc[event.type] = (acc[event.type] || 0) + 1;
-          if (event.type === "station") {
-            acc[`station-${event.stationType}`] =
-              (acc[`station-${event.stationType}`] || 0) + 1;
-          }
-          return acc;
-        }, {} as Record<string, number>);
-        console.log(
-          `Calendar events received: ${events.length} total`,
-          eventCounts
-        );
-
         // Process ephemeris samples for LINES view
-        // IMPORTANT: Always fetch daily samples (24h interval) for lines chart
-        // The lines chart needs exactly 365 data points (one per day), not the
-        // high-frequency samples used for event detection (6h interval)
-        let processedLinesData = null;
         const linesResponse = await apiService.getYearEphemeris(
           year,
           location.latitude,
@@ -353,41 +551,111 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
             `📊 Processed lines data: ${processedLinesData.dates.length} daily samples`
           );
         }
+      } else {
+        mundaneEvents = (cachedYearData.listEvents || []).filter(
+          (event) => !(event.type === "aspect" && event.isNatalTransit)
+        );
+        processedLinesData = cachedYearData.linesData;
+      }
+
+      let natalTransitEvents: CalendarEvent[] = cachedNatalEvents || [];
+      if (natalChart && !cachedNatalEvents) {
+        const natalResponse = await apiService.getYearEphemeris(
+        year,
+        location.latitude,
+        location.longitude,
+        sampleInterval,
+        natalChart
+        );
+        if (natalResponse.success && natalResponse.data?.events) {
+          natalTransitEvents = natalResponse.data.events
+          .map((event: any) => {
+            let utcString: string;
+            if (event.utcDateTime instanceof Date) {
+              utcString = event.utcDateTime.toISOString();
+            } else {
+              utcString =
+                typeof event.utcDateTime === "string" &&
+                event.utcDateTime.endsWith("Z")
+                  ? event.utcDateTime
+                  : event.utcDateTime + "Z";
+            }
+            const utcDateTime = new Date(utcString);
+            const localDateTime = new Date(utcDateTime);
+            if (event.type === "aspect" && event.isNatalTransit) {
+              const aspectScope = event.isNatalTransit
+                ? `natal-${event.natalTargetType || "point"}-${
+                    event.natalTargetName || event.planet2
+                  }`
+                : "mundane";
+              return {
+                id: `aspect-${aspectScope}-${event.planet1}-${event.planet2}-${event.aspectName}-${event.utcDateTime}`,
+                type: "aspect" as const,
+                planet1: event.planet1,
+                planet2: event.planet2,
+                aspectName: event.aspectName,
+                date: localDateTime,
+                utcDateTime,
+                localDateTime,
+                orb: event.orb,
+                planet1Position: event.planet1Position,
+                planet2Position: event.planet2Position,
+                isNatalTransit: event.isNatalTransit || false,
+                natalTargetType: event.natalTargetType,
+                natalTargetName: event.natalTargetName,
+                refinedByFailsafe: event.refinedByFailsafe,
+              } as AspectEvent;
+            }
+            return null;
+          })
+          .filter((event): event is CalendarEvent => event !== null);
+          await saveNatalTransitEventsToCache(
+            year,
+            location.latitude,
+            location.longitude,
+            natalCacheKey,
+            natalTransitEvents
+          );
+        }
+      }
+
+      const events = [...mundaneEvents, ...natalTransitEvents].sort(
+        (a, b) => a.utcDateTime.getTime() - b.utcDateTime.getTime()
+      );
 
         // Fetch lunations for the year (MOONS view data)
         console.log(`🌙 Fetching lunations for year ${year}...`);
-        const lunationsData = await fetchLunationsForYear(
+      const lunationsData =
+        cachedYearData?.lunationsData ||
+        (await fetchLunationsForYear(
           year,
           location.latitude,
           location.longitude
-        );
+        ));
 
-        // Save to new unified cache (LIST, LINES, and MOONS data)
+      if (!cachedYearData) {
         await saveYearDataToCache(
           year,
           location.latitude,
           location.longitude,
-          events,
+          mundaneEvents,
           processedLinesData,
-          lunationsData
+          lunationsData,
+          "no-natal"
         );
-
-        setEvents(events);
-        setLinesData(processedLinesData);
-        setLunationsData(lunationsData);
-
-        // Update last loaded ref after successful fetch
-        lastLoadedRef.current = {
-          year,
-          latitude: location.latitude,
-          longitude: location.longitude,
-        };
-      } else {
-        setError("Failed to fetch ephemeris data");
-        setEvents([]);
-        setLinesData(null);
-        setLunationsData(null);
       }
+
+      setEvents(events);
+      setLinesData(processedLinesData);
+      setLunationsData(lunationsData);
+
+      // Update last loaded ref after successful fetch
+      lastLoadedRef.current = {
+        year,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        natalCacheKey,
+      };
     } catch (err: any) {
       console.error("Error fetching year ephemeris:", err);
       setError(err.message || "Failed to fetch ephemeris data");
@@ -409,11 +677,28 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
       latitude: 40.7128,
       longitude: -74.006,
     };
+    const natalChart = await loadSavedNatalChart();
+    const natalCacheKey = natalChart
+      ? `${natalChart.year}-${natalChart.month}-${natalChart.day}-${natalChart.hour}-${natalChart.minute}-${natalChart.second}-${natalChart.latitude}-${natalChart.longitude}`
+      : "no-natal";
 
     // Clear new unified cache
     try {
       const { clearYearDataCache } = await import("../services/yearDataCache");
-      await clearYearDataCache(year, location.latitude, location.longitude);
+      await clearYearDataCache(
+        year,
+        location.latitude,
+        location.longitude,
+        "no-natal"
+      );
+      const natalSpecificKey = getNatalTransitCacheKey(
+        year,
+        location.latitude,
+        location.longitude,
+        natalCacheKey
+      );
+      natalTransitCache.delete(natalSpecificKey);
+      await AsyncStorage.removeItem(natalSpecificKey);
     } catch (err) {
       console.error("Error clearing calendar cache:", err);
     }
@@ -436,6 +721,7 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
     year,
     currentChart?.location?.latitude,
     currentChart?.location?.longitude,
+    loadSavedNatalChart,
   ]);
 
   // Fetch data on mount and when year or location changes

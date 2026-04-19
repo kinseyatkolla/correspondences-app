@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -212,10 +212,19 @@ function CalendarStack() {
 }
 
 type SettingsDrawerType = "astrology" | "tarot" | null;
+const OPEN_ASTROLOGY_SETTINGS_KEY = "openAstrologySettingsDrawer";
+const OPEN_ASTROLOGY_SETTINGS_SECTION_KEY = "openAstrologySettingsSection";
+const OPEN_ASTROLOGY_SETTINGS_RETURN_TAB_KEY = "openAstrologySettingsReturnTab";
 
 function AppNavigatorContent() {
   const [settingsDrawerType, setSettingsDrawerType] =
     useState<SettingsDrawerType>(null);
+  const [astrologySettingsFocusSection, setAstrologySettingsFocusSection] =
+    useState<"location" | "natal">("location");
+  const [astrologySettingsReturnTab, setAstrologySettingsReturnTab] = useState<
+    string | null
+  >(null);
+  const navigationRef = useRef<any>(null);
   const { currentChart, refreshChart } = useAstrology();
 
   const handleSaveLocation = async (location: {
@@ -239,11 +248,58 @@ function AppNavigatorContent() {
       setSettingsDrawerType("astrology");
   };
 
+  const closeAstrologySettingsDrawer = async () => {
+    setSettingsDrawerType(null);
+    if (astrologySettingsReturnTab) {
+      const tabToReturn = astrologySettingsReturnTab;
+      setAstrologySettingsReturnTab(null);
+      try {
+        await AsyncStorage.removeItem(OPEN_ASTROLOGY_SETTINGS_RETURN_TAB_KEY);
+      } catch (error) {
+        console.error("Error clearing settings return tab key:", error);
+      }
+      setTimeout(() => {
+        navigationRef.current?.navigate?.(tabToReturn);
+      }, 0);
+    }
+  };
+
   return (
     <>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Tab.Navigator
           initialRouteName="Moon"
+          screenListeners={{
+            state: async (e) => {
+              try {
+                const state: any = e.data.state;
+                const currentTab =
+                  state?.routes?.[state?.index || 0]?.name || null;
+                if (currentTab !== "Astrology") return;
+
+                const shouldOpen = await AsyncStorage.getItem(
+                  OPEN_ASTROLOGY_SETTINGS_KEY
+                );
+                if (shouldOpen !== "1") return;
+
+                const requestedSection =
+                  (await AsyncStorage.getItem(OPEN_ASTROLOGY_SETTINGS_SECTION_KEY)) ||
+                  "location";
+                const requestedReturnTab = await AsyncStorage.getItem(
+                  OPEN_ASTROLOGY_SETTINGS_RETURN_TAB_KEY
+                );
+                setAstrologySettingsFocusSection(
+                  requestedSection === "natal" ? "natal" : "location"
+                );
+                setAstrologySettingsReturnTab(requestedReturnTab || null);
+                setSettingsDrawerType("astrology");
+                await AsyncStorage.removeItem(OPEN_ASTROLOGY_SETTINGS_KEY);
+                await AsyncStorage.removeItem(OPEN_ASTROLOGY_SETTINGS_SECTION_KEY);
+              } catch (error) {
+                console.error("Error auto-opening astrology settings:", error);
+              }
+            },
+          }}
           screenOptions={({ navigation, route }) => ({
             tabBarActiveTintColor: "#e6e6fa",
             tabBarInactiveTintColor: "#8a8a8a",
@@ -351,9 +407,10 @@ function AppNavigatorContent() {
       </NavigationContainer>
       <AstrologySettingsDrawer
         visible={settingsDrawerType === "astrology"}
-        onClose={() => setSettingsDrawerType(null)}
+        onClose={closeAstrologySettingsDrawer}
         onSave={handleSaveLocation}
         currentLocation={currentChart?.location || null}
+        focusSection={astrologySettingsFocusSection}
       />
       <TarotSettingsDrawer
         visible={settingsDrawerType === "tarot"}

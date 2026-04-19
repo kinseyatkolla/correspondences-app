@@ -69,6 +69,10 @@ export interface AspectEvent {
     degreeFormatted: string;
     zodiacSignName: string;
   };
+  isNatalTransit?: boolean;
+  natalTargetType?: "planet" | "angle";
+  natalTargetName?: string;
+  refinedByFailsafe?: boolean;
 }
 
 // Union type for all calendar events
