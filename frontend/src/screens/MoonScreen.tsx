@@ -1635,7 +1635,10 @@ export default function MoonScreen({ navigation, route }: any) {
           </ScrollView>
 
           {/* Secondary Navigation Bar - Display Date */}
-          <TouchableOpacity style={navigationUI.secondaryNavBar} onPress={openDrawer}>
+          <TouchableOpacity
+            style={navigationUI.secondaryNavBar}
+            onPress={openDrawer}
+          >
             <Text style={navigationUI.secondaryNavText}>
               {(() => {
                 const dateString = displayDate.toLocaleDateString("en-US", {

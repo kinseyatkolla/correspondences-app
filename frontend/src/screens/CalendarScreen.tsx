@@ -70,6 +70,37 @@ function getDegreeOnly(degreeFormatted: string): string {
 }
 
 /**
+ * Parse a degree string like "15°30'45"" into decimal degrees within the sign.
+ */
+function parseDegreeWithinSign(degreeFormatted: string): number {
+  const degMatch = degreeFormatted.match(/^(\d+)°/);
+  const minMatch = degreeFormatted.match(/(\d+)'/);
+  const secMatch = degreeFormatted.match(/(\d+)"/);
+
+  const degrees = degMatch ? parseFloat(degMatch[1]) : 0;
+  const minutes = minMatch ? parseFloat(minMatch[1]) : 0;
+  const seconds = secMatch ? parseFloat(secMatch[1]) : 0;
+
+  return degrees + minutes / 60 + seconds / 3600;
+}
+
+/**
+ * Aspects are defined by shared degree numbers across signs, so normalize both
+ * planets to one rounded whole degree for list display.
+ */
+function getSharedAspectDegree(
+  planet1DegreeFormatted: string,
+  planet2DegreeFormatted: string
+): string {
+  const p1 = parseDegreeWithinSign(planet1DegreeFormatted);
+  const p2 = parseDegreeWithinSign(planet2DegreeFormatted);
+  const sharedRounded = Math.round((p1 + p2) / 2);
+  // Keep degree value inside a sign range for display.
+  const normalized = Math.min(29, Math.max(0, sharedRounded));
+  return `${normalized}°`;
+}
+
+/**
  * Formats planet name for display
  * Converts "northNode" to "N. Node", other planets get capitalized first letter
  */
@@ -2276,6 +2307,10 @@ export default function CalendarScreen({ navigation }: any) {
                     const aspectName =
                       event.aspectName.charAt(0).toUpperCase() +
                       event.aspectName.slice(1);
+                    const sharedAspectDegree = getSharedAspectDegree(
+                      event.planet1Position.degreeFormatted,
+                      event.planet2Position.degreeFormatted
+                    );
 
                     const eventIsToday = isToday(event.localDateTime);
                     return (
@@ -2346,9 +2381,7 @@ export default function CalendarScreen({ navigation }: any) {
                                 }
                               </Text>
                               {"  "}
-                              {getDegreeOnly(
-                                event.planet1Position.degreeFormatted
-                              )}{" "}
+                              {sharedAspectDegree}{" "}
                               {event.planet1Position.zodiacSignName}
                             </Text>
                           ) : (
@@ -2388,9 +2421,7 @@ export default function CalendarScreen({ navigation }: any) {
                                   }
                                 </Text>
                                 {"  "}
-                                {getDegreeOnly(
-                                  event.planet1Position.degreeFormatted
-                                )}{" "}
+                                {sharedAspectDegree}{" "}
                                 {event.planet1Position.zodiacSignName}
                               </Text>
                               <Text
@@ -2428,9 +2459,7 @@ export default function CalendarScreen({ navigation }: any) {
                                   }
                                 </Text>
                                 {"  "}
-                                {getDegreeOnly(
-                                  event.planet2Position.degreeFormatted
-                                )}{" "}
+                                {sharedAspectDegree}{" "}
                                 {event.planet2Position.zodiacSignName}
                               </Text>
                             </>

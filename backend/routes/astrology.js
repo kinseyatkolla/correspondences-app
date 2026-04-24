@@ -1535,7 +1535,9 @@ router.post("/year-ephemeris", (req, res) => {
       longitude = -74.006,
       sampleInterval = 12, // Hours between samples (default: 12 hours for better detection)
       natalChart,
+      moonMode,
     } = req.body;
+    const useMoonMode = moonMode === true;
 
     if (!year) {
       return res.status(400).json({
@@ -1549,7 +1551,9 @@ router.post("/year-ephemeris", (req, res) => {
     const natalCacheKey = natalChart
       ? `${natalChart.year}-${natalChart.month}-${natalChart.day}-${natalChart.hour}-${natalChart.minute}-${natalChart.second}-${natalChart.latitude}-${natalChart.longitude}`
       : "no-natal";
-    const cacheKey = `${year}-${latitude}-${longitude}-${sampleInterval}-${natalCacheKey}`;
+    const cacheKey = `${year}-${latitude}-${longitude}-${sampleInterval}-${natalCacheKey}-${
+      useMoonMode ? "moon" : "standard"
+    }`;
     const cachedData = yearEphemerisCache.get(cacheKey);
 
     if (cachedData) {
@@ -1583,7 +1587,7 @@ router.post("/year-ephemeris", (req, res) => {
       }
     );
 
-    // Planet IDs to track (including Sun for ingresses, excluding Moon, including North Node)
+    // Planet IDs to track (standard mode excludes moon; moon mode includes it)
     const planetIds = [
       { name: "sun", id: 0, symbol: "☉" },
       { name: "mercury", id: 2, symbol: "☿" },
@@ -1596,6 +1600,9 @@ router.post("/year-ephemeris", (req, res) => {
       { name: "pluto", id: 9, symbol: "♇" },
       { name: "northNode", id: 11, symbol: "☊" }, // True Node (North Node)
     ];
+    if (useMoonMode) {
+      planetIds.splice(1, 0, { name: "moon", id: 1, symbol: "☽" });
+    }
 
     const natalPoints = [];
     if (
@@ -2400,6 +2407,8 @@ router.post("/year-ephemeris", (req, res) => {
                     natalPoint.longitude
                   );
 
+                  // Hierarchical refinement for natal transits, mirroring mundane
+                  // aspect strategy (hour -> minute -> second) but with a fixed natal point.
                   let exactJD =
                     Math.abs(prevAngle - aspectType.angle) <
                     Math.abs(currentAngle - aspectType.angle)
@@ -2410,12 +2419,21 @@ router.post("/year-ephemeris", (req, res) => {
                     getDistanceFromTarget(currentAngle)
                   );
 
-                  const baseStepDays = 60 / (24 * 60 * 60); // 60-second resolution
-                  for (
-                    let testJD = prevSample.julianDay;
-                    testJD <= sample.julianDay;
-                    testJD += baseStepDays
-                  ) {
+                  const windowSizeHours =
+                    (sample.julianDay - prevSample.julianDay) * 24;
+                  const expansionHours = Math.max(24, windowSizeHours * 2);
+                  const expandedPrevJD =
+                    prevSample.julianDay - expansionHours / 24;
+                  const expandedCurrentJD =
+                    sample.julianDay + expansionHours / 24;
+
+                  // Pass 1: hourly scan across expanded window
+                  const totalHours = Math.ceil(
+                    (expandedCurrentJD - expandedPrevJD) * 24
+                  );
+                  let bestHourJD = exactJD;
+                  for (let h = 0; h <= totalHours; h++) {
+                    const testJD = expandedPrevJD + h / 24;
                     try {
                       const testTransit = sweph.calc_ut(
                         testJD,
@@ -2430,11 +2448,84 @@ router.post("/year-ephemeris", (req, res) => {
                         const testDistance = getDistanceFromTarget(testAngle);
                         if (testDistance + 1e-10 < bestDistance) {
                           bestDistance = testDistance;
+                          bestHourJD = testJD;
                           exactJD = testJD;
                         }
                       }
                     } catch (error) {
                       // Skip individual refinement errors
+                    }
+                  }
+
+                  // Pass 2: minute scan in best hour +/- 1 hour
+                  const minuteHoursToSearch = [
+                    bestHourJD - 1 / 24,
+                    bestHourJD,
+                    bestHourJD + 1 / 24,
+                  ];
+                  let bestMinuteJD = exactJD;
+                  for (const hourJD of minuteHoursToSearch) {
+                    for (let m = 0; m < 60; m++) {
+                      const testJD = hourJD + m / (24 * 60);
+                      if (testJD < expandedPrevJD || testJD > expandedCurrentJD) {
+                        continue;
+                      }
+                      try {
+                        const testTransit = sweph.calc_ut(
+                          testJD,
+                          transitPlanet.id,
+                          SEFLG_TOPOCTR
+                        );
+                        if (testTransit.data && testTransit.data.length >= 1) {
+                          const testAngle = getAngularDistance(
+                            testTransit.data[0],
+                            natalPoint.longitude
+                          );
+                          const testDistance = getDistanceFromTarget(testAngle);
+                          if (testDistance + 1e-10 < bestDistance) {
+                            bestDistance = testDistance;
+                            bestMinuteJD = testJD;
+                            exactJD = testJD;
+                          }
+                        }
+                      } catch (error) {
+                        // Skip individual refinement errors
+                      }
+                    }
+                  }
+
+                  // Pass 3: second scan in best minute +/- 1 minute
+                  const secondMinutesToSearch = [
+                    bestMinuteJD - 1 / (24 * 60),
+                    bestMinuteJD,
+                    bestMinuteJD + 1 / (24 * 60),
+                  ];
+                  for (const minuteJD of secondMinutesToSearch) {
+                    for (let s = 0; s < 60; s++) {
+                      const testJD = minuteJD + s / (24 * 60 * 60);
+                      if (testJD < expandedPrevJD || testJD > expandedCurrentJD) {
+                        continue;
+                      }
+                      try {
+                        const testTransit = sweph.calc_ut(
+                          testJD,
+                          transitPlanet.id,
+                          SEFLG_TOPOCTR
+                        );
+                        if (testTransit.data && testTransit.data.length >= 1) {
+                          const testAngle = getAngularDistance(
+                            testTransit.data[0],
+                            natalPoint.longitude
+                          );
+                          const testDistance = getDistanceFromTarget(testAngle);
+                          if (testDistance + 1e-10 < bestDistance) {
+                            bestDistance = testDistance;
+                            exactJD = testJD;
+                          }
+                        }
+                      } catch (error) {
+                        // Skip individual refinement errors
+                      }
                     }
                   }
 
@@ -2595,6 +2686,42 @@ router.post("/year-ephemeris", (req, res) => {
       (event) => event.type !== "aspect" || deduplicatedAspectEvents.has(event)
     );
 
+    const normalizedMoonModeEvents = useMoonMode
+      ? deduplicatedEvents
+          .filter((event) => {
+            if (event.type === "ingress") {
+              return event.planet === "moon";
+            }
+
+            if (event.type === "aspect") {
+              const includesMoon =
+                event.planet1 === "moon" || event.planet2 === "moon";
+              const isNatalTransitAspect = event.isNatalTransit === true;
+              return includesMoon && !isNatalTransitAspect;
+            }
+
+            // Exclude stations and all other event types in moon mode
+            return false;
+          })
+          .map((event) => {
+            if (event.type !== "aspect") {
+              return event;
+            }
+
+            if (event.planet1 === "moon") {
+              return event;
+            }
+
+            return {
+              ...event,
+              planet1: "moon",
+              planet2: event.planet1,
+              planet1Position: event.planet2Position,
+              planet2Position: event.planet1Position,
+            };
+          })
+      : deduplicatedEvents;
+
     // Log event counts for debugging
     const eventCounts = deduplicatedEvents.reduce((acc, event) => {
       acc[event.type] = (acc[event.type] || 0) + 1;
@@ -2611,8 +2738,9 @@ router.post("/year-ephemeris", (req, res) => {
       year,
       location: { latitude, longitude },
       sampleInterval,
+      moonMode: useMoonMode,
       totalSamples: samples.length,
-      events: deduplicatedEvents, // Return deduplicated events with exact timestamps
+      events: normalizedMoonModeEvents, // Return mode-filtered events with exact timestamps
       samples, // Keep samples for backward compatibility if needed
     };
 
