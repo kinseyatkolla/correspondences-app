@@ -529,10 +529,9 @@ export default function TarotScreen({ navigation }: any) {
               >
                 <View style={sharedUI.listItemContent}>
                   <Text style={sharedUI.listItemTitle}>{card.name}</Text>
-                  <Text style={sharedUI.listItemSubtitle}>{card.suit}</Text>
                   {card.keywords && card.keywords.length > 0 && (
                     <Text style={sharedUI.listItemKeywords}>
-                      {card.keywords.slice(0, 3).join(" • ")}
+                      {card.keywords.join(" • ")}
                     </Text>
                   )}
                 </View>

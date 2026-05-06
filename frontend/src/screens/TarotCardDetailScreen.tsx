@@ -23,6 +23,41 @@ type TarotCardDetailRouteProp = RouteProp<
   "TarotCardDetail"
 >;
 
+function renderWithSuperscriptCitations(text: string) {
+  const nodes: React.ReactNode[] = [];
+  const regex = /(\d+)(?=\s*(?:•|$))/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    const numberIndex = match.index;
+    if (numberIndex > lastIndex) {
+      nodes.push(
+        <Text key={`t-${key++}`} style={sharedUI.sectionText}>
+          {text.slice(lastIndex, numberIndex)}
+        </Text>,
+      );
+    }
+    nodes.push(
+      <Text key={`s-${key++}`} style={styles.superscriptCitation}>
+        {match[1]}
+      </Text>,
+    );
+    lastIndex = numberIndex + match[1].length;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(
+      <Text key={`t-${key++}`} style={sharedUI.sectionText}>
+        {text.slice(lastIndex)}
+      </Text>,
+    );
+  }
+
+  return nodes;
+}
+
 function getElementEmoji(element?: string) {
   switch (element) {
     case "Fire":
@@ -136,11 +171,31 @@ export default function TarotCardDetailScreen() {
           <Text style={sharedUI.sectionText}>
             {(card.keywords ?? []).join(", ")}
           </Text>
+          {(card.keywords2 ?? []).length > 0 ? (
+            <Text style={[sharedUI.sectionText, styles.keywords2]}>
+              {(card.keywords2 ?? []).join(", ")}
+            </Text>
+          ) : null}
         </View>
 
         <View style={styles.section}>
           <Text style={sharedUI.sectionTitle}>Description</Text>
-          <Text style={sharedUI.sectionText}>{card.description}</Text>
+          {card.dotsQuotes ? (
+            <Text style={[sharedUI.sectionText, styles.dotsQuotes]}>
+              {renderWithSuperscriptCitations(card.dotsQuotes)}
+            </Text>
+          ) : null}
+          {card.description1 ? (
+            <Text style={sharedUI.sectionText}>{card.description1}</Text>
+          ) : null}
+          {card.description2 ? (
+            <Text style={[sharedUI.sectionText, styles.description2]}>
+              {card.description2}
+            </Text>
+          ) : null}
+          {!card.description1 && !card.description2 ? (
+            <Text style={sharedUI.sectionText}>{card.description}</Text>
+          ) : null}
         </View>
 
         {card.astrologicalCorrespondence ? (
@@ -220,5 +275,20 @@ const styles = StyleSheet.create({
   decanKeyword: {
     marginTop: 8,
     fontStyle: "italic",
+  },
+  keywords2: {
+    marginTop: 8,
+  },
+  dotsQuotes: {
+    marginBottom: 10,
+    fontStyle: "italic",
+  },
+  superscriptCitation: {
+    fontSize: 11,
+    lineHeight: 18,
+    transform: [{ translateY: -4 }],
+  },
+  description2: {
+    marginTop: 10,
   },
 });

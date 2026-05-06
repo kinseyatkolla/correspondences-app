@@ -22,6 +22,7 @@ const TAROT_DECK_KEY = "tarot_deck";
 const TAROT_DRAW_REF_SYMBOLS_KEY = "tarot_draw_ref_symbols_enabled";
 const TAROT_DRAW_REF_KEYWORDS_KEY = "tarot_draw_ref_keywords_enabled";
 const CACHE_EXPIRY_HOURS = 24; // Cache for 24 hours
+const TAROT_CACHE_VERSION = 3;
 
 export type { TarotDeckId };
 
@@ -74,6 +75,7 @@ interface TarotContextType {
 interface CachedTarotCards {
   data: TarotCard[];
   timestamp: number;
+  version: number;
 }
 
 // ============================================================================
@@ -155,19 +157,24 @@ export function TarotProvider({ children }: TarotProviderProps) {
     try {
       const cached = await AsyncStorage.getItem(TAROT_CACHE_KEY);
       if (cached) {
-        const parsedCache: CachedTarotCards = JSON.parse(cached);
+        const parsedCache = JSON.parse(cached) as Partial<CachedTarotCards>;
         console.log(
           "TarotContext - Cache found with",
-          parsedCache.data.length,
+          parsedCache.data?.length ?? 0,
           "cards",
         );
+        if (parsedCache.version !== TAROT_CACHE_VERSION) {
+          console.log("TarotContext - Cache version mismatch, clearing cache");
+          await AsyncStorage.removeItem(TAROT_CACHE_KEY);
+          return null;
+        }
         if (
-          isCacheValid(parsedCache.timestamp) &&
-          parsedCache.data.length > 0
+          isCacheValid(parsedCache.timestamp ?? 0) &&
+          (parsedCache.data?.length ?? 0) > 0
         ) {
           console.log("Loading tarot cards from cache");
-          return parsedCache.data;
-        } else if (parsedCache.data.length === 0) {
+          return parsedCache.data as TarotCard[];
+        } else if ((parsedCache.data?.length ?? 0) === 0) {
           console.log("Cache contains empty data, will fetch fresh data");
         } else {
           console.log("Cache expired, will fetch fresh data");
@@ -186,6 +193,7 @@ export function TarotProvider({ children }: TarotProviderProps) {
       const cacheData: CachedTarotCards = {
         data,
         timestamp: Date.now(),
+        version: TAROT_CACHE_VERSION,
       };
       await AsyncStorage.setItem(TAROT_CACHE_KEY, JSON.stringify(cacheData));
       console.log("Tarot cards saved to cache");

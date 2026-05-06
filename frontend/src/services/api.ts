@@ -121,6 +121,10 @@ export interface TarotCard {
   number: number;
   suit: string;
   keywords: string[];
+  keywords2?: string[];
+  dotsQuotes?: string;
+  description1?: string;
+  description2?: string;
   /** Thoth-style or traditional esoteric title */
   esotericTitle?: string;
   /** Decan / minor arcana keyword line */

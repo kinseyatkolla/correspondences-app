@@ -14,7 +14,7 @@ const tarotCardSchema = new mongoose.Schema(
     suit: {
       type: String,
       required: true,
-      enum: ["Major Arcana", "Cups", "Wands", "Swords", "Coins"],
+      enum: ["Major Arcana", "Cups", "Wands", "Swords", "Pentacles", "Coins"],
     },
     keywords: [
       {
@@ -27,6 +27,24 @@ const tarotCardSchema = new mongoose.Schema(
       trim: true,
     },
     decanKeyword: {
+      type: String,
+      trim: true,
+    },
+    keywords2: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    dotsQuotes: {
+      type: String,
+      trim: true,
+    },
+    description1: {
+      type: String,
+      trim: true,
+    },
+    description2: {
       type: String,
       trim: true,
     },

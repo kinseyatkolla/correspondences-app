@@ -9,6 +9,7 @@ import React, {
   useRef,
   useMemo,
 } from "react";
+import type { ImageSourcePropType } from "react-native";
 import {
   View,
   Text,
@@ -17,6 +18,9 @@ import {
   Dimensions,
   StatusBar,
   Vibration,
+  Modal,
+  Pressable,
+  ScrollView,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Accelerometer } from "expo-sensors";
@@ -26,6 +30,7 @@ import {
   getTarotImages,
   getTarotCardBackImages,
   resolveTarotFaceFromMap,
+  resolveTarotGuidebookFromImageName,
 } from "../utils/tarotImageHelper";
 
 // ============================================================================
@@ -94,6 +99,8 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   );
   // Shuffle key to force immediate re-render on shuffle
   const [shuffleKey, setShuffleKey] = useState(0);
+  const [guidebookSource, setGuidebookSource] =
+    useState<ImageSourcePropType | null>(null);
 
   const [refSymbolsPos, setRefSymbolsPos] = useState(() =>
     centerReferenceCardPosition(),
@@ -425,13 +432,19 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   const handleCardLongPress = (card: CardData) => {
     if (card.isDragging) return;
 
-    // Front image: open detail page for this assigned tarot card.
+    // Face up: show guidebook page for this card (tap overlay to dismiss).
     if (card.isFlipped && card.tarotCard?._id) {
+      const guide = resolveTarotGuidebookFromImageName(card.tarotCard.imageName);
+      if (guide) {
+        bringToFront(card.id);
+        setGuidebookSource(guide);
+        return;
+      }
       navigation.navigate("TarotCardDetail", { cardId: card.tarotCard._id });
       return;
     }
 
-    // Back image: keep existing behavior (flip card).
+    // Face down: flip via pinch-style flow; long-press still flips.
     handleCardFlip(card.id);
   };
 
@@ -710,6 +723,59 @@ export default function TarotDrawScreen({ navigation, route }: any) {
         <Text style={drawCardsUI.searchNavText}>SEARCH</Text>
         <Text style={drawCardsUI.searchNavArrow}>›</Text>
       </TouchableOpacity>
+
+      <Modal
+        visible={guidebookSource !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setGuidebookSource(null)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.88)",
+          }}
+        >
+          <ScrollView
+            contentContainerStyle={{
+              flexGrow: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              paddingVertical: 24,
+              paddingHorizontal: 12,
+            }}
+            showsHorizontalScrollIndicator={false}
+            showsVerticalScrollIndicator={false}
+          >
+            {guidebookSource !== null ? (
+              <Pressable onPress={() => setGuidebookSource(null)}>
+                <Image
+                  source={guidebookSource}
+                  style={{
+                    width: SCREEN_WIDTH - 24,
+                    height: SCREEN_HEIGHT * 0.82,
+                  }}
+                  resizeMode="contain"
+                />
+              </Pressable>
+            ) : null}
+          </ScrollView>
+          <Pressable
+            onPress={() => setGuidebookSource(null)}
+            style={{ paddingBottom: 28, paddingTop: 8 }}
+          >
+            <Text
+              style={{
+                textAlign: "center",
+                color: "rgba(255,255,255,0.65)",
+                fontSize: 14,
+              }}
+            >
+              Tap image or here to close
+            </Text>
+          </Pressable>
+        </View>
+      </Modal>
     </View>
   );
 }
