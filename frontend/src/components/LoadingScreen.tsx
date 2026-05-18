@@ -46,12 +46,28 @@ export default function LoadingScreen({
     astrologyLoaded: false,
     tarotLoaded: false,
     flowersLoaded: false,
-    calendarLoaded: false,
-    lunationsLoaded: false,
+    // Calendar preload runs in the background and must not block startup
+    calendarLoaded: true,
+    lunationsLoaded: true,
     completed: false, // Prevent multiple calls to onLoadingComplete
   });
 
-  // Preload calendar data for current year
+  const tryCompleteLoading = useCallback(() => {
+    const state = loadingStateRef.current;
+    if (
+      !state.completed &&
+      state.astrologyLoaded &&
+      state.tarotLoaded &&
+      state.flowersLoaded &&
+      state.calendarLoaded &&
+      state.lunationsLoaded
+    ) {
+      state.completed = true;
+      setTimeout(() => onLoadingComplete(), 500);
+    }
+  }, [onLoadingComplete]);
+
+  // Preload calendar data in the background (must not block app entry)
   const preloadCalendarData = useCallback(async () => {
     try {
       const location = currentChart?.location || {
@@ -68,23 +84,6 @@ export default function LoadingScreen({
 
       if (cachedYearData) {
         console.log(`✅ Preloaded calendar data from cache for year ${year}`);
-        loadingStateRef.current.calendarLoaded = true;
-        loadingStateRef.current.lunationsLoaded = true; // Lunations are included in year data
-        // Trigger a check for completion
-        setTimeout(() => {
-          const state = loadingStateRef.current;
-          if (
-            !state.completed &&
-            state.astrologyLoaded &&
-            state.tarotLoaded &&
-            state.flowersLoaded &&
-            state.calendarLoaded &&
-            state.lunationsLoaded
-          ) {
-            state.completed = true;
-            onLoadingComplete();
-          }
-        }, 100);
         return;
       }
 
@@ -158,46 +157,11 @@ export default function LoadingScreen({
         console.log(
           `✅ Preloaded calendar data for year ${year} (${events.length} events, ${lunationsData.length} lunations)`
         );
-        loadingStateRef.current.calendarLoaded = true;
-        loadingStateRef.current.lunationsLoaded = true;
-        // Trigger a check for completion
-        setTimeout(() => {
-          const state = loadingStateRef.current;
-          if (
-            !state.completed &&
-            state.astrologyLoaded &&
-            state.tarotLoaded &&
-            state.flowersLoaded &&
-            state.calendarLoaded &&
-            state.lunationsLoaded
-          ) {
-            state.completed = true;
-            onLoadingComplete();
-          }
-        }, 100);
       }
     } catch (error) {
       console.error("Error preloading calendar data:", error);
-      // Continue anyway - data will load when screen is accessed
-      loadingStateRef.current.calendarLoaded = true;
-      loadingStateRef.current.lunationsLoaded = true;
-      // Trigger a check for completion even on error
-      setTimeout(() => {
-        const state = loadingStateRef.current;
-        if (
-          !state.completed &&
-          state.astrologyLoaded &&
-          state.tarotLoaded &&
-          state.flowersLoaded &&
-          state.calendarLoaded &&
-          state.lunationsLoaded
-        ) {
-          state.completed = true;
-          onLoadingComplete();
-        }
-      }, 100);
     }
-  }, [currentChart, year, onLoadingComplete]);
+  }, [currentChart, year]);
 
   // Original loading text animation effect
   useEffect(() => {
@@ -225,61 +189,49 @@ export default function LoadingScreen({
     return () => clearInterval(interval);
   }, []);
 
+  // Safety timeout so Expo Go never hangs on the splash screen
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const state = loadingStateRef.current;
+      if (!state.completed) {
+        console.warn(
+          "Loading screen timeout — continuing with partial data",
+        );
+        state.astrologyLoaded = true;
+        state.tarotLoaded = true;
+        state.flowersLoaded = true;
+        tryCompleteLoading();
+      }
+    }, 20000);
+
+    return () => clearTimeout(timeout);
+  }, [tryCompleteLoading]);
+
   // Main loading effect
   useEffect(() => {
-    const checkLoadingComplete = () => {
-      const state = loadingStateRef.current;
-      if (
-        !state.completed &&
-        state.astrologyLoaded &&
-        state.tarotLoaded &&
-        state.flowersLoaded &&
-        state.calendarLoaded &&
-        state.lunationsLoaded
-      ) {
-        // All critical data loaded, complete loading
-        state.completed = true;
-        // Wait a bit to ensure the final text is shown
-        setTimeout(() => {
-          onLoadingComplete();
-        }, 500);
-      }
-    };
-
-    // Check astrology chart
-    if (!astrologyLoading && currentChart) {
+    // Astrology: proceed once the fetch finishes (success or failure)
+    if (!astrologyLoading) {
       if (!loadingStateRef.current.astrologyLoaded) {
         loadingStateRef.current.astrologyLoaded = true;
-        // Start preloading calendar data once we have location
         preloadCalendarData();
       }
     }
 
-    // Check tarot cards
-    if (!tarotLoading) {
-      if (!loadingStateRef.current.tarotLoaded) {
-        loadingStateRef.current.tarotLoaded = true;
-        checkLoadingComplete();
-      }
+    if (!tarotLoading && !loadingStateRef.current.tarotLoaded) {
+      loadingStateRef.current.tarotLoaded = true;
     }
 
-    // Check flower essences
-    if (!flowersLoading) {
-      if (!loadingStateRef.current.flowersLoaded) {
-        loadingStateRef.current.flowersLoaded = true;
-        checkLoadingComplete();
-      }
+    if (!flowersLoading && !loadingStateRef.current.flowersLoaded) {
+      loadingStateRef.current.flowersLoaded = true;
     }
 
-    checkLoadingComplete();
+    tryCompleteLoading();
   }, [
     astrologyLoading,
-    currentChart,
     tarotLoading,
     flowersLoading,
-    year,
-    onLoadingComplete,
     preloadCalendarData,
+    tryCompleteLoading,
   ]);
 
   // ===== LIFECYCLE =====

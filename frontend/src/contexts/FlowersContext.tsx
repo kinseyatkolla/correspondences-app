@@ -81,17 +81,25 @@ export function FlowersProvider({ children }: FlowersProviderProps) {
     return cacheAge < maxAge;
   };
 
-  const loadFlowersFromCache = async (): Promise<FlowerEssence[] | null> => {
+  const loadFlowersFromCache = async (
+    allowStale = false,
+  ): Promise<FlowerEssence[] | null> => {
     try {
       const cached = await AsyncStorage.getItem(FLOWERS_CACHE_KEY);
       if (cached) {
         const parsedCache: CachedFlowers = JSON.parse(cached);
+        if ((parsedCache.data?.length ?? 0) === 0) {
+          return null;
+        }
         if (isCacheValid(parsedCache.timestamp)) {
           console.log("Loading flowers from cache");
           return parsedCache.data;
-        } else {
-          console.log("Cache expired, will fetch fresh data");
         }
+        if (allowStale) {
+          console.log("Using expired flowers cache after API failure");
+          return parsedCache.data;
+        }
+        console.log("Cache expired, will fetch fresh data");
       }
     } catch (err) {
       console.error("Error loading from cache:", err);
@@ -175,6 +183,14 @@ export function FlowersProvider({ children }: FlowersProviderProps) {
       await saveFlowersToCache(response.data);
     } catch (err: any) {
       console.error("Error loading flowers:", err);
+      const staleCache = await loadFlowersFromCache(true);
+      if (staleCache) {
+        setFlowers(staleCache);
+        setLastUpdated(new Date());
+        setIsFromCache(true);
+        setError(null);
+        return;
+      }
       const errorMessage =
         err?.message || err?.toString() || "Failed to load flowers";
       setError(errorMessage);

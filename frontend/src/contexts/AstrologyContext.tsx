@@ -193,10 +193,29 @@ export function AstrologyProvider({ children }: AstrologyProviderProps) {
         });
       } else {
         setError("Failed to fetch current chart");
+        setCurrentChart({
+          planets: {},
+          currentTime: { timestamp: new Date().toISOString() },
+          location,
+        });
       }
     } catch (err) {
       console.error("Error fetching current chart:", err);
       setError("Failed to connect to astrology service");
+      try {
+        const location = await getLocation();
+        setCurrentChart({
+          planets: {},
+          currentTime: { timestamp: new Date().toISOString() },
+          location,
+        });
+      } catch {
+        setCurrentChart({
+          planets: {},
+          currentTime: { timestamp: new Date().toISOString() },
+          location: { latitude: 40.7128, longitude: -74.006 },
+        });
+      }
     } finally {
       setLoading(false);
     }

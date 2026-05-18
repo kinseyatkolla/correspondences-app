@@ -153,7 +153,9 @@ export function TarotProvider({ children }: TarotProviderProps) {
     return cacheAge < maxAge;
   };
 
-  const loadTarotCardsFromCache = async (): Promise<TarotCard[] | null> => {
+  const loadTarotCardsFromCache = async (
+    allowStale = false,
+  ): Promise<TarotCard[] | null> => {
     try {
       const cached = await AsyncStorage.getItem(TAROT_CACHE_KEY);
       if (cached) {
@@ -168,17 +170,19 @@ export function TarotProvider({ children }: TarotProviderProps) {
           await AsyncStorage.removeItem(TAROT_CACHE_KEY);
           return null;
         }
-        if (
-          isCacheValid(parsedCache.timestamp ?? 0) &&
-          (parsedCache.data?.length ?? 0) > 0
-        ) {
+        if ((parsedCache.data?.length ?? 0) === 0) {
+          console.log("Cache contains empty data, will fetch fresh data");
+          return null;
+        }
+        if (isCacheValid(parsedCache.timestamp ?? 0)) {
           console.log("Loading tarot cards from cache");
           return parsedCache.data as TarotCard[];
-        } else if ((parsedCache.data?.length ?? 0) === 0) {
-          console.log("Cache contains empty data, will fetch fresh data");
-        } else {
-          console.log("Cache expired, will fetch fresh data");
         }
+        if (allowStale) {
+          console.log("Using expired tarot cache after API failure");
+          return parsedCache.data as TarotCard[];
+        }
+        console.log("Cache expired, will fetch fresh data");
       } else {
         console.log("TarotContext - No cache found");
       }
@@ -279,6 +283,14 @@ export function TarotProvider({ children }: TarotProviderProps) {
     } catch (err: any) {
       console.error("TarotContext - Error loading tarot cards:", err);
       console.error("TarotContext - Error details:", JSON.stringify(err));
+      const staleCache = await loadTarotCardsFromCache(true);
+      if (staleCache) {
+        setTarotCards(staleCache);
+        setLastUpdated(new Date());
+        setIsFromCache(true);
+        setError(null);
+        return;
+      }
       const errorMessage =
         err?.message || err?.toString() || "Failed to load tarot cards";
       setError(errorMessage);

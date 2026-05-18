@@ -80,6 +80,7 @@ function getLocalApiUrl(): string {
 }
 
 const API_BASE_URL = getLocalApiUrl();
+const API_REQUEST_TIMEOUT_MS = 30000;
 
 // Log the API URL being used (only in development)
 if (__DEV__) {
@@ -231,13 +232,20 @@ class ApiService {
         console.log(`📡 API Request: ${options.method || "GET"} ${url}`);
       }
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        API_REQUEST_TIMEOUT_MS,
+      );
+
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
           ...options.headers,
         },
         ...options,
-      });
+        signal: options.signal ?? controller.signal,
+      }).finally(() => clearTimeout(timeoutId));
 
       if (!response.ok) {
         // Try to get error message from response
@@ -262,6 +270,11 @@ class ApiService {
       return await response.json();
     } catch (error) {
       console.error(`❌ API Error for ${url}:`, error);
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error(
+          `Request timed out after ${API_REQUEST_TIMEOUT_MS / 1000}s`,
+        );
+      }
       if (
         error instanceof TypeError &&
         error.message === "Network request failed"
