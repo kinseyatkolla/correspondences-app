@@ -1219,7 +1219,25 @@ function findExactStationTime(
   return bestJD;
 }
 
-// Helper function to find exact aspect time using hierarchical search (hour -> minute -> second)
+function getAspectDistanceAtJD(jd, planet1Id, planet2Id, targetAngle) {
+  const result1 = sweph.calc_ut(jd, planet1Id, SEFLG_TOPOCTR);
+  const result2 = sweph.calc_ut(jd, planet2Id, SEFLG_TOPOCTR);
+  if (
+    !result1.data ||
+    result1.data.length < 1 ||
+    !result2.data ||
+    result2.data.length < 1
+  ) {
+    return null;
+  }
+
+  const angle = getAngularDistance(result1.data[0], result2.data[0]);
+  return getAspectDistanceFromTarget(angle, targetAngle);
+}
+
+// Find exact aspect time using coarse + fine search (mirrors station refinement).
+// The previous hour/minute/second grid search often returned unrefined sample times
+// when sample intervals were coarse (e.g. 6h), producing suspicious :00/:30 timestamps.
 function findExactAspectTime(
   planet1Id,
   planet2Id,
@@ -1227,236 +1245,72 @@ function findExactAspectTime(
   prevJD,
   currentJD,
   prevAngle,
-  currentAngle,
-  maxIterations = 30, // Not used in hierarchical search, kept for compatibility
-  toleranceDays = 0.01 / (24 * 60 * 60) // Not used in hierarchical search, kept for compatibility
+  currentAngle
 ) {
-  const planet1Name = getPlanetNameFromId(planet1Id);
-  const planet2Name = getPlanetNameFromId(planet2Id);
-  const prevDate = julianDayToDate(prevJD);
-  const currentDate = julianDayToDate(currentJD);
-  const timeDiffHours = ((currentJD - prevJD) * 24).toFixed(2);
+  const prevDistance = getAspectDistanceFromTarget(prevAngle, targetAngle);
+  const currentDistance = getAspectDistanceFromTarget(currentAngle, targetAngle);
 
-  const aspectNames = {
-    0: "conjunct",
-    60: "sextile",
-    90: "square",
-    120: "trine",
-    180: "opposition",
-  };
-  const aspectName = aspectNames[targetAngle] || `${targetAngle}°`;
+  let bestJD = prevDistance < currentDistance ? prevJD : currentJD;
+  let bestDistance = Math.min(prevDistance, currentDistance);
 
-  // Calculate how far the angle is from the target (0 = exact match)
-  const getDistanceFromTarget = (angle) => {
-    const diff = Math.abs(angle - targetAngle);
-    return Math.min(diff, 360 - diff);
-  };
-
-  const prevDistance = getDistanceFromTarget(prevAngle);
-  const currentDistance = getDistanceFromTarget(currentAngle);
-
-  // If we're not crossing the exact angle, return the sample that's closer
-  // (This shouldn't happen if detection is working correctly, but safety check)
-  if (prevDistance > 1 && currentDistance > 1) {
-    return prevDistance < currentDistance ? prevJD : currentJD;
-  }
-
-  // Expand search window significantly before prevJD and after currentJD
-  // This ensures we catch aspects that occur well outside sample boundaries
-  // Use at least 24 hours expansion (1 full day on each side) to handle cases
-  // where the aspect occurs much later than the initial sample window suggests
-  const windowSizeHours = (currentJD - prevJD) * 24;
-  const expansionHours = Math.max(24, windowSizeHours * 2); // At least 24h, or 2x window size
+  const windowSizeHours = Math.max((currentJD - prevJD) * 24, 0.5);
+  const expansionHours = Math.max(2, windowSizeHours * 0.5);
   const expansionDays = expansionHours / 24;
   const expandedPrevJD = prevJD - expansionDays;
   const expandedCurrentJD = currentJD + expansionDays;
 
-  // Hierarchical search: find best hour, then best minute, then best second
-  // Initialize bestJD to whichever sample is closer to target angle
-  let bestJD = prevDistance < currentDistance ? prevJD : currentJD;
-  let bestDistance = Math.min(prevDistance, currentDistance);
+  const coarseStepSeconds = 30;
+  const coarseStepDays = coarseStepSeconds / (24 * 60 * 60);
+  const beforeCoarseJD = bestJD;
 
-  // Step 1: Find the best hour within the expanded window
-  // Sample every hour (at :00 minutes) in the expanded window
-  const hoursInWindow = Math.ceil((expandedCurrentJD - expandedPrevJD) * 24);
-
-  let bestHourDate = null;
-  let bestHourDistance = bestDistance;
-
-  for (let h = 0; h <= hoursInWindow; h++) {
-    const hourJD = expandedPrevJD + h / 24;
-
-    // Skip if outside expanded window
-    if (hourJD < expandedPrevJD || hourJD > expandedCurrentJD) continue;
-
+  for (
+    let testJD = expandedPrevJD;
+    testJD <= expandedCurrentJD;
+    testJD += coarseStepDays
+  ) {
     try {
-      const result1 = sweph.calc_ut(
-        hourJD,
+      const distance = getAspectDistanceAtJD(
+        testJD,
         planet1Id,
-        SEFLG_TOPOCTR | SEFLG_SPEED
-      );
-      const result2 = sweph.calc_ut(
-        hourJD,
         planet2Id,
-        SEFLG_TOPOCTR | SEFLG_SPEED
+        targetAngle
       );
-
-      if (
-        result1.data &&
-        result1.data.length >= 1 &&
-        result2.data &&
-        result2.data.length >= 1
-      ) {
-        const lon1 = result1.data[0];
-        const lon2 = result2.data[0];
-        const diff = Math.abs(lon1 - lon2);
-        const angle = Math.min(diff, 360 - diff);
-        const distance = getDistanceFromTarget(angle);
-
-        if (distance < bestHourDistance - 1e-10) {
-          bestHourDistance = distance;
-          bestJD = hourJD;
-        }
+      if (distance !== null && distance < bestDistance) {
+        bestDistance = distance;
+        bestJD = testJD;
       }
     } catch (error) {
-      // Skip errors for individual hours
+      // Skip individual sample errors
     }
   }
 
-  // Even if no better hour found, we should still check minutes and seconds
-  // because the optimal time might be between hour boundaries
-  if (bestHourDistance >= bestDistance - 1e-10) {
-    // Reset to initial best values so we search around the initial sample time
-    bestHourDistance = bestDistance;
-    // Use the hour containing the initial best time (round down to hour start)
-    const initialBestDate = julianDayToDate(bestJD);
-    const hourStartDate = new Date(initialBestDate);
-    hourStartDate.setUTCMinutes(0, 0, 0);
-    // Convert back to JD (approximate - this should be fine for our search)
-    const msSinceEpoch = hourStartDate.getTime();
-    const jdOffset = 2440587.5;
-    const msPerDay = 86400000;
-    const hourStartJD = msSinceEpoch / msPerDay + jdOffset;
-    bestJD = hourStartJD;
-  }
+  const offsetSeconds = Math.abs((bestJD - beforeCoarseJD) * 24 * 60 * 60);
+  const fineWindowSeconds = offsetSeconds > 300 ? 600 : 300;
+  const fineStepSeconds = 1;
+  const fineWindowDays = fineWindowSeconds / (24 * 60 * 60);
+  const fineStepDays = fineStepSeconds / (24 * 60 * 60);
 
-  bestHourDate = julianDayToDate(bestJD);
+  for (
+    let offset = -fineWindowDays;
+    offset <= fineWindowDays;
+    offset += fineStepDays
+  ) {
+    const fineJD = bestJD + offset;
+    if (fineJD < expandedPrevJD || fineJD > expandedCurrentJD) continue;
 
-  // Step 2: Find the best minute - search in best hour plus adjacent hours for better precision
-  // Search 1 hour before, the best hour, and 1 hour after (to catch optimal times near boundaries)
-
-  const bestHourJD = bestJD;
-  let bestMinuteDate = bestHourDate;
-  let bestMinuteDistance = bestHourDistance;
-
-  // Search in 3 hours: bestHour - 1h, bestHour, bestHour + 1h
-  const hoursToSearch = [bestHourJD - 1 / 24, bestHourJD, bestHourJD + 1 / 24];
-
-  for (const hourJD of hoursToSearch) {
-    // Skip if outside expanded window
-    if (hourJD < expandedPrevJD || hourJD > expandedCurrentJD) continue;
-
-    // Check all 60 minutes in this hour
-    for (let m = 0; m < 60; m++) {
-      const minuteJD = hourJD + m / (24 * 60);
-
-      // Skip if outside expanded window
-      if (minuteJD < expandedPrevJD || minuteJD > expandedCurrentJD) continue;
-
-      try {
-        const result1 = sweph.calc_ut(
-          minuteJD,
-          planet1Id,
-          SEFLG_TOPOCTR | SEFLG_SPEED
-        );
-        const result2 = sweph.calc_ut(
-          minuteJD,
-          planet2Id,
-          SEFLG_TOPOCTR | SEFLG_SPEED
-        );
-
-        if (
-          result1.data &&
-          result1.data.length >= 1 &&
-          result2.data &&
-          result2.data.length >= 1
-        ) {
-          const lon1 = result1.data[0];
-          const lon2 = result2.data[0];
-          const diff = Math.abs(lon1 - lon2);
-          const angle = Math.min(diff, 360 - diff);
-          const distance = getDistanceFromTarget(angle);
-
-          if (distance < bestMinuteDistance - 1e-10) {
-            bestMinuteDistance = distance;
-            bestMinuteDate = julianDayToDate(minuteJD);
-            bestJD = minuteJD;
-          }
-        }
-      } catch (error) {
-        // Skip errors for individual minutes
+    try {
+      const distance = getAspectDistanceAtJD(
+        fineJD,
+        planet1Id,
+        planet2Id,
+        targetAngle
+      );
+      if (distance !== null && distance < bestDistance) {
+        bestDistance = distance;
+        bestJD = fineJD;
       }
-    }
-  }
-
-  // Step 3: Find the best second - search in best minute plus adjacent minutes for better precision
-  // Search 1 minute before, the best minute, and 1 minute after (to catch optimal times near boundaries)
-
-  const bestMinuteJD = bestJD;
-  let bestSecondDate = bestMinuteDate;
-  let bestSecondDistance = bestMinuteDistance;
-
-  // Search in 3 minutes: bestMinute - 1m, bestMinute, bestMinute + 1m
-  const minutesToSearch = [
-    bestMinuteJD - 1 / (24 * 60),
-    bestMinuteJD,
-    bestMinuteJD + 1 / (24 * 60),
-  ];
-
-  for (const minuteJD of minutesToSearch) {
-    // Skip if outside expanded window
-    if (minuteJD < expandedPrevJD || minuteJD > expandedCurrentJD) continue;
-
-    // Check all 60 seconds in this minute
-    for (let s = 0; s < 60; s++) {
-      const secondJD = minuteJD + s / (24 * 60 * 60);
-
-      // Skip if outside expanded window
-      if (secondJD < expandedPrevJD || secondJD > expandedCurrentJD) continue;
-
-      try {
-        const result1 = sweph.calc_ut(
-          secondJD,
-          planet1Id,
-          SEFLG_TOPOCTR | SEFLG_SPEED
-        );
-        const result2 = sweph.calc_ut(
-          secondJD,
-          planet2Id,
-          SEFLG_TOPOCTR | SEFLG_SPEED
-        );
-
-        if (
-          result1.data &&
-          result1.data.length >= 1 &&
-          result2.data &&
-          result2.data.length >= 1
-        ) {
-          const lon1 = result1.data[0];
-          const lon2 = result2.data[0];
-          const diff = Math.abs(lon1 - lon2);
-          const angle = Math.min(diff, 360 - diff);
-          const distance = getDistanceFromTarget(angle);
-
-          if (distance < bestSecondDistance - 1e-10) {
-            bestSecondDistance = distance;
-            bestSecondDate = julianDayToDate(secondJD);
-            bestJD = secondJD;
-          }
-        }
-      } catch (error) {
-        // Skip errors for individual seconds
-      }
+    } catch (error) {
+      // Skip individual sample errors
     }
   }
 
@@ -1505,18 +1359,21 @@ function julianDayToDate(jd) {
   return date;
 }
 
-function isSuspiciousRoundedHour(date) {
-  return date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
-}
-
 function getAngularDistance(lon1, lon2) {
   const diff = Math.abs(lon1 - lon2);
-  return Math.min(diff, 360 - diff);
+  return diff > 180 ? 360 - diff : diff;
 }
 
 function getAspectDistanceFromTarget(angle, targetAngle) {
   const diff = Math.abs(angle - targetAngle);
   return Math.min(diff, 360 - diff);
+}
+
+function isSuspiciousRoundedTime(date) {
+  return (
+    date.getUTCSeconds() === 0 &&
+    (date.getUTCMinutes() === 0 || date.getUTCMinutes() === 30)
+  );
 }
 
 function getIngressBoundaryDistance(longitude, targetSign) {
@@ -1903,7 +1760,7 @@ router.post("/year-ephemeris", (req, res) => {
             let exactDate = julianDayToDate(exactJD);
             let refinedByFailsafe = false;
 
-            if (isSuspiciousRoundedHour(exactDate)) {
+            if (isSuspiciousRoundedTime(exactDate)) {
               const halfWindowDays = 90 / (24 * 60); // +/- 90 minutes
               const recheckStartJD = exactJD - halfWindowDays;
               const recheckEndJD = exactJD + halfWindowDays;
@@ -2033,7 +1890,7 @@ router.post("/year-ephemeris", (req, res) => {
               let exactDate = julianDayToDate(exactJD);
               let refinedByFailsafe = false;
 
-              if (isSuspiciousRoundedHour(exactDate)) {
+              if (isSuspiciousRoundedTime(exactDate)) {
                 const halfWindowDays = 90 / (24 * 60); // +/- 90 minutes
                 const recheckStartJD = exactJD - halfWindowDays;
                 const recheckEndJD = exactJD + halfWindowDays;
@@ -2235,7 +2092,7 @@ router.post("/year-ephemeris", (req, res) => {
                   let exactDate = julianDayToDate(exactJD);
                   let refinedByFailsafe = false;
 
-                  if (isSuspiciousRoundedHour(exactDate)) {
+                  if (isSuspiciousRoundedTime(exactDate)) {
                     const halfWindowDays = 90 / (24 * 60); // +/- 90 minutes
                     const recheckStartJD = exactJD - halfWindowDays;
                     const recheckEndJD = exactJD + halfWindowDays;
@@ -2532,7 +2389,7 @@ router.post("/year-ephemeris", (req, res) => {
                   let exactDate = julianDayToDate(exactJD);
                   let refinedByFailsafe = false;
 
-                  if (isSuspiciousRoundedHour(exactDate)) {
+                  if (isSuspiciousRoundedTime(exactDate)) {
                     const halfWindowDays = 90 / (24 * 60);
                     const recheckStartJD = exactJD - halfWindowDays;
                     const recheckEndJD = exactJD + halfWindowDays;
