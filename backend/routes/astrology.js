@@ -1395,6 +1395,9 @@ router.post("/year-ephemeris", (req, res) => {
       moonMode,
     } = req.body;
     const useMoonMode = moonMode === true;
+    const effectiveSampleInterval = useMoonMode
+      ? Math.min(Number(sampleInterval) || 12, 2)
+      : Number(sampleInterval) || 12;
 
     if (!year) {
       return res.status(400).json({
@@ -1408,7 +1411,7 @@ router.post("/year-ephemeris", (req, res) => {
     const natalCacheKey = natalChart
       ? `${natalChart.year}-${natalChart.month}-${natalChart.day}-${natalChart.hour}-${natalChart.minute}-${natalChart.second}-${natalChart.latitude}-${natalChart.longitude}`
       : "no-natal";
-    const cacheKey = `${year}-${latitude}-${longitude}-${sampleInterval}-${natalCacheKey}-${
+    const cacheKey = `${year}-${latitude}-${longitude}-${effectiveSampleInterval}-${natalCacheKey}-${
       useMoonMode ? "moon" : "standard"
     }`;
     const cachedData = yearEphemerisCache.get(cacheKey);
@@ -1439,7 +1442,7 @@ router.post("/year-ephemeris", (req, res) => {
       {
         location: { latitude, longitude },
         year,
-        sampleInterval,
+        sampleInterval: effectiveSampleInterval,
         note: "All Swiss Ephemeris calc_ut() calls will use this location with their respective dates",
       }
     );
@@ -1584,7 +1587,7 @@ router.post("/year-ephemeris", (req, res) => {
         );
         // Skip this sample and advance to next
         currentDate.setTime(
-          currentDate.getTime() + sampleInterval * 60 * 60 * 1000
+          currentDate.getTime() + effectiveSampleInterval * 60 * 60 * 1000
         );
         continue;
       }
@@ -1652,7 +1655,7 @@ router.post("/year-ephemeris", (req, res) => {
       // Move to next sample time
       // Add milliseconds directly to avoid date wrapping issues
       currentDate.setTime(
-        currentDate.getTime() + sampleInterval * 60 * 60 * 1000
+        currentDate.getTime() + effectiveSampleInterval * 60 * 60 * 1000
       );
     }
 
@@ -2021,13 +2024,8 @@ router.post("/year-ephemeris", (req, res) => {
                 (nextDist === 999 || currentDistance < nextDist);
             }
 
-            // Detect aspect if:
-            // 1. It's within orb and wasn't exact before (crossing into orb) - this is the primary detection
-            // 2. It's within orb and is a local minimum (closest approach), but only if we haven't detected it recently
-            const isCrossingIntoOrb = !wasExact && isExact && i > 0;
-
-            // Check if we've already detected this aspect recently (within 18 hours = 0.75 days)
-            // This prevents detecting the same aspect multiple times as it moves through the orb window
+            // Detect at the closest approach within orb (local minimum), not on orb entry.
+            // Moon mode uses 2h sampling so brief transits are bracketed for refinement.
             const lastEventJD = aspectLastEventTime[aspectKey];
             const minTimeBetweenEvents = 0.75; // 18 hours in Julian Days (0.75 days)
             const timeSinceLastEvent = lastEventJD
@@ -2035,14 +2033,8 @@ router.post("/year-ephemeris", (req, res) => {
               : Infinity;
             const isRecentDuplicate = timeSinceLastEvent < minTimeBetweenEvents;
 
-            // Only detect if:
-            // - Crossing into orb (primary detection), OR
-            // - Local minimum AND we haven't detected it recently AND it wasn't already exact
-            // (This catches aspects that became exact between samples without crossing the threshold at a sample time)
             const shouldDetect =
-              (isCrossingIntoOrb ||
-                (isLocalMinimum && !isRecentDuplicate && !wasExact)) &&
-              i > 0;
+              i > 0 && !isRecentDuplicate && isLocalMinimum && isExact;
 
             if (shouldDetect) {
               // Find exact time if we have previous sample
@@ -2245,7 +2237,29 @@ router.post("/year-ephemeris", (req, res) => {
               const currentDistance = getDistanceFromTarget(currentAngle);
               const isExact = currentDistance <= 0.5;
               const wasExact = prevAspectState && prevAspectState.wasExact;
-              const isCrossingIntoOrb = !wasExact && isExact && i > 0;
+              const prevDist = prevAspectState
+                ? getDistanceFromTarget(prevAspectState.lastAngle || currentAngle)
+                : 999;
+
+              let isLocalMinimum = false;
+              if (i > 0 && prevAspectState && isExact) {
+                let nextDist = 999;
+                if (i < samples.length - 1) {
+                  const nextSample = samples[i + 1];
+                  const nextTransitPlanetData =
+                    nextSample.planets[transitPlanet.name];
+                  if (nextTransitPlanetData) {
+                    const nextAngle = getAngularDistance(
+                      nextTransitPlanetData.longitude,
+                      natalPoint.longitude
+                    );
+                    nextDist = getDistanceFromTarget(nextAngle);
+                  }
+                }
+                isLocalMinimum =
+                  currentDistance < prevDist &&
+                  (nextDist === 999 || currentDistance < nextDist);
+              }
 
               const lastEventJD = aspectLastEventTime[aspectKey];
               const minTimeBetweenEvents = 0.75;
@@ -2254,7 +2268,7 @@ router.post("/year-ephemeris", (req, res) => {
                 : Infinity;
               const isRecentDuplicate = timeSinceLastEvent < minTimeBetweenEvents;
 
-              if (isCrossingIntoOrb && !isRecentDuplicate && i > 0) {
+              if (isLocalMinimum && isExact && !isRecentDuplicate && i > 0) {
                 const prevSample = samples[i - 1];
                 const prevTransitPlanetData =
                   prevSample.planets[transitPlanet.name];
@@ -2594,7 +2608,7 @@ router.post("/year-ephemeris", (req, res) => {
     const responseData = {
       year,
       location: { latitude, longitude },
-      sampleInterval,
+      sampleInterval: effectiveSampleInterval,
       moonMode: useMoonMode,
       totalSamples: samples.length,
       events: normalizedMoonModeEvents, // Return mode-filtered events with exact timestamps
