@@ -1317,6 +1317,120 @@ function findExactAspectTime(
   return bestJD;
 }
 
+function buildPlanetPositionFromLongitude(longitude) {
+  return {
+    degree: longitude % 30,
+    degreeFormatted: formatDegree(longitude),
+    zodiacSignName: getZodiacSign(longitude),
+  };
+}
+
+function getTransitPositionAtJD(jd, planetId) {
+  const result = sweph.calc_ut(jd, planetId, SEFLG_TOPOCTR);
+  if (!result.data || result.data.length < 1) return null;
+  return buildPlanetPositionFromLongitude(result.data[0]);
+}
+
+function getNatalAspectDistanceAtJD(
+  jd,
+  transitPlanetId,
+  natalLongitude,
+  targetAngle
+) {
+  const result = sweph.calc_ut(jd, transitPlanetId, SEFLG_TOPOCTR);
+  if (!result.data || result.data.length < 1) return null;
+  const angle = getAngularDistance(result.data[0], natalLongitude);
+  return getAspectDistanceFromTarget(angle, targetAngle);
+}
+
+function findExactNatalAspectTime(
+  transitPlanetId,
+  natalLongitude,
+  targetAngle,
+  prevJD,
+  currentJD,
+  prevAngle,
+  currentAngle
+) {
+  const prevDistance = getAspectDistanceFromTarget(prevAngle, targetAngle);
+  const currentDistance = getAspectDistanceFromTarget(currentAngle, targetAngle);
+
+  let bestJD = prevDistance < currentDistance ? prevJD : currentJD;
+  let bestDistance = Math.min(prevDistance, currentDistance);
+
+  const windowSizeHours = Math.max((currentJD - prevJD) * 24, 0.5);
+  const expansionHours = Math.max(2, windowSizeHours * 0.5);
+  const expansionDays = expansionHours / 24;
+  const expandedPrevJD = prevJD - expansionDays;
+  const expandedCurrentJD = currentJD + expansionDays;
+
+  const coarseStepSeconds = 30;
+  const coarseStepDays = coarseStepSeconds / (24 * 60 * 60);
+  const beforeCoarseJD = bestJD;
+
+  for (
+    let testJD = expandedPrevJD;
+    testJD <= expandedCurrentJD;
+    testJD += coarseStepDays
+  ) {
+    try {
+      const distance = getNatalAspectDistanceAtJD(
+        testJD,
+        transitPlanetId,
+        natalLongitude,
+        targetAngle
+      );
+      if (distance !== null && distance < bestDistance) {
+        bestDistance = distance;
+        bestJD = testJD;
+      }
+    } catch (error) {
+      // Skip individual sample errors
+    }
+  }
+
+  const offsetSeconds = Math.abs((bestJD - beforeCoarseJD) * 24 * 60 * 60);
+  const fineWindowSeconds = offsetSeconds > 300 ? 600 : 300;
+  const fineStepSeconds = 1;
+  const fineWindowDays = fineWindowSeconds / (24 * 60 * 60);
+  const fineStepDays = fineStepSeconds / (24 * 60 * 60);
+
+  for (
+    let offset = -fineWindowDays;
+    offset <= fineWindowDays;
+    offset += fineStepDays
+  ) {
+    const fineJD = bestJD + offset;
+    if (fineJD < expandedPrevJD || fineJD > expandedCurrentJD) continue;
+
+    try {
+      const distance = getNatalAspectDistanceAtJD(
+        fineJD,
+        transitPlanetId,
+        natalLongitude,
+        targetAngle
+      );
+      if (distance !== null && distance < bestDistance) {
+        bestDistance = distance;
+        bestJD = fineJD;
+      }
+    } catch (error) {
+      // Skip individual sample errors
+    }
+  }
+
+  return { jd: bestJD, distance: bestDistance };
+}
+
+function isBracketedAspectMinimum(prevDist, currentDist, nextDist) {
+  const isLocalMinimum =
+    currentDist < prevDist && (nextDist === 999 || currentDist < nextDist);
+  // Reject lone in-orb samples between coarse intervals; both neighbors must
+  // bracket the window or at least one stays in orb for a real turning point.
+  const isolatedSample = prevDist > 0.5 && nextDist > 0.5;
+  return isLocalMinimum && !isolatedSample;
+}
+
 // Helper function to convert Julian Day to Date
 // Swiss Ephemeris Julian Days are in UT (Universal Time)
 // JD 2440587.5 = January 1, 1970 00:00:00 UTC
@@ -1395,9 +1509,19 @@ router.post("/year-ephemeris", (req, res) => {
       moonMode,
     } = req.body;
     const useMoonMode = moonMode === true;
-    const effectiveSampleInterval = useMoonMode
-      ? Math.min(Number(sampleInterval) || 12, 2)
-      : Number(sampleInterval) || 12;
+    const hasNatalChartInput =
+      natalChart &&
+      natalChart.year !== undefined &&
+      natalChart.month !== undefined &&
+      natalChart.day !== undefined &&
+      natalChart.hour !== undefined &&
+      natalChart.minute !== undefined &&
+      natalChart.latitude !== undefined &&
+      natalChart.longitude !== undefined;
+    let effectiveSampleInterval = Number(sampleInterval) || 12;
+    if (useMoonMode || hasNatalChartInput) {
+      effectiveSampleInterval = Math.min(effectiveSampleInterval, 2);
+    }
 
     if (!year) {
       return res.status(400).json({
@@ -2000,32 +2124,26 @@ router.post("/year-ephemeris", (req, res) => {
               ? getDistanceFromTarget(prevAspectState.lastAngle || currentAngle)
               : 999;
 
-            // Check if this is a local minimum (aspect is at its closest approach)
-            // This helps catch aspects that become exact between samples
-            let isLocalMinimum = false;
-            if (i > 0 && prevAspectState && isExact) {
-              // Check next sample if available to determine if this is a local minimum
-              let nextDist = 999;
-              if (i < samples.length - 1) {
-                const nextSample = samples[i + 1];
-                const nextP1 = nextSample.planets[planet1.name];
-                const nextP2 = nextSample.planets[planet2.name];
-                if (nextP1 && nextP2) {
-                  const nextAngle = getAngularDistance(
-                    nextP1.longitude,
-                    nextP2.longitude
-                  );
-                  nextDist = getDistanceFromTarget(nextAngle);
-                }
-              }
-              // Local minimum: current is closer than both prev and next
-              isLocalMinimum =
-                currentDistance < prevDist &&
-                (nextDist === 999 || currentDistance < nextDist);
-            }
-
             // Detect at the closest approach within orb (local minimum), not on orb entry.
-            // Moon mode uses 2h sampling so brief transits are bracketed for refinement.
+            let nextDist = 999;
+            if (i > 0 && isExact && i < samples.length - 1) {
+              const nextSample = samples[i + 1];
+              const nextP1 = nextSample.planets[planet1.name];
+              const nextP2 = nextSample.planets[planet2.name];
+              if (nextP1 && nextP2) {
+                const nextAngle = getAngularDistance(
+                  nextP1.longitude,
+                  nextP2.longitude
+                );
+                nextDist = getDistanceFromTarget(nextAngle);
+              }
+            }
+            const isLocalMinimum = isBracketedAspectMinimum(
+              prevDist,
+              currentDistance,
+              nextDist
+            );
+
             const lastEventJD = aspectLastEventTime[aspectKey];
             const minTimeBetweenEvents = 0.75; // 18 hours in Julian Days (0.75 days)
             const timeSinceLastEvent = lastEventJD
@@ -2180,6 +2298,25 @@ router.post("/year-ephemeris", (req, res) => {
                   }
 
                   const exactDateStr = exactDate.toISOString();
+                  const refinedOrb =
+                    getAspectDistanceAtJD(
+                      exactJD,
+                      planet1.id,
+                      planet2.id,
+                      aspectType.angle
+                    ) ?? orb;
+                  const planet1Position =
+                    getTransitPositionAtJD(exactJD, planet1.id) ?? {
+                      degree: planet1Data.degree,
+                      degreeFormatted: planet1Data.degreeFormatted,
+                      zodiacSignName: planet1Data.zodiacSignName,
+                    };
+                  const planet2Position =
+                    getTransitPositionAtJD(exactJD, planet2.id) ?? {
+                      degree: planet2Data.degree,
+                      degreeFormatted: planet2Data.degreeFormatted,
+                      zodiacSignName: planet2Data.zodiacSignName,
+                    };
 
                   events.push({
                     type: "aspect",
@@ -2187,17 +2324,9 @@ router.post("/year-ephemeris", (req, res) => {
                     planet2: planet2.name,
                     aspectName: aspectType.name,
                     utcDateTime: exactDateStr,
-                    orb: orb,
-                    planet1Position: {
-                      degree: planet1Data.degree,
-                      degreeFormatted: planet1Data.degreeFormatted,
-                      zodiacSignName: planet1Data.zodiacSignName,
-                    },
-                    planet2Position: {
-                      degree: planet2Data.degree,
-                      degreeFormatted: planet2Data.degreeFormatted,
-                      zodiacSignName: planet2Data.zodiacSignName,
-                    },
+                    orb: refinedOrb,
+                    planet1Position,
+                    planet2Position,
                     refinedByFailsafe,
                   });
 
@@ -2241,25 +2370,24 @@ router.post("/year-ephemeris", (req, res) => {
                 ? getDistanceFromTarget(prevAspectState.lastAngle || currentAngle)
                 : 999;
 
-              let isLocalMinimum = false;
-              if (i > 0 && prevAspectState && isExact) {
-                let nextDist = 999;
-                if (i < samples.length - 1) {
-                  const nextSample = samples[i + 1];
-                  const nextTransitPlanetData =
-                    nextSample.planets[transitPlanet.name];
-                  if (nextTransitPlanetData) {
-                    const nextAngle = getAngularDistance(
-                      nextTransitPlanetData.longitude,
-                      natalPoint.longitude
-                    );
-                    nextDist = getDistanceFromTarget(nextAngle);
-                  }
+              let nextDist = 999;
+              if (i > 0 && isExact && i < samples.length - 1) {
+                const nextSample = samples[i + 1];
+                const nextTransitPlanetData =
+                  nextSample.planets[transitPlanet.name];
+                if (nextTransitPlanetData) {
+                  const nextAngle = getAngularDistance(
+                    nextTransitPlanetData.longitude,
+                    natalPoint.longitude
+                  );
+                  nextDist = getDistanceFromTarget(nextAngle);
                 }
-                isLocalMinimum =
-                  currentDistance < prevDist &&
-                  (nextDist === 999 || currentDistance < nextDist);
               }
+              const isLocalMinimum = isBracketedAspectMinimum(
+                prevDist,
+                currentDistance,
+                nextDist
+              );
 
               const lastEventJD = aspectLastEventTime[aspectKey];
               const minTimeBetweenEvents = 0.75;
@@ -2278,128 +2406,31 @@ router.post("/year-ephemeris", (req, res) => {
                     natalPoint.longitude
                   );
 
-                  // Hierarchical refinement for natal transits, mirroring mundane
-                  // aspect strategy (hour -> minute -> second) but with a fixed natal point.
-                  let exactJD =
-                    Math.abs(prevAngle - aspectType.angle) <
-                    Math.abs(currentAngle - aspectType.angle)
-                      ? prevSample.julianDay
-                      : sample.julianDay;
-                  let bestDistance = Math.min(
-                    getDistanceFromTarget(prevAngle),
-                    getDistanceFromTarget(currentAngle)
-                  );
-
-                  const windowSizeHours =
-                    (sample.julianDay - prevSample.julianDay) * 24;
-                  const expansionHours = Math.max(24, windowSizeHours * 2);
-                  const expandedPrevJD =
-                    prevSample.julianDay - expansionHours / 24;
-                  const expandedCurrentJD =
-                    sample.julianDay + expansionHours / 24;
-
-                  // Pass 1: hourly scan across expanded window
-                  const totalHours = Math.ceil(
-                    (expandedCurrentJD - expandedPrevJD) * 24
-                  );
-                  let bestHourJD = exactJD;
-                  for (let h = 0; h <= totalHours; h++) {
-                    const testJD = expandedPrevJD + h / 24;
-                    try {
-                      const testTransit = sweph.calc_ut(
-                        testJD,
-                        transitPlanet.id,
-                        SEFLG_TOPOCTR
+                  let refinementHighJD = sample.julianDay;
+                  let refinementHighAngle = currentAngle;
+                  if (i < samples.length - 1) {
+                    const nextSample = samples[i + 1];
+                    const nextTransitPlanetData =
+                      nextSample.planets[transitPlanet.name];
+                    if (nextTransitPlanetData) {
+                      refinementHighJD = nextSample.julianDay;
+                      refinementHighAngle = getAngularDistance(
+                        nextTransitPlanetData.longitude,
+                        natalPoint.longitude
                       );
-                      if (testTransit.data && testTransit.data.length >= 1) {
-                        const testAngle = getAngularDistance(
-                          testTransit.data[0],
-                          natalPoint.longitude
-                        );
-                        const testDistance = getDistanceFromTarget(testAngle);
-                        if (testDistance + 1e-10 < bestDistance) {
-                          bestDistance = testDistance;
-                          bestHourJD = testJD;
-                          exactJD = testJD;
-                        }
-                      }
-                    } catch (error) {
-                      // Skip individual refinement errors
                     }
                   }
 
-                  // Pass 2: minute scan in best hour +/- 1 hour
-                  const minuteHoursToSearch = [
-                    bestHourJD - 1 / 24,
-                    bestHourJD,
-                    bestHourJD + 1 / 24,
-                  ];
-                  let bestMinuteJD = exactJD;
-                  for (const hourJD of minuteHoursToSearch) {
-                    for (let m = 0; m < 60; m++) {
-                      const testJD = hourJD + m / (24 * 60);
-                      if (testJD < expandedPrevJD || testJD > expandedCurrentJD) {
-                        continue;
-                      }
-                      try {
-                        const testTransit = sweph.calc_ut(
-                          testJD,
-                          transitPlanet.id,
-                          SEFLG_TOPOCTR
-                        );
-                        if (testTransit.data && testTransit.data.length >= 1) {
-                          const testAngle = getAngularDistance(
-                            testTransit.data[0],
-                            natalPoint.longitude
-                          );
-                          const testDistance = getDistanceFromTarget(testAngle);
-                          if (testDistance + 1e-10 < bestDistance) {
-                            bestDistance = testDistance;
-                            bestMinuteJD = testJD;
-                            exactJD = testJD;
-                          }
-                        }
-                      } catch (error) {
-                        // Skip individual refinement errors
-                      }
-                    }
-                  }
-
-                  // Pass 3: second scan in best minute +/- 1 minute
-                  const secondMinutesToSearch = [
-                    bestMinuteJD - 1 / (24 * 60),
-                    bestMinuteJD,
-                    bestMinuteJD + 1 / (24 * 60),
-                  ];
-                  for (const minuteJD of secondMinutesToSearch) {
-                    for (let s = 0; s < 60; s++) {
-                      const testJD = minuteJD + s / (24 * 60 * 60);
-                      if (testJD < expandedPrevJD || testJD > expandedCurrentJD) {
-                        continue;
-                      }
-                      try {
-                        const testTransit = sweph.calc_ut(
-                          testJD,
-                          transitPlanet.id,
-                          SEFLG_TOPOCTR
-                        );
-                        if (testTransit.data && testTransit.data.length >= 1) {
-                          const testAngle = getAngularDistance(
-                            testTransit.data[0],
-                            natalPoint.longitude
-                          );
-                          const testDistance = getDistanceFromTarget(testAngle);
-                          if (testDistance + 1e-10 < bestDistance) {
-                            bestDistance = testDistance;
-                            exactJD = testJD;
-                          }
-                        }
-                      } catch (error) {
-                        // Skip individual refinement errors
-                      }
-                    }
-                  }
-
+                  const refined = findExactNatalAspectTime(
+                    transitPlanet.id,
+                    natalPoint.longitude,
+                    aspectType.angle,
+                    prevSample.julianDay,
+                    refinementHighJD,
+                    prevAngle,
+                    refinementHighAngle
+                  );
+                  const exactJD = refined.jd;
                   let exactDate = julianDayToDate(exactJD);
                   let refinedByFailsafe = false;
 
@@ -2408,40 +2439,42 @@ router.post("/year-ephemeris", (req, res) => {
                     const recheckStartJD = exactJD - halfWindowDays;
                     const recheckEndJD = exactJD + halfWindowDays;
                     let bestJD = exactJD;
-                    const stepDays = 30 / (24 * 60 * 60); // 30-second resolution
+                    let bestDistance = refined.distance;
+                    const stepDays = 30 / (24 * 60 * 60);
                     for (
                       let testJD = recheckStartJD;
                       testJD <= recheckEndJD;
                       testJD += stepDays
                     ) {
-                      try {
-                        const testTransit = sweph.calc_ut(
-                          testJD,
-                          transitPlanet.id,
-                          SEFLG_TOPOCTR
-                        );
-                        if (testTransit.data && testTransit.data.length >= 1) {
-                          const testAngle = getAngularDistance(
-                            testTransit.data[0],
-                            natalPoint.longitude
-                          );
-                          const testDistance = getDistanceFromTarget(testAngle);
-                          if (testDistance + 1e-10 < bestDistance) {
-                            bestDistance = testDistance;
-                            bestJD = testJD;
-                          }
-                        }
-                      } catch (error) {
-                        // Skip individual refinement errors
+                      const testDistance = getNatalAspectDistanceAtJD(
+                        testJD,
+                        transitPlanet.id,
+                        natalPoint.longitude,
+                        aspectType.angle
+                      );
+                      if (
+                        testDistance !== null &&
+                        testDistance + 1e-10 < bestDistance
+                      ) {
+                        bestDistance = testDistance;
+                        bestJD = testJD;
                       }
                     }
 
                     if (bestJD !== exactJD) {
-                      exactJD = bestJD;
-                      exactDate = julianDayToDate(exactJD);
+                      exactDate = julianDayToDate(bestJD);
                       refinedByFailsafe = true;
                     }
                   }
+
+                  const finalJD = exactDate.getTime() / 86400000 + 2440587.5;
+                  const refinedOrb =
+                    getNatalAspectDistanceAtJD(
+                      finalJD,
+                      transitPlanet.id,
+                      natalPoint.longitude,
+                      aspectType.angle
+                    ) ?? refined.distance;
 
                   events.push({
                     type: "aspect",
@@ -2449,24 +2482,23 @@ router.post("/year-ephemeris", (req, res) => {
                     planet2: natalPoint.name,
                     aspectName: aspectType.name,
                     utcDateTime: exactDate.toISOString(),
-                    orb: currentDistance,
-                    planet1Position: {
-                      degree: transitPlanetData.degree,
-                      degreeFormatted: transitPlanetData.degreeFormatted,
-                      zodiacSignName: transitPlanetData.zodiacSignName,
-                    },
-                    planet2Position: {
-                      degree: natalPoint.degree,
-                      degreeFormatted: natalPoint.degreeFormatted,
-                      zodiacSignName: natalPoint.zodiacSignName,
-                    },
+                    orb: refinedOrb,
+                    planet1Position:
+                      getTransitPositionAtJD(finalJD, transitPlanet.id) ?? {
+                        degree: transitPlanetData.degree,
+                        degreeFormatted: transitPlanetData.degreeFormatted,
+                        zodiacSignName: transitPlanetData.zodiacSignName,
+                      },
+                    planet2Position: buildPlanetPositionFromLongitude(
+                      natalPoint.longitude
+                    ),
                     isNatalTransit: true,
                     natalTargetType: natalPoint.type,
                     natalTargetName: natalPoint.name,
                     refinedByFailsafe,
                   });
 
-                  aspectLastEventTime[aspectKey] = exactJD;
+                  aspectLastEventTime[aspectKey] = finalJD;
                 }
               }
 
