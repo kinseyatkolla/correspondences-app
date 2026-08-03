@@ -25,6 +25,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { Accelerometer } from "expo-sensors";
 import { useTarot, CardData } from "../contexts/TarotContext";
+import OnboardingOverlay from "../components/OnboardingOverlay";
 import { drawCardBackgrounds, drawCardsUI } from "../styles/drawCardsUI";
 import {
   getTarotImages,
@@ -697,6 +698,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       ]}
     >
       <StatusBar hidden={true} />
+      <OnboardingOverlay screenKey="TAROT" />
       {/* Cards Container - Full Screen */}
       <View style={drawCardsUI.cardsContainer}>
         {cards.map(renderCard)}

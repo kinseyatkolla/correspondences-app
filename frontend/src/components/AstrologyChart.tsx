@@ -481,20 +481,12 @@ export default function AstrologyChart({
   );
   const aspectLines = getAspectLines(planetPositions, ascendantSign);
 
-  // Temporary test: force Pluto to be retrograde for testing
-  const testPlanetPositions = planetPositions.map((planet) => {
-    if (planet.name === "pluto") {
-      return { ...planet, isRetrograde: true };
-    }
-    return planet;
-  });
-
   return (
     <View style={containerStyle}>
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         {/* Degree lines - drawn first so they appear behind the zodiac ring */}
         {/* Planet degree lines */}
-        {testPlanetPositions.map((planet) => {
+        {planetPositions.map((planet) => {
           const signColor = getZodiacSignColor(planet.sign);
           return (
             <Line
@@ -652,7 +644,7 @@ export default function AstrologyChart({
         ))}
 
         {/* Planets */}
-        {testPlanetPositions.map((planet, index) => {
+        {planetPositions.map((planet, index) => {
           const signColor = getZodiacSignColor(planet.sign);
           const radialLabelPositions = getRadialLabelPairPositions(
             planet.labelX,

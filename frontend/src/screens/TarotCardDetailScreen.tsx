@@ -23,7 +23,10 @@ type TarotCardDetailRouteProp = RouteProp<
   "TarotCardDetail"
 >;
 
-function renderWithSuperscriptCitations(text: string) {
+function renderWithSuperscriptCitations(
+  text: string,
+  onCitationPress: () => void,
+) {
   const nodes: React.ReactNode[] = [];
   const regex = /(\d+)(?=\s*(?:•|$))/g;
   let lastIndex = 0;
@@ -40,7 +43,11 @@ function renderWithSuperscriptCitations(text: string) {
       );
     }
     nodes.push(
-      <Text key={`s-${key++}`} style={styles.superscriptCitation}>
+      <Text
+        key={`s-${key++}`}
+        style={styles.superscriptCitation}
+        onPress={onCitationPress}
+      >
         {match[1]}
       </Text>,
     );
@@ -109,6 +116,10 @@ export default function TarotCardDetailScreen() {
       navigation.goBack();
     }
   }, [tarotLoading, cardId, card, navigation]);
+
+  const handleCitationPress = () => {
+    navigation.navigate("TarotReferences" as never);
+  };
 
   if (tarotLoading || !card) {
     return (
@@ -182,7 +193,10 @@ export default function TarotCardDetailScreen() {
           <Text style={sharedUI.sectionTitle}>Description</Text>
           {card.dotsQuotes ? (
             <Text style={[sharedUI.sectionText, styles.dotsQuotes]}>
-              {renderWithSuperscriptCitations(card.dotsQuotes)}
+              {renderWithSuperscriptCitations(
+                card.dotsQuotes,
+                handleCitationPress,
+              )}
             </Text>
           ) : null}
           {card.description1 ? (

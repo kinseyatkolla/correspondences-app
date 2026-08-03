@@ -171,8 +171,8 @@ export default function BirthChartCalculatorScreen({ navigation }: any) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>House System</Text>
           <Text style={styles.infoText}>
-            {chart.houses.houseSystem === "P"
-              ? "Placidus"
+            {chart.houses.houseSystem === "W"
+              ? "Whole Sign"
               : chart.houses.houseSystem}
           </Text>
         </View>

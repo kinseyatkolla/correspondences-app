@@ -362,9 +362,6 @@ export default function MoonScreen({ navigation, route }: any) {
   const { currentChart, loading, error } = useAstrology();
   const { fontLoaded } = usePhysisFont();
 
-  // Debug flag to control aspect debugging display
-  const DEBUG_ASPECTS = true;
-
   // Ref for the ScrollView to control scrolling
   const scrollViewRef = useRef<ScrollView>(null);
 

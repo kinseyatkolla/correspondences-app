@@ -19,6 +19,7 @@ import TithiInfoScreen from "../screens/TithiInfoScreen";
 import TarotScreen from "../screens/TarotScreen";
 import TarotDrawScreen from "../screens/TarotDrawScreen";
 import TarotCardDetailScreen from "../screens/TarotCardDetailScreen";
+import TarotReferencesScreen from "../screens/TarotReferencesScreen";
 import FlowersScreen from "../screens/FlowersScreen";
 import FlowerDrawScreen from "../screens/FlowerDrawScreen";
 import AstrologyScreen from "../screens/AstrologyScreen";
@@ -94,6 +95,11 @@ function TarotStack() {
       <Stack.Screen
         name="TarotCardDetail"
         component={TarotCardDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="TarotReferences"
+        component={TarotReferencesScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

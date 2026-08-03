@@ -550,48 +550,6 @@ export default function TithiInfoScreen({
                       </Text>
                       <Text style={styles.pakshaText}>{paksha}</Text>
 
-                      {/* Debug information for tithi calculation */}
-                      {activeChart?.planets?.moon &&
-                        activeChart?.planets?.sun && (
-                          <View style={styles.debugContainer}>
-                            <Text style={styles.debugTitle}>Debug Info:</Text>
-                            <Text style={styles.debugText}>
-                              Moon Longitude:{" "}
-                              {activeChart.planets.moon.longitude.toFixed(2)}°
-                            </Text>
-                            <Text style={styles.debugText}>
-                              Sun Longitude:{" "}
-                              {activeChart.planets.sun.longitude.toFixed(2)}°
-                            </Text>
-                            <Text style={styles.debugText}>
-                              Difference:{" "}
-                              {(
-                                (activeChart.planets.moon.longitude -
-                                  activeChart.planets.sun.longitude +
-                                  360) %
-                                360
-                              ).toFixed(2)}
-                              °
-                            </Text>
-                            <Text style={styles.debugText}>
-                              Tithi Calculation:{" "}
-                              {(
-                                ((activeChart.planets.moon.longitude -
-                                  activeChart.planets.sun.longitude +
-                                  360) %
-                                  360) /
-                                12
-                              ).toFixed(2)}
-                            </Text>
-                            {tithiPercentageRemaining !== null && (
-                              <Text style={styles.debugText}>
-                                Percentage Remaining:{" "}
-                                {tithiPercentageRemaining.toFixed(2)}%
-                              </Text>
-                            )}
-                          </View>
-                        )}
-
                       {/* Additional Tithi Information */}
                       <View style={styles.tithiDetails}>
                         <View style={styles.tithiDetailRow}>
@@ -785,27 +743,6 @@ const styles = StyleSheet.create({
     color: "#e6e6fa",
     textAlign: "right",
     flex: 1,
-  },
-  debugContainer: {
-    backgroundColor: "#2a2a3e",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 15,
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#ffd700",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  debugText: {
-    fontSize: 12,
-    color: "#b8b8b8",
-    marginBottom: 4,
-    fontFamily: "monospace",
   },
   // Secondary Navigation Bar
   secondaryNavBar: {

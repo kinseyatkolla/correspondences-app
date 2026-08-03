@@ -19,7 +19,6 @@ import { FlowerEssence } from "../services/api";
 import { getFlowerEmoji } from "../utils/imageHelper";
 import { sharedUI } from "../styles/sharedUI";
 import { useFlowers } from "../contexts/FlowersContext";
-import OnboardingOverlay from "../components/OnboardingOverlay";
 
 // ============================================================================
 // DATA & CONSTANTS
@@ -172,7 +171,6 @@ export default function FlowersScreen({ navigation }: any) {
   // ===== MAIN TEMPLATE =====
   return (
     <View style={styles.container}>
-      <OnboardingOverlay screenKey="FLOWERS" />
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}

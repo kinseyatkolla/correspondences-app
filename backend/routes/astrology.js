@@ -14,6 +14,11 @@ const yearEphemerisCache = new Map();
 // Swiss Ephemeris flags
 const SEFLG_TOPOCTR = 0x00040000; // Topocentric position flag
 const SEFLG_SPEED = 0x00000002; // Include speed in calculation
+const DEFAULT_HOUSE_SYSTEM = "W"; // Whole Sign across all chart endpoints
+const resolveHouseSystem = (houseSystem) =>
+  typeof houseSystem === "string" && houseSystem.length > 0
+    ? houseSystem
+    : DEFAULT_HOUSE_SYSTEM;
 
 // Type definitions for reference (JavaScript comments)
 /**
@@ -26,7 +31,7 @@ const SEFLG_SPEED = 0x00000002; // Include speed in calculation
  * @property {number} [second=0]
  * @property {number} [latitude]
  * @property {number} [longitude]
- * @property {string} [houseSystem='P']
+ * @property {string} [houseSystem='W']
  */
 
 /**
@@ -252,8 +257,9 @@ router.post("/houses", (req, res) => {
       second = 0,
       latitude,
       longitude,
-      houseSystem = "P", // Placidus
+      houseSystem: requestedHouseSystem,
     } = req.body;
+    const houseSystem = resolveHouseSystem(requestedHouseSystem);
 
     // Validate input
     if (
@@ -350,8 +356,9 @@ router.post("/chart", (req, res) => {
       second = 0,
       latitude,
       longitude,
-      houseSystem = "P",
+      houseSystem: requestedHouseSystem,
     } = req.body;
+    const houseSystem = resolveHouseSystem(requestedHouseSystem);
 
     // Validate input
     if (
@@ -2680,5 +2687,8 @@ router.post("/year-ephemeris", (req, res) => {
     });
   }
 });
+
+router.DEFAULT_HOUSE_SYSTEM = DEFAULT_HOUSE_SYSTEM;
+router.resolveHouseSystem = resolveHouseSystem;
 
 module.exports = router;

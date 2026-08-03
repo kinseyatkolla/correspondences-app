@@ -46,10 +46,6 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
-    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are.</string>
-    <key>NSLocationAlwaysUsageDescription</key>
-    <string>Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are.</string>
     <key>RCTNewArchEnabled</key>

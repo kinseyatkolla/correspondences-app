@@ -15,7 +15,6 @@ import { TarotCard } from "../services/api";
 import { useTarot } from "../contexts/TarotContext";
 import { sharedUI } from "../styles/sharedUI";
 import { drawCardBackgrounds } from "../styles/drawCardsUI";
-import OnboardingOverlay from "../components/OnboardingOverlay";
 import { usePhysisFont } from "../utils/physisFont";
 import {
   getPlanetKeysFromNames,
@@ -478,7 +477,6 @@ export default function TarotScreen({ navigation }: any) {
   // ===== MAIN TEMPLATE =====
   return (
     <View style={styles.container}>
-      <OnboardingOverlay screenKey="TAROT" />
       <ScrollView
         ref={scrollRef}
         style={styles.scrollContainer}
@@ -547,6 +545,14 @@ export default function TarotScreen({ navigation }: any) {
         )}
 
         {renderCategories()}
+
+        <TouchableOpacity
+          style={styles.referencesLink}
+          onPress={() => navigation.navigate("TarotReferences")}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.referencesLinkText}>References</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <TouchableOpacity
@@ -644,6 +650,19 @@ const styles = StyleSheet.create({
   },
   resultListItem: {
     borderRadius: 10,
+  },
+  referencesLink: {
+    marginTop: 10,
+    marginBottom: 10,
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  referencesLinkText: {
+    color: "#b19cd9",
+    fontSize: 16,
+    fontWeight: "600",
+    textDecorationLine: "underline",
+    letterSpacing: 1,
   },
   categoryList: {
     width: "100%",

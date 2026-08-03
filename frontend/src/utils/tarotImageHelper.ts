@@ -92,6 +92,9 @@ export const IMAGE_NAME_TO_RWS_FILE: Record<string, string> = {
 const TAROT_FACE_FALLBACK_FILE = "RWSa-T-00.png";
 
 function fileCodeFromMinorNumber(n: number): string {
+  // RWS filenames use decimal "10" for the 9 and hex "0A" for the 10.
+  if (n === 9) return "10";
+  if (n === 10) return "0A";
   return (n + 1).toString(16).toUpperCase().padStart(2, "0");
 }
 

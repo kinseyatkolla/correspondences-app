@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   ImageSourcePropType,
+  Linking,
 } from "react-native";
 import {
   hasOnboardingBeenDismissed,
@@ -38,7 +39,7 @@ interface OnboardingOverlayProps {
 //   <OnboardingImage source={require('../../assets/images/custom.png')} />
 // </OnboardingOverlay>
 const getPlaceholderContent = (
-  screenKey: keyof typeof ONBOARDING_KEYS
+  screenKey: keyof typeof ONBOARDING_KEYS,
 ): React.ReactNode => {
   const placeholderContents: Record<
     keyof typeof ONBOARDING_KEYS,
@@ -77,7 +78,17 @@ const getPlaceholderContent = (
           Reverse pinch (zoom in) to flip a card.
         </Text>
         <Text style={styles.placeholderParagraph}>
-          Art by Pamela Colman Smith from the Rider Waite Smith Tarot Deck.
+          Press and hold to see the card's meaning.
+        </Text>
+        <Text style={styles.placeholderParagraph}>
+          RWS deck art by Pamela Coleman Smith, the Correspondences Deck by
+          Kinsey Watts.{" "}
+          <Text
+            style={styles.linkText}
+            onPress={() => Linking.openURL("https://correspondencestarot.com")}
+          >
+            correspondencestarot.com
+          </Text>
         </Text>
       </>
     ),
@@ -124,7 +135,7 @@ export default function OnboardingOverlay({
 
   const checkOnboardingStatus = useCallback(async () => {
     const dismissed = await hasOnboardingBeenDismissed(
-      ONBOARDING_KEYS[screenKey]
+      ONBOARDING_KEYS[screenKey],
     );
     setVisible(!dismissed);
   }, [screenKey]);
@@ -236,6 +247,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "left",
     lineHeight: 28,
+  },
+  linkText: {
+    color: "#b8a0e8",
+    textDecorationLine: "underline",
   },
   placeholderImage: {
     width: "100%",

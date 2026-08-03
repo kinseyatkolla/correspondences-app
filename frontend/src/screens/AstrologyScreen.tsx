@@ -1327,11 +1327,6 @@ export default function AstrologyScreen({ navigation, route }: any) {
                                   ? false // Ascendant doesn't go retrograde
                                   : !!planetForRetrogradeCheck?.isRetrograde;
 
-                              // Temporary test: force Pluto to be retrograde for testing (matching chart component)
-                              if (planet.name === "pluto") {
-                                isRetrograde = true;
-                              }
-
                               // Handle navigation for moon card
                               const handleMoonCardPress = () => {
                                 if (planet.name === "moon" && navigation) {
@@ -2478,11 +2473,6 @@ export default function AstrologyScreen({ navigation, route }: any) {
                   )}
                   {Object.entries(activeChart.planets).map(
                     ([planetName, planet]) => {
-                      // Temporary test: force Pluto to be retrograde for testing
-                      const testPlanet =
-                        planetName === "pluto"
-                          ? { ...planet, isRetrograde: true }
-                          : planet;
                       const planetKeys = getPlanetKeysFromNames();
                       const zodiacKeys = getZodiacKeysFromNames();
                       const capitalizedName =
@@ -2500,7 +2490,7 @@ export default function AstrologyScreen({ navigation, route }: any) {
                             : capitalizedName
                         ];
                       const physisSymbol = physisKey;
-                      const zodiacKey = zodiacKeys[testPlanet.zodiacSignName];
+                      const zodiacKey = zodiacKeys[planet.zodiacSignName];
                       const physisZodiacSymbol = zodiacKey;
 
                       return (
@@ -2520,13 +2510,13 @@ export default function AstrologyScreen({ navigation, route }: any) {
                             </Text>{" "}
                           </Text>
                           <Text style={styles.planetPosition}>
-                            {testPlanet.zodiacSignName} {displayName}
-                            {testPlanet.isRetrograde && (
+                            {planet.zodiacSignName} {displayName}
+                            {planet.isRetrograde && (
                               <Text style={styles.retrogradeIndicator}> R</Text>
                             )}
                           </Text>
                           <Text style={styles.planetPosition}>
-                            {testPlanet.degreeFormatted}
+                            {planet.degreeFormatted}
                           </Text>
                         </View>
                       );

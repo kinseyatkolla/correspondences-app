@@ -16,6 +16,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Accelerometer } from "expo-sensors";
 import { FlowerEssence } from "../services/api";
 import { useFlowers, FlowerCardData } from "../contexts/FlowersContext";
+import OnboardingOverlay from "../components/OnboardingOverlay";
 import { drawCardBackgrounds, drawCardsUI } from "../styles/drawCardsUI";
 
 // ============================================================================
@@ -446,6 +447,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
       ]}
     >
       <StatusBar hidden={true} />
+      <OnboardingOverlay screenKey="FLOWERS" />
       {/* Cards Container - Full Screen */}
       <View style={drawCardsUI.cardsContainer}>{cards.map(renderCard)}</View>
       {/* Search Navigation Bar - Moved to bottom */}

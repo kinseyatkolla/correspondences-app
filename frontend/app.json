@@ -2,7 +2,7 @@
   "expo": {
     "name": "CORRESPONDENCES",
     "slug": "correspondences",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -18,9 +18,7 @@
       "icon": "./assets/icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are.",
-        "NSLocationWhenInUseUsageDescription": "Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are.",
-        "NSLocationAlwaysUsageDescription": "Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are."
+        "NSLocationWhenInUseUsageDescription": "Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are."
       }
     },
     "android": {
@@ -40,6 +38,6 @@
         "projectId": "a920bc1c-1bbe-4155-affc-863174eef137"
       }
     },
-    "owner": "kinsey.kinsey"
+    "owner": "cmyk.rgb.llc"
   }
 }

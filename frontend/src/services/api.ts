@@ -514,7 +514,7 @@ class ApiService {
   }> {
     return this.fetchData("/astrology/houses", {
       method: "POST",
-      body: JSON.stringify(birthData),
+      body: JSON.stringify({ ...birthData, houseSystem: "W" }),
     });
   }
 
@@ -524,7 +524,7 @@ class ApiService {
   }> {
     return this.fetchData("/astrology/chart", {
       method: "POST",
-      body: JSON.stringify(birthData),
+      body: JSON.stringify({ ...birthData, houseSystem: "W" }),
     });
   }
 
