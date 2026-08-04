@@ -22,13 +22,27 @@
       }
     },
     "android": {
+      "package": "com.kinsey.kinsey.correspondences",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Correspondences is a personal reference for moon phases, tarot, flower essences, astrology, and calendar work. Your location is used to align charts, planetary hours, and sky-related timing with where you are."
+        }
+      ]
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     },
