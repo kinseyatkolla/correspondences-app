@@ -48,8 +48,8 @@ const INITIAL_CARD_COUNT = 24; // Only render what's visible initially
 const MAX_CARD_COUNT = 78; // Total cards we can have (full tarot deck)
 const CARDS_TO_ADD_THRESHOLD = 5; // Add more cards when this many or fewer face-down cards remain
 
-const DRAW_REF_SYMBOLS_IMAGE = require("../../assets/images/tarot/correspondences/symbols.png");
-const DRAW_REF_KEYWORDS_IMAGE = require("../../assets/images/tarot/correspondences/keywords.png");
+const DRAW_REF_SYMBOLS_IMAGE = require("../../assets/images/tarot/correspondences/symbols.webp");
+const DRAW_REF_KEYWORDS_IMAGE = require("../../assets/images/tarot/correspondences/keywords.webp");
 
 function centerReferenceCardPosition() {
   return {
