@@ -5,8 +5,13 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  DEFAULT_LOCATION,
+  getCurrentCoordinates,
+  reverseGeocodeLabel,
+  type GeoCoords,
+} from "../utils/geolocation";
 import {
   apiService,
   PlanetPosition as ApiPlanetPosition,
@@ -85,25 +90,17 @@ export function AstrologyProvider({ children }: AstrologyProviderProps) {
       // Only save if we got a valid GPS location (not the fallback)
       // Check if it's not the default New York coordinates
       if (
-        currentLocation.latitude !== 40.7128 ||
-        currentLocation.longitude !== -74.006
+        currentLocation.latitude !== DEFAULT_LOCATION.latitude ||
+        currentLocation.longitude !== DEFAULT_LOCATION.longitude
       ) {
         try {
           // Try to get location name via reverse geocoding
           let locationName = "";
           try {
-            const addresses = await Location.reverseGeocodeAsync({
-              latitude: currentLocation.latitude,
-              longitude: currentLocation.longitude,
-            });
-            if (addresses && addresses.length > 0) {
-              const address = addresses[0];
-              const parts: string[] = [];
-              if (address.city) parts.push(address.city);
-              if (address.region) parts.push(address.region);
-              if (address.country) parts.push(address.country);
-              locationName = parts.length > 0 ? parts.join(", ") : "";
-            }
+            locationName = await reverseGeocodeLabel(
+              currentLocation.latitude,
+              currentLocation.longitude,
+            );
           } catch (geocodeError) {
             console.error(
               "Error reverse geocoding on first startup:",
@@ -133,40 +130,11 @@ export function AstrologyProvider({ children }: AstrologyProviderProps) {
       return currentLocation;
     } catch (err) {
       console.error("Error getting location:", err);
-      // Fallback to default location (New York)
-      return {
-        latitude: 40.7128,
-        longitude: -74.006,
-      };
+      return DEFAULT_LOCATION;
     }
   };
 
-  const getCurrentLocation = async (): Promise<{
-    latitude: number;
-    longitude: number;
-  }> => {
-    try {
-      // Request permission
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        throw new Error("Location permission denied");
-      }
-
-      // Get current position
-      const location = await Location.getCurrentPositionAsync({});
-      return {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      };
-    } catch (err) {
-      console.error("Error getting current location:", err);
-      // Fallback to default location (New York)
-      return {
-        latitude: 40.7128,
-        longitude: -74.006,
-      };
-    }
-  };
+  const getCurrentLocation = async (): Promise<GeoCoords> => getCurrentCoordinates();
 
   const fetchCurrentChart = async () => {
     try {
@@ -213,7 +181,7 @@ export function AstrologyProvider({ children }: AstrologyProviderProps) {
         setCurrentChart({
           planets: {},
           currentTime: { timestamp: new Date().toISOString() },
-          location: { latitude: 40.7128, longitude: -74.006 },
+          location: DEFAULT_LOCATION,
         });
       }
     } finally {

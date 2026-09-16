@@ -2100,6 +2100,7 @@ export default function CalendarScreen({ navigation }: any) {
                   if (event.type === "ingress") {
                     const planetSymbols: Record<string, string> = {
                       sun: "☉",
+                      moon: "☽",
                       mercury: "☿",
                       venus: "♀",
                       mars: "♂",
@@ -2286,6 +2287,7 @@ export default function CalendarScreen({ navigation }: any) {
                   if (event.type === "aspect") {
                     const planetSymbols: Record<string, string> = {
                       sun: "☉",
+                      moon: "☽",
                       mercury: "☿",
                       venus: "♀",
                       mars: "♂",

@@ -3,6 +3,13 @@ const router = express.Router();
 
 // Swiss Ephemeris - use require to avoid TypeScript issues
 const sweph = require("sweph");
+const {
+  ASPECT_DETECTOR_VERSION,
+  getAspectDetectionOrbDegrees,
+  involvesMoon,
+  isBracketedAspectMinimum,
+  isRefinedAspectExact,
+} = require("../lib/aspectDetection");
 
 // Backend cache for year-ephemeris data
 // Key format: "year-latitude-longitude-sampleInterval"
@@ -1429,15 +1436,6 @@ function findExactNatalAspectTime(
   return { jd: bestJD, distance: bestDistance };
 }
 
-function isBracketedAspectMinimum(prevDist, currentDist, nextDist) {
-  const isLocalMinimum =
-    currentDist < prevDist && (nextDist === 999 || currentDist < nextDist);
-  // Reject lone in-orb samples between coarse intervals; both neighbors must
-  // bracket the window or at least one stays in orb for a real turning point.
-  const isolatedSample = prevDist > 0.5 && nextDist > 0.5;
-  return isLocalMinimum && !isolatedSample;
-}
-
 // Helper function to convert Julian Day to Date
 // Swiss Ephemeris Julian Days are in UT (Universal Time)
 // JD 2440587.5 = January 1, 1970 00:00:00 UTC
@@ -1544,7 +1542,7 @@ router.post("/year-ephemeris", (req, res) => {
       : "no-natal";
     const cacheKey = `${year}-${latitude}-${longitude}-${effectiveSampleInterval}-${natalCacheKey}-${
       useMoonMode ? "moon" : "standard"
-    }`;
+    }-ad${ASPECT_DETECTOR_VERSION}`;
     const cachedData = yearEphemerisCache.get(cacheKey);
 
     if (cachedData) {
@@ -1592,6 +1590,11 @@ router.post("/year-ephemeris", (req, res) => {
       { name: "northNode", id: 11, symbol: "☊" }, // True Node (North Node)
     ];
     if (useMoonMode) {
+      planetIds.splice(1, 0, { name: "moon", id: 1, symbol: "☽" });
+    } else if (
+      hasNatalChartInput &&
+      !planetIds.some((planet) => planet.name === "moon")
+    ) {
       planetIds.splice(1, 0, { name: "moon", id: 1, symbol: "☽" });
     }
 
@@ -2121,11 +2124,15 @@ router.post("/year-ephemeris", (req, res) => {
               : 999;
 
             // Detect aspects using a more robust approach:
-            // - Detect when aspect is within orb (0.5 degrees) and wasn't already logged
-            // - Detect when aspect crosses into orb (wasn't exact, now is)
+            // - Detect when aspect is within the pair's detection orb
             // - Detect when aspect is at its closest point (local minimum)
+            // Moon uses a wider catch orb, then refinement must still hit 0.5°.
             const orb = currentDistance;
-            const isExact = orb <= 0.5; // 0.5 degree orb for detection
+            const detectionOrb = getAspectDetectionOrbDegrees(
+              planet1.name,
+              planet2.name
+            );
+            const isExact = orb <= detectionOrb;
             const wasExact = prevAspectState && prevAspectState.wasExact;
             const prevDist = prevAspectState
               ? getDistanceFromTarget(prevAspectState.lastAngle || currentAngle)
@@ -2148,7 +2155,10 @@ router.post("/year-ephemeris", (req, res) => {
             const isLocalMinimum = isBracketedAspectMinimum(
               prevDist,
               currentDistance,
-              nextDist
+              nextDist,
+              {
+                allowIsolatedSample: involvesMoon(planet1.name, planet2.name),
+              }
             );
 
             const lastEventJD = aspectLastEventTime[aspectKey];
@@ -2312,33 +2322,36 @@ router.post("/year-ephemeris", (req, res) => {
                       planet2.id,
                       aspectType.angle
                     ) ?? orb;
-                  const planet1Position =
-                    getTransitPositionAtJD(exactJD, planet1.id) ?? {
-                      degree: planet1Data.degree,
-                      degreeFormatted: planet1Data.degreeFormatted,
-                      zodiacSignName: planet1Data.zodiacSignName,
-                    };
-                  const planet2Position =
-                    getTransitPositionAtJD(exactJD, planet2.id) ?? {
-                      degree: planet2Data.degree,
-                      degreeFormatted: planet2Data.degreeFormatted,
-                      zodiacSignName: planet2Data.zodiacSignName,
-                    };
 
-                  events.push({
-                    type: "aspect",
-                    planet1: planet1.name,
-                    planet2: planet2.name,
-                    aspectName: aspectType.name,
-                    utcDateTime: exactDateStr,
-                    orb: refinedOrb,
-                    planet1Position,
-                    planet2Position,
-                    refinedByFailsafe,
-                  });
+                  if (isRefinedAspectExact(refinedOrb)) {
+                    const planet1Position =
+                      getTransitPositionAtJD(exactJD, planet1.id) ?? {
+                        degree: planet1Data.degree,
+                        degreeFormatted: planet1Data.degreeFormatted,
+                        zodiacSignName: planet1Data.zodiacSignName,
+                      };
+                    const planet2Position =
+                      getTransitPositionAtJD(exactJD, planet2.id) ?? {
+                        degree: planet2Data.degree,
+                        degreeFormatted: planet2Data.degreeFormatted,
+                        zodiacSignName: planet2Data.zodiacSignName,
+                      };
 
-                  // Track the last event time for this aspect to prevent duplicates
-                  aspectLastEventTime[aspectKey] = exactJD;
+                    events.push({
+                      type: "aspect",
+                      planet1: planet1.name,
+                      planet2: planet2.name,
+                      aspectName: aspectType.name,
+                      utcDateTime: exactDateStr,
+                      orb: refinedOrb,
+                      planet1Position,
+                      planet2Position,
+                      refinedByFailsafe,
+                    });
+
+                    // Track the last event time for this aspect to prevent duplicates
+                    aspectLastEventTime[aspectKey] = exactJD;
+                  }
                 }
               }
             }
@@ -2371,7 +2384,10 @@ router.post("/year-ephemeris", (req, res) => {
               const getDistanceFromTarget = (angle) =>
                 getAspectDistanceFromTarget(angle, aspectType.angle);
               const currentDistance = getDistanceFromTarget(currentAngle);
-              const isExact = currentDistance <= 0.5;
+              const detectionOrb = getAspectDetectionOrbDegrees(
+                transitPlanet.name
+              );
+              const isExact = currentDistance <= detectionOrb;
               const wasExact = prevAspectState && prevAspectState.wasExact;
               const prevDist = prevAspectState
                 ? getDistanceFromTarget(prevAspectState.lastAngle || currentAngle)
@@ -2393,7 +2409,10 @@ router.post("/year-ephemeris", (req, res) => {
               const isLocalMinimum = isBracketedAspectMinimum(
                 prevDist,
                 currentDistance,
-                nextDist
+                nextDist,
+                {
+                  allowIsolatedSample: involvesMoon(transitPlanet.name),
+                }
               );
 
               const lastEventJD = aspectLastEventTime[aspectKey];
@@ -2483,29 +2502,32 @@ router.post("/year-ephemeris", (req, res) => {
                       aspectType.angle
                     ) ?? refined.distance;
 
-                  events.push({
-                    type: "aspect",
-                    planet1: transitPlanet.name,
-                    planet2: natalPoint.name,
-                    aspectName: aspectType.name,
-                    utcDateTime: exactDate.toISOString(),
-                    orb: refinedOrb,
-                    planet1Position:
-                      getTransitPositionAtJD(finalJD, transitPlanet.id) ?? {
-                        degree: transitPlanetData.degree,
-                        degreeFormatted: transitPlanetData.degreeFormatted,
-                        zodiacSignName: transitPlanetData.zodiacSignName,
-                      },
-                    planet2Position: buildPlanetPositionFromLongitude(
-                      natalPoint.longitude
-                    ),
-                    isNatalTransit: true,
-                    natalTargetType: natalPoint.type,
-                    natalTargetName: natalPoint.name,
-                    refinedByFailsafe,
-                  });
+                  if (isRefinedAspectExact(refinedOrb)) {
+                    events.push({
+                      type: "aspect",
+                      planet1: transitPlanet.name,
+                      planet2: natalPoint.name,
+                      aspectName: aspectType.name,
+                      utcDateTime: exactDate.toISOString(),
+                      orb: refinedOrb,
+                      planet1Position:
+                        getTransitPositionAtJD(finalJD, transitPlanet.id) ?? {
+                          degree: transitPlanetData.degree,
+                          degreeFormatted:
+                            transitPlanetData.degreeFormatted,
+                          zodiacSignName: transitPlanetData.zodiacSignName,
+                        },
+                      planet2Position: buildPlanetPositionFromLongitude(
+                        natalPoint.longitude
+                      ),
+                      isNatalTransit: true,
+                      natalTargetType: natalPoint.type,
+                      natalTargetName: natalPoint.name,
+                      refinedByFailsafe,
+                    });
 
-                  aspectLastEventTime[aspectKey] = finalJD;
+                    aspectLastEventTime[aspectKey] = finalJD;
+                  }
                 }
               }
 
@@ -2606,8 +2628,10 @@ router.post("/year-ephemeris", (req, res) => {
             if (event.type === "aspect") {
               const includesMoon =
                 event.planet1 === "moon" || event.planet2 === "moon";
-              const isNatalTransitAspect = event.isNatalTransit === true;
-              return includesMoon && !isNatalTransitAspect;
+              if (event.isNatalTransit && !hasNatalChartInput) {
+                return false;
+              }
+              return includesMoon;
             }
 
             // Exclude stations and all other event types in moon mode

@@ -11,9 +11,28 @@ import {
   Animated,
   Platform,
   ScrollView,
+  TextInput,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { sharedUI } from "../styles/sharedUI";
+import { isWeb } from "../utils/platformUtils";
+
+function formatWebDateValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatWebTimeValue(date: Date): string {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+function readWebInputValue(event: any): string {
+  return event?.target?.value ?? event?.nativeEvent?.text ?? "";
+}
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -202,83 +221,119 @@ export default function DateTimePickerDrawer({
               style={sharedUI.drawerContent}
               showsVerticalScrollIndicator={false}
             >
-              {/* Date Picker */}
-              <View>
-                <Text style={styles.datetimeTitleLabel}>Date</Text>
-                <TouchableOpacity
-                  style={styles.datetimeDropdown}
-                  onPress={() => {
-                    setShowDatePicker(true);
-                    setShowTimePicker(false);
-                  }}
-                >
-                  <Text style={styles.datetimeDropdownText}>
-                    {tempDate.toLocaleDateString("en-US", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </Text>
-                  <Text style={styles.datetimePickerArrow}>▼</Text>
-                </TouchableOpacity>
-
-                {/* Inline Date Picker */}
-                {showDatePicker && (
-                  <View style={styles.spinningDateSelectArea}>
-                    <DateTimePicker
-                      value={tempDate}
-                      mode="date"
-                      display={Platform.OS === "ios" ? "spinner" : "default"}
-                      onChange={onDateChange}
-                      // No date limits - Swiss Ephemeris supports dates from ~6000 BC to ~10000 AD
-                      // Users can select any date they want
-                      style={styles.inlineDateTimePicker}
-                      textColor="#e6e6fa"
-                      themeVariant="dark"
+              {isWeb ? (
+                <>
+                  <View>
+                    <Text style={styles.datetimeTitleLabel}>Date</Text>
+                    <TextInput
+                      // @ts-expect-error web-only input type
+                      type="date"
+                      value={formatWebDateValue(tempDate)}
+                      onChange={(event) => {
+                        const value = readWebInputValue(event);
+                        if (!value) return;
+                        const [year, month, day] = value.split("-").map(Number);
+                        const next = new Date(tempDate);
+                        next.setFullYear(year, month - 1, day);
+                        setTempDate(next);
+                      }}
+                      style={styles.webDateTimeInput}
                     />
                   </View>
-                )}
-              </View>
-
-              {/* Time Picker */}
-              <View style={styles.timePickerSection}>
-                <Text style={styles.datetimeTitleLabel}>Time</Text>
-                <TouchableOpacity
-                  style={styles.datetimeDropdown}
-                  onPress={() => {
-                    // Increment key when opening time picker to ensure fresh render
-                    timePickerKeyRef.current += 1;
-                    setShowTimePicker(true);
-                    setShowDatePicker(false);
-                  }}
-                >
-                  <Text style={styles.datetimeDropdownText}>
-                    {tempDate.toLocaleTimeString("en-US", {
-                      hour: "numeric",
-                      minute: "2-digit",
-                      hour12: true,
-                    })}
-                  </Text>
-                  <Text style={styles.datetimePickerArrow}>▼</Text>
-                </TouchableOpacity>
-
-                {/* Inline Time Picker */}
-                {showTimePicker && (
-                  <View style={styles.spinningDateSelectArea}>
-                    <DateTimePicker
-                      key={`time-picker-${timePickerKeyRef.current}`}
-                      value={tempDate}
-                      mode="time"
-                      display={Platform.OS === "ios" ? "spinner" : "default"}
-                      onChange={onTimeChange}
-                      style={styles.inlineDateTimePicker}
-                      textColor="#e6e6fa"
-                      themeVariant="dark"
+                  <View style={styles.timePickerSection}>
+                    <Text style={styles.datetimeTitleLabel}>Time</Text>
+                    <TextInput
+                      // @ts-expect-error web-only input type
+                      type="time"
+                      value={formatWebTimeValue(tempDate)}
+                      onChange={(event) => {
+                        const value = readWebInputValue(event);
+                        if (!value) return;
+                        const [hours, minutes] = value.split(":").map(Number);
+                        const next = new Date(tempDate);
+                        next.setHours(hours, minutes, 0, 0);
+                        setTempDate(next);
+                      }}
+                      style={styles.webDateTimeInput}
                     />
                   </View>
-                )}
-              </View>
+                </>
+              ) : (
+                <>
+                  {/* Date Picker */}
+                  <View>
+                    <Text style={styles.datetimeTitleLabel}>Date</Text>
+                    <TouchableOpacity
+                      style={styles.datetimeDropdown}
+                      onPress={() => {
+                        setShowDatePicker(true);
+                        setShowTimePicker(false);
+                      }}
+                    >
+                      <Text style={styles.datetimeDropdownText}>
+                        {tempDate.toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </Text>
+                      <Text style={styles.datetimePickerArrow}>▼</Text>
+                    </TouchableOpacity>
+
+                    {showDatePicker && (
+                      <View style={styles.spinningDateSelectArea}>
+                        <DateTimePicker
+                          value={tempDate}
+                          mode="date"
+                          display={Platform.OS === "ios" ? "spinner" : "default"}
+                          onChange={onDateChange}
+                          style={styles.inlineDateTimePicker}
+                          textColor="#e6e6fa"
+                          themeVariant="dark"
+                        />
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Time Picker */}
+                  <View style={styles.timePickerSection}>
+                    <Text style={styles.datetimeTitleLabel}>Time</Text>
+                    <TouchableOpacity
+                      style={styles.datetimeDropdown}
+                      onPress={() => {
+                        timePickerKeyRef.current += 1;
+                        setShowTimePicker(true);
+                        setShowDatePicker(false);
+                      }}
+                    >
+                      <Text style={styles.datetimeDropdownText}>
+                        {tempDate.toLocaleTimeString("en-US", {
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
+                      </Text>
+                      <Text style={styles.datetimePickerArrow}>▼</Text>
+                    </TouchableOpacity>
+
+                    {showTimePicker && (
+                      <View style={styles.spinningDateSelectArea}>
+                        <DateTimePicker
+                          key={`time-picker-${timePickerKeyRef.current}`}
+                          value={tempDate}
+                          mode="time"
+                          display={Platform.OS === "ios" ? "spinner" : "default"}
+                          onChange={onTimeChange}
+                          style={styles.inlineDateTimePicker}
+                          textColor="#e6e6fa"
+                          themeVariant="dark"
+                        />
+                      </View>
+                    )}
+                  </View>
+                </>
+              )}
 
               {/* Action Buttons */}
               <View style={styles.drawerBtnsContainer}>
@@ -369,5 +424,15 @@ const styles = StyleSheet.create({
     height: 100,
     width: "100%",
     alignSelf: "center",
+  },
+  webDateTimeInput: {
+    backgroundColor: "#222",
+    color: "#e6e6fa",
+    fontSize: 16,
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#000",
+    width: "100%",
   },
 });

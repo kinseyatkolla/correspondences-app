@@ -15,6 +15,7 @@ import { fetchLunationsForYear } from "../utils/lunationsUtils";
 import { apiService } from "../services/api";
 import { processEphemerisData } from "../utils/ephemerisChartData";
 import { CalendarEvent } from "../types/calendarTypes";
+import { fetchMoonModeEvents } from "../utils/calendarMoonAspectUtils";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -124,6 +125,13 @@ export default function LoadingScreen({
             };
           }
         );
+
+        const moonModeEvents = await fetchMoonModeEvents(
+          year,
+          location.latitude,
+          location.longitude
+        );
+        events.push(...moonModeEvents.mundane);
 
         // Process ephemeris samples for LINES view
         let processedLinesData = null;

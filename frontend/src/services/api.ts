@@ -1,88 +1,8 @@
 // API configuration
-import Constants from "expo-constants";
+import { API_BASE_URL } from "./apiConfig";
 
-// Helper function to extract IP from various Expo Constants sources
-function extractIpFromHost(host: string | undefined | null): string | null {
-  if (!host) return null;
-
-  // Remove protocol if present (exp://, http://, https://, etc.)
-  const cleanHost = host.replace(/^[^:]+:\/\//, "");
-  // Extract IP (everything before the port)
-  const ip = cleanHost.split(":")[0];
-
-  // Validate it's a proper IP address
-  if (
-    ip &&
-    ip !== "localhost" &&
-    ip !== "127.0.0.1" &&
-    ip.match(/^\d+\.\d+\.\d+\.\d+$/)
-  ) {
-    return ip;
-  }
-  return null;
-}
-
-// Helper function to get the local IP address from Expo
-function getLocalApiUrl(): string {
-  // If environment variable is set, use it (required for production builds)
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    if (__DEV__) {
-      console.log(
-        `📍 Using API URL from environment: ${process.env.EXPO_PUBLIC_API_URL}`,
-      );
-    }
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-
-  // In production, EXPO_PUBLIC_API_URL must be set
-  if (!__DEV__) {
-    throw new Error(
-      "EXPO_PUBLIC_API_URL environment variable is required for production builds. " +
-        "Please set it in your eas.json build configuration.",
-    );
-  }
-
-  // Development-only: Try multiple methods to get the IP address
-  const possibleHosts = [
-    Constants.expoConfig?.hostUri,
-    Constants.manifest?.hostUri,
-    Constants.manifest2?.extra?.expoGo?.debuggerHost,
-    // @ts-ignore - debuggerHost might exist
-    Constants.debuggerHost,
-  ];
-
-  for (const host of possibleHosts) {
-    const ip = extractIpFromHost(host);
-    if (ip) {
-      console.log(`📍 Detected local IP: ${ip} (from ${host})`);
-      return `http://${ip}:3000/api`;
-    }
-  }
-
-  // Debug: Log what Constants contains (for troubleshooting)
-  console.log("🔍 Constants debug info:", {
-    hasExpoConfig: !!Constants.expoConfig,
-    hasManifest: !!Constants.manifest,
-    hasManifest2: !!Constants.manifest2,
-    expoConfigHostUri: Constants.expoConfig?.hostUri,
-    manifestHostUri: Constants.manifest?.hostUri,
-  });
-
-  // Last resort fallback for development only
-  console.warn(
-    "⚠️ Could not detect local IP. Using fallback. " +
-      "To fix this:\n" +
-      "1. Find your computer's IP address (run: ifconfig on Mac/Linux or ipconfig on Windows)\n" +
-      "2. Set EXPO_PUBLIC_API_URL environment variable: EXPO_PUBLIC_API_URL=http://YOUR_IP:3000/api\n" +
-      "3. Or update the fallback IP in src/services/api.ts",
-  );
-  return "http://192.168.0.10:3000/api";
-}
-
-const API_BASE_URL = getLocalApiUrl();
 const API_REQUEST_TIMEOUT_MS = 30000;
 
-// Log the API URL being used (only in development)
 if (__DEV__) {
   console.log(`🌐 API Base URL: ${API_BASE_URL}`);
 }
@@ -731,6 +651,9 @@ class ApiService {
       latitude: number;
       longitude: number;
     },
+    options?: {
+      moonMode?: boolean;
+    },
   ): Promise<{
     success: boolean;
     data: {
@@ -793,6 +716,7 @@ class ApiService {
     if (sampleInterval !== undefined)
       requestBody.sampleInterval = sampleInterval;
     if (natalChart) requestBody.natalChart = natalChart;
+    if (options?.moonMode) requestBody.moonMode = true;
 
     type YearEphemerisResponse = Awaited<
       ReturnType<ApiService["getYearEphemeris"]>

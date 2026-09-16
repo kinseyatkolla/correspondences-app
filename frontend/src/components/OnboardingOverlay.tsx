@@ -15,6 +15,7 @@ import {
   dismissOnboarding,
   ONBOARDING_KEYS,
 } from "../utils/onboardingUtils";
+import { isWeb } from "../utils/platformUtils";
 
 interface OnboardingOverlayProps {
   screenKey: keyof typeof ONBOARDING_KEYS;
@@ -48,13 +49,15 @@ const getPlaceholderContent = (
     FLOWERS: (
       <>
         <Text style={styles.placeholderParagraph}>
-          Shake your device to shuffle the cards.
+          Tap SHUFFLE (or shake on mobile) to shuffle the cards.
         </Text>
         <Text style={styles.placeholderParagraph}>
-          Tap a card to bring it to the front
+          Tap a card to bring it to the front.
         </Text>
         <Text style={styles.placeholderParagraph}>
-          Reverse pinch (zoom in) to flip a card.
+          {isWeb
+            ? "Double-click a card to flip it (or reverse pinch on trackpad)."
+            : "Press and hold a card to flip it (or reverse pinch on mobile)."}
         </Text>
         <Text style={styles.placeholderParagraph}>
           Copyright 2018 The Flower Essences Deck by Kinsey Watts
@@ -69,16 +72,15 @@ const getPlaceholderContent = (
     TAROT: (
       <>
         <Text style={styles.placeholderParagraph}>
-          Shake your device to shuffle the cards.
+          Tap SHUFFLE (or shake on mobile) to shuffle the cards.
         </Text>
         <Text style={styles.placeholderParagraph}>
-          Tap a card to bring it to the front
+          Tap a card to bring it to the front.
         </Text>
         <Text style={styles.placeholderParagraph}>
-          Reverse pinch (zoom in) to flip a card.
-        </Text>
-        <Text style={styles.placeholderParagraph}>
-          Press and hold to see the card's meaning.
+          {isWeb
+            ? "Double-click a card to flip it or see its meaning (or reverse pinch on trackpad)."
+            : "Press and hold a card to flip it or see its meaning (or reverse pinch on mobile)."}
         </Text>
         <Text style={styles.placeholderParagraph}>
           RWS deck art by Pamela Coleman Smith, the Correspondences Deck by

@@ -7,17 +7,31 @@ import {
   Text,
   TouchableOpacity,
   Image,
-  Dimensions,
   Alert,
   StatusBar,
-  Vibration,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { Accelerometer } from "expo-sensors";
 import { FlowerEssence } from "../services/api";
 import { useFlowers, FlowerCardData } from "../contexts/FlowersContext";
 import OnboardingOverlay from "../components/OnboardingOverlay";
-import { drawCardBackgrounds, drawCardsUI } from "../styles/drawCardsUI";
+import {
+  drawCardBackgrounds,
+  drawCardsUI,
+  cardStackStyle,
+  DRAW_CARD_HEIGHT,
+  DRAW_CARD_WIDTH,
+} from "../styles/drawCardsUI";
+import { useCardDrag } from "../hooks/useCardDrag";
+import { useLayoutSize } from "../hooks/useLayoutSize";
+import { isWeb, safeVibrate } from "../utils/platformUtils";
+import {
+  createPointerHandlers,
+  createWebTapHandler,
+  getTouchCount,
+  isSinglePointer,
+  type WebTapHandler,
+} from "../utils/pointerEvents";
+import { setupShakeListener } from "../utils/shakeListener";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -26,9 +40,6 @@ import { drawCardBackgrounds, drawCardsUI } from "../styles/drawCardsUI";
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const CARD_WIDTH = 240; // 3x bigger
-const CARD_HEIGHT = 360; // 3x bigger
 const INITIAL_CARD_COUNT = 25; // Only render what's visible initially
 const MAX_CARD_COUNT = 50; // Total cards we can have
 
@@ -99,6 +110,8 @@ const cardBackImages = [
 // COMPONENT
 // ============================================================================
 export default function FlowerDrawScreen({ navigation, route }: any) {
+  const { width: layoutWidth, height: layoutHeight } = useLayoutSize();
+
   const {
     flowers: allFlowers,
     loading: flowersLoading,
@@ -111,8 +124,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
   const lastTapRef = useRef<number>(0);
   const lastPinchDistance = useRef<number>(0);
   const lastFlipTime = useRef<number>(0);
-  const [draggedCard, setDraggedCard] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const webTapHandlersRef = useRef(new Map<string, WebTapHandler>());
   const [hasLoadedInitialState, setHasLoadedInitialState] = useState(false);
 
   // ===== LIFECYCLE =====
@@ -135,31 +147,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
         });
       }
 
-      // Set up accelerometer listener when screen comes into focus
-      let lastShake = 0;
-      const SHAKE_THRESHOLD = 2.5;
-      const SHAKE_TIMEOUT = 3000;
-
-      const handleShake = (event: any) => {
-        const { x, y, z } = event;
-        const acceleration = Math.sqrt(x * x + y * y + z * z);
-        const now = Date.now();
-
-        if (acceleration > SHAKE_THRESHOLD && now - lastShake > SHAKE_TIMEOUT) {
-          lastShake = now;
-          shuffleCards();
-        }
-      };
-
-      // Set up accelerometer with slower update interval for flowers only
-      Accelerometer.setUpdateInterval(200);
-      const subscription = Accelerometer.addListener(handleShake);
-
-      // Cleanup function - runs when screen loses focus
-      return () => {
-        subscription?.remove();
-        // Note: Don't reset global accelerometer interval as it may interfere with other screens
-      };
+      return setupShakeListener(() => shuffleCards(), { updateIntervalMs: 200 });
     }, [hasLoadedInitialState]),
   );
 
@@ -174,8 +162,8 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
   const initializeCards = () => {
     const newCards: FlowerCardData[] = [];
     const margin = 50;
-    const availableWidth = SCREEN_WIDTH - CARD_WIDTH - margin * 2;
-    const availableHeight = SCREEN_HEIGHT - CARD_HEIGHT - margin * 2;
+    const availableWidth = layoutWidth - DRAW_CARD_WIDTH - margin * 2;
+    const availableHeight = layoutHeight - DRAW_CARD_HEIGHT - margin * 2;
 
     for (let i = 0; i < INITIAL_CARD_COUNT; i++) {
       newCards.push({
@@ -197,10 +185,10 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
   };
 
   const shuffleCards = () => {
-    Vibration.vibrate(100);
+    safeVibrate(100);
     const margin = 50;
-    const availableWidth = SCREEN_WIDTH - CARD_WIDTH - margin * 2;
-    const availableHeight = SCREEN_HEIGHT - CARD_HEIGHT - margin * 2;
+    const availableWidth = layoutWidth - DRAW_CARD_WIDTH - margin * 2;
+    const availableHeight = layoutHeight - DRAW_CARD_HEIGHT - margin * 2;
 
     // If no cards exist, initialize them with random positions
     if (cards.length === 0) {
@@ -237,14 +225,27 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
     setCards(shuffledCards);
   };
 
-  const bringToFront = (cardId: string) => {
-    const updatedCards = cards.map((card: FlowerCardData) => ({
-      ...card,
-      zIndex: card.id === cardId ? maxZIndex + 1 : card.zIndex,
-    }));
-    setCards(updatedCards);
-    setMaxZIndex((prev) => prev + 1);
-  };
+  const bringToFront = useCallback(
+    (cardId: string) => {
+      setMaxZIndex((prev) => {
+        const next = prev + 1;
+        setCards((current) =>
+          current.map((card) => ({
+            ...card,
+            zIndex: card.id === cardId ? next : card.zIndex,
+          })),
+        );
+        return next;
+      });
+    },
+    [setCards],
+  );
+
+  const { startDrag, moveDrag, endDrag, didDrag, resetDragTracking } =
+    useCardDrag<FlowerCardData>({
+      setCards,
+      onBringToFront: bringToFront,
+    });
 
   const flipCard = (cardId: string) => {
     const now = Date.now();
@@ -291,48 +292,20 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
     flipCard(cardId);
   };
 
-  const handleDragStart = (cardId: string, event: any) => {
-    const touch = event.nativeEvent.touches[0];
-    const card = cards.find((c) => c.id === cardId);
-    if (card) {
-      setDraggedCard(cardId);
-      setDragOffset({
-        x: touch.pageX - card.x,
-        y: touch.pageY - card.y,
-      });
-      bringToFront(cardId);
-      // Don't set isDragging immediately - wait for actual movement
-    }
-  };
-
-  const handleDragMove = (cardId: string, event: any) => {
-    if (draggedCard === cardId) {
-      const touch = event.nativeEvent.touches[0];
-      const newX = touch.pageX - dragOffset.x;
-      const newY = touch.pageY - dragOffset.y;
-
-      const updatedCards = cards.map((c: FlowerCardData) =>
-        c.id === cardId ? { ...c, x: newX, y: newY, isDragging: true } : c,
-      );
-      setCards(updatedCards);
-    }
-  };
-
-  const handleDragEnd = (cardId: string) => {
-    if (draggedCard === cardId) {
-      setDraggedCard(null);
-      const updatedCards = cards.map((c: FlowerCardData) =>
-        c.id === cardId ? { ...c, isDragging: false } : c,
-      );
-      setCards(updatedCards);
-    }
-  };
-
   // Calculate distance between two touch points
   const getDistance = (touch1: any, touch2: any) => {
     const dx = touch1.pageX - touch2.pageX;
     const dy = touch1.pageY - touch2.pageY;
     return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const getWebTapHandler = (cardId: string) => {
+    let handler = webTapHandlersRef.current.get(cardId);
+    if (!handler) {
+      handler = createWebTapHandler();
+      webTapHandlersRef.current.set(cardId, handler);
+    }
+    return handler;
   };
 
   // ===== RENDER CARD =====
@@ -352,53 +325,56 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
                 ? [{ rotate: "180deg" }]
                 : []),
             ],
-            zIndex: card.zIndex,
-            elevation: card.zIndex,
+            ...cardStackStyle(card.zIndex),
           },
         ]}
       >
         <View
-          onTouchStart={(event: any) => {
-            const touches = event.nativeEvent.touches;
-            if (touches.length === 1) {
-              // Single finger - start drag
-              handleDragStart(card.id, event);
-            } else if (touches.length === 2) {
-              // Two fingers - start pinch gesture
-              const currentDistance = getDistance(touches[0], touches[1]);
-              lastPinchDistance.current = currentDistance;
-            }
-          }}
-          onTouchMove={(event: any) => {
-            const touches = event.nativeEvent.touches;
-            if (touches.length === 1) {
-              // Single finger - continue drag
-              handleDragMove(card.id, event);
-            } else if (touches.length === 2) {
-              // Two fingers - handle pinch gesture
-              const currentDistance = getDistance(touches[0], touches[1]);
-              if (lastPinchDistance.current > 0) {
-                const distanceDiff =
-                  currentDistance - lastPinchDistance.current;
-                if (distanceDiff > 10) {
-                  handleFlipCard(card.id);
-                  lastPinchDistance.current = 0;
-                }
+          style={drawCardsUI.cardInner}
+          {...createPointerHandlers({
+            onStart: (event) => {
+              const touchCount = getTouchCount(event);
+              if (isSinglePointer(event)) {
+                startDrag(card.id, event);
+              } else if (touchCount === 2) {
+                const touches = event.nativeEvent.touches!;
+                const currentDistance = getDistance(touches[0], touches[1]);
+                lastPinchDistance.current = currentDistance;
               }
-              lastPinchDistance.current = currentDistance;
-            }
-          }}
-          onTouchEnd={() => {
-            handleDragEnd(card.id);
-            lastPinchDistance.current = 0;
-          }}
+            },
+            onMove: (event) => {
+              const touchCount = getTouchCount(event);
+              if (isSinglePointer(event)) {
+                moveDrag(card.id, event);
+              } else if (touchCount === 2) {
+                const touches = event.nativeEvent.touches!;
+                const currentDistance = getDistance(touches[0], touches[1]);
+                if (lastPinchDistance.current > 0) {
+                  const distanceDiff =
+                    currentDistance - lastPinchDistance.current;
+                  if (distanceDiff > 10) {
+                    handleFlipCard(card.id);
+                    lastPinchDistance.current = 0;
+                  }
+                }
+                lastPinchDistance.current = currentDistance;
+              }
+            },
+            onEnd: () => {
+              endDrag(card.id);
+              lastPinchDistance.current = 0;
+              if (isWeb) {
+                getWebTapHandler(card.id).handleTap(
+                  didDrag(),
+                  () => handleCardPress(card.id),
+                  () => handleFlipCard(card.id),
+                );
+                resetDragTracking();
+              }
+            },
+          })}
         >
-          <TouchableOpacity
-            style={drawCardsUI.cardTouchable}
-            onPress={() => handleCardPress(card.id)}
-            onLongPress={() => handleFlipCard(card.id)}
-            activeOpacity={1}
-          >
+          {isWeb ? (
             <Image
               source={
                 card.isFlipped && card.flower
@@ -410,7 +386,31 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
               style={drawCardsUI.cardImage}
               resizeMode="contain"
             />
-          </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={drawCardsUI.cardTouchable}
+              onPress={() => {
+                if (!didDrag()) {
+                  handleCardPress(card.id);
+                }
+                resetDragTracking();
+              }}
+              onLongPress={() => handleFlipCard(card.id)}
+              activeOpacity={1}
+            >
+              <Image
+                source={
+                  card.isFlipped && card.flower
+                    ? (card.flower.imageName &&
+                        flowerImages[card.flower.imageName]) ||
+                      flowerImages["default.jpg"]
+                    : cardBackImages[card.cardBackIndex]
+                }
+                style={drawCardsUI.cardImage}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -448,6 +448,13 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
     >
       <StatusBar hidden={true} />
       <OnboardingOverlay screenKey="FLOWERS" />
+      <TouchableOpacity
+        style={drawCardsUI.shuffleButton}
+        onPress={shuffleCards}
+        activeOpacity={0.8}
+      >
+        <Text style={drawCardsUI.shuffleButtonText}>SHUFFLE</Text>
+      </TouchableOpacity>
       {/* Cards Container - Full Screen */}
       <View style={drawCardsUI.cardsContainer}>{cards.map(renderCard)}</View>
       {/* Search Navigation Bar - Moved to bottom */}

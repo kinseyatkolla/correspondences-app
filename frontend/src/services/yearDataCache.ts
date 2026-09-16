@@ -36,7 +36,7 @@ export interface ProcessedYearData {
 // CONSTANTS
 // ============================================================================
 
-const CACHE_VERSION = 4; // v4: add natal transit aspect fields in list events
+const CACHE_VERSION = 7; // v7: moon-mode ingresses + loosened backend moon aspects
 const MAX_CACHED_YEARS = 10; // Maximum number of years to cache (excluding current year)
 
 // Cache key format: "year-data-{year}-{lat}-{lng}"

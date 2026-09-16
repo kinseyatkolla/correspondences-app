@@ -15,18 +15,35 @@ import {
   Text,
   TouchableOpacity,
   Image,
-  Dimensions,
   StatusBar,
-  Vibration,
   Modal,
   Pressable,
   ScrollView,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { Accelerometer } from "expo-sensors";
 import { useTarot, CardData } from "../contexts/TarotContext";
 import OnboardingOverlay from "../components/OnboardingOverlay";
-import { drawCardBackgrounds, drawCardsUI } from "../styles/drawCardsUI";
+import {
+  drawCardBackgrounds,
+  drawCardsUI,
+  cardStackStyle,
+  DRAW_CARD_HEIGHT,
+  DRAW_CARD_WIDTH,
+} from "../styles/drawCardsUI";
+import { useCardDrag } from "../hooks/useCardDrag";
+import { useLayoutSize } from "../hooks/useLayoutSize";
+import { isWeb, safeVibrate } from "../utils/platformUtils";
+import {
+  beginDocumentDrag,
+  createPointerHandlers,
+  createWebTapHandler,
+  endDocumentDrag,
+  getPrimaryPointer,
+  getTouchCount,
+  isSinglePointer,
+  type WebTapHandler,
+} from "../utils/pointerEvents";
+import { setupShakeListener } from "../utils/shakeListener";
 import {
   getTarotImages,
   getTarotCardBackImages,
@@ -41,22 +58,12 @@ import {
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const CARD_WIDTH = 240;
-const CARD_HEIGHT = 360;
 const INITIAL_CARD_COUNT = 24; // Only render what's visible initially
 const MAX_CARD_COUNT = 78; // Total cards we can have (full tarot deck)
 const CARDS_TO_ADD_THRESHOLD = 5; // Add more cards when this many or fewer face-down cards remain
 
 const DRAW_REF_SYMBOLS_IMAGE = require("../../assets/images/tarot/correspondences/symbols.webp");
 const DRAW_REF_KEYWORDS_IMAGE = require("../../assets/images/tarot/correspondences/keywords.webp");
-
-function centerReferenceCardPosition() {
-  return {
-    x: (SCREEN_WIDTH - CARD_WIDTH) / 2,
-    y: (SCREEN_HEIGHT - CARD_HEIGHT) / 2,
-  };
-}
 
 /** Half the cards get an extra 180° so asymmetric back art (e.g. wear) varies; then slight tilt ±30°. */
 function randomFaceDownRotation(): number {
@@ -69,6 +76,16 @@ function randomFaceDownRotation(): number {
 // COMPONENT
 // ============================================================================
 export default function TarotDrawScreen({ navigation, route }: any) {
+  const { width: layoutWidth, height: layoutHeight } = useLayoutSize();
+
+  const centerReferenceCardPosition = useCallback(
+    () => ({
+      x: (layoutWidth - DRAW_CARD_WIDTH) / 2,
+      y: (layoutHeight - DRAW_CARD_HEIGHT) / 2,
+    }),
+    [layoutWidth, layoutHeight],
+  );
+
   const {
     tarotCards: allTarotCards,
     loading: tarotLoading,
@@ -91,8 +108,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   const lastTapRef = useRef<number>(0);
   const lastPinchDistance = useRef<number>(0);
   const lastFlipTime = useRef<number>(0);
-  const [draggedCard, setDraggedCard] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const webTapHandlersRef = useRef(new Map<string, WebTapHandler>());
   const [hasLoadedInitialState, setHasLoadedInitialState] = useState(false);
   // Track which tarot cards have been assigned to prevent duplicates
   const [usedTarotCardIds, setUsedTarotCardIds] = useState<Set<string>>(
@@ -121,11 +137,11 @@ export default function TarotDrawScreen({ navigation, route }: any) {
 
   useEffect(() => {
     setRefSymbolsPos(centerReferenceCardPosition());
-  }, [drawRefSymbolsResetNonce]);
+  }, [drawRefSymbolsResetNonce, centerReferenceCardPosition]);
 
   useEffect(() => {
     setRefKeywordsPos(centerReferenceCardPosition());
-  }, [drawRefKeywordsResetNonce]);
+  }, [drawRefKeywordsResetNonce, centerReferenceCardPosition]);
 
   // ===== LIFECYCLE =====
   useFocusEffect(
@@ -162,31 +178,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
         });
       }
 
-      // Set up accelerometer listener when screen comes into focus
-      let lastShake = 0;
-      const SHAKE_THRESHOLD = 2.5;
-      const SHAKE_TIMEOUT = 3000;
-
-      const handleShake = (event: any) => {
-        const { x, y, z } = event;
-        const acceleration = Math.sqrt(x * x + y * y + z * z);
-        const now = Date.now();
-
-        if (acceleration > SHAKE_THRESHOLD && now - lastShake > SHAKE_TIMEOUT) {
-          lastShake = now;
-          shuffleCards();
-        }
-      };
-
-      // Set up accelerometer with slower update interval for tarot only
-      Accelerometer.setUpdateInterval(200);
-      const subscription = Accelerometer.addListener(handleShake);
-
-      // Cleanup function - runs when screen loses focus
-      return () => {
-        subscription?.remove();
-        // Note: Don't reset global accelerometer interval as it may interfere with other screens
-      };
+      return setupShakeListener(() => shuffleCards(), { updateIntervalMs: 200 });
     }, [hasLoadedInitialState]),
   );
 
@@ -201,8 +193,8 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   const initializeCards = () => {
     const newCards: CardData[] = [];
     const margin = 50;
-    const availableWidth = SCREEN_WIDTH - CARD_WIDTH - margin * 2;
-    const availableHeight = SCREEN_HEIGHT - CARD_HEIGHT - margin * 2;
+    const availableWidth = layoutWidth - DRAW_CARD_WIDTH - margin * 2;
+    const availableHeight = layoutHeight - DRAW_CARD_HEIGHT - margin * 2;
 
     for (let i = 0; i < INITIAL_CARD_COUNT; i++) {
       newCards.push({
@@ -223,11 +215,11 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   };
 
   const shuffleCards = () => {
-    Vibration.vibrate(100);
+    safeVibrate(100);
 
     const margin = 50;
-    const availableWidth = SCREEN_WIDTH - CARD_WIDTH - margin * 2;
-    const availableHeight = SCREEN_HEIGHT - CARD_HEIGHT - margin * 2;
+    const availableWidth = layoutWidth - DRAW_CARD_WIDTH - margin * 2;
+    const availableHeight = layoutHeight - DRAW_CARD_HEIGHT - margin * 2;
 
     // Reset the used tarot cards tracking when shuffling
     setUsedTarotCardIds(new Set());
@@ -268,8 +260,8 @@ export default function TarotDrawScreen({ navigation, route }: any) {
         `[addMoreCards] Adding: ${faceDownCount} face-down, ${currentCards.length} total`,
       );
       const margin = 50;
-      const availableWidth = SCREEN_WIDTH - CARD_WIDTH - margin * 2;
-      const availableHeight = SCREEN_HEIGHT - CARD_HEIGHT - margin * 2;
+      const availableWidth = layoutWidth - DRAW_CARD_WIDTH - margin * 2;
+      const availableHeight = layoutHeight - DRAW_CARD_HEIGHT - margin * 2;
 
       // Calculate how many cards to add (don't exceed MAX_CARD_COUNT)
       // Add enough cards to bring us well above the threshold
@@ -335,18 +327,26 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     return currentCards;
   };
 
-  const bringToFront = (cardId: string) => {
-    // Find the current maximum z-index from all cards
-    const currentMaxZ = Math.max(...cards.map((card) => card.zIndex), 0);
-    const newMaxZ = currentMaxZ + 1;
+  const bringToFront = useCallback(
+    (cardId: string) => {
+      setCards((prev) => {
+        const currentMaxZ = Math.max(...prev.map((card) => card.zIndex), 0);
+        const newMaxZ = currentMaxZ + 1;
+        setMaxZIndex(newMaxZ);
+        return prev.map((card) => ({
+          ...card,
+          zIndex: card.id === cardId ? newMaxZ : card.zIndex,
+        }));
+      });
+    },
+    [setCards],
+  );
 
-    const updatedCards = cards.map((card: CardData) => ({
-      ...card,
-      zIndex: card.id === cardId ? newMaxZ : card.zIndex,
-    }));
-    setCards(updatedCards);
-    setMaxZIndex(newMaxZ);
-  };
+  const { startDrag, moveDrag, endDrag, didDrag, resetDragTracking } =
+    useCardDrag<CardData>({
+      setCards,
+      onBringToFront: bringToFront,
+    });
 
   const flipCard = (cardId: string) => {
     const now = Date.now();
@@ -449,43 +449,6 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     handleCardFlip(card.id);
   };
 
-  const handleDragStart = (cardId: string, event: any) => {
-    const touch = event.nativeEvent.touches[0];
-    const card = cards.find((c) => c.id === cardId);
-    if (card) {
-      setDraggedCard(cardId);
-      setDragOffset({
-        x: touch.pageX - card.x,
-        y: touch.pageY - card.y,
-      });
-      bringToFront(cardId);
-      // Don't set isDragging immediately - wait for actual movement
-    }
-  };
-
-  const handleDragMove = (cardId: string, event: any) => {
-    if (draggedCard === cardId) {
-      const touch = event.nativeEvent.touches[0];
-      const newX = touch.pageX - dragOffset.x;
-      const newY = touch.pageY - dragOffset.y;
-
-      const updatedCards = cards.map((c: CardData) =>
-        c.id === cardId ? { ...c, x: newX, y: newY, isDragging: true } : c,
-      );
-      setCards(updatedCards);
-    }
-  };
-
-  const handleDragEnd = (cardId: string) => {
-    if (draggedCard === cardId) {
-      setDraggedCard(null);
-      const updatedCards = cards.map((c: CardData) =>
-        c.id === cardId ? { ...c, isDragging: false } : c,
-      );
-      setCards(updatedCards);
-    }
-  };
-
   // Calculate distance between two touch points
   const getDistance = (touch1: any, touch2: any) => {
     const dx = touch1.pageX - touch2.pageX;
@@ -498,26 +461,43 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   const refKeywordsZ = refBaseZ + (refTop === "keywords" ? 2 : 0);
 
   const handleRefDragStart = (kind: "symbols" | "keywords", event: any) => {
-    const touches = event.nativeEvent.touches;
-    if (touches.length !== 1) return;
-    const touch = touches[0];
+    if (!isSinglePointer(event)) return;
+    const pointer = getPrimaryPointer(event);
+    if (!pointer) return;
+
     setRefTop(kind);
     setDraggedRef(kind);
     const pos =
       kind === "symbols" ? refSymbolsPosRef.current : refKeywordsPosRef.current;
     refDragOffsetRef.current = {
-      x: touch.pageX - pos.x,
-      y: touch.pageY - pos.y,
+      x: pointer.pageX - pos.x,
+      y: pointer.pageY - pos.y,
     };
+
+    beginDocumentDrag(
+      (coords) => {
+        const nx = coords.pageX - refDragOffsetRef.current.x;
+        const ny = coords.pageY - refDragOffsetRef.current.y;
+        if (kind === "symbols") {
+          setRefSymbolsPos({ x: nx, y: ny });
+        } else {
+          setRefKeywordsPos({ x: nx, y: ny });
+        }
+      },
+      () => {
+        setDraggedRef(null);
+        endDocumentDrag();
+      },
+    );
   };
 
   const handleRefDragMove = (kind: "symbols" | "keywords", event: any) => {
-    if (draggedRef !== kind) return;
-    const touches = event.nativeEvent.touches;
-    if (touches.length !== 1) return;
-    const t = touches[0];
-    const nx = t.pageX - refDragOffsetRef.current.x;
-    const ny = t.pageY - refDragOffsetRef.current.y;
+    if (draggedRef !== kind || !isSinglePointer(event)) return;
+    const pointer = getPrimaryPointer(event);
+    if (!pointer) return;
+
+    const nx = pointer.pageX - refDragOffsetRef.current.x;
+    const ny = pointer.pageY - refDragOffsetRef.current.y;
     if (kind === "symbols") {
       setRefSymbolsPos({ x: nx, y: ny });
     } else {
@@ -528,6 +508,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
   const handleRefDragEnd = (kind: "symbols" | "keywords") => {
     if (draggedRef === kind) {
       setDraggedRef(null);
+      endDocumentDrag();
     }
   };
 
@@ -545,37 +526,45 @@ export default function TarotDrawScreen({ navigation, route }: any) {
           left: pos.x,
           top: pos.y,
           transform: [{ rotate: "0deg" }],
-          zIndex: zStyle,
-          elevation: zStyle,
+          ...cardStackStyle(zStyle),
         },
       ]}
     >
       <View
-        onTouchStart={(e: any) => {
-          const touches = e.nativeEvent.touches;
-          if (touches.length === 1) {
-            handleRefDragStart(kind, e);
-          }
-        }}
-        onTouchMove={(e: any) => {
-          const touches = e.nativeEvent.touches;
-          if (touches.length === 1) {
-            handleRefDragMove(kind, e);
-          }
-        }}
-        onTouchEnd={() => handleRefDragEnd(kind)}
+        style={drawCardsUI.cardInner}
+        {...createPointerHandlers({
+          onStart: (e) => handleRefDragStart(kind, e),
+          onMove: (e) => handleRefDragMove(kind, e),
+          onEnd: () => handleRefDragEnd(kind),
+        })}
       >
-        {/* Plain View: avoids nested Pressability with parent touch handlers (trackedTouchCount). */}
-        <View style={drawCardsUI.cardTouchable}>
+        {isWeb ? (
           <Image
             source={source}
             style={drawCardsUI.cardImage}
             resizeMode="contain"
           />
-        </View>
+        ) : (
+          <View style={drawCardsUI.cardTouchable}>
+            <Image
+              source={source}
+              style={drawCardsUI.cardImage}
+              resizeMode="contain"
+            />
+          </View>
+        )}
       </View>
     </View>
   );
+
+  const getWebTapHandler = (cardId: string) => {
+    let handler = webTapHandlersRef.current.get(cardId);
+    if (!handler) {
+      handler = createWebTapHandler();
+      webTapHandlersRef.current.set(cardId, handler);
+    }
+    return handler;
+  };
 
   // ===== RENDER CARD =====
   const renderCard = (card: CardData) => {
@@ -588,60 +577,56 @@ export default function TarotDrawScreen({ navigation, route }: any) {
             left: card.x,
             top: card.y,
             transform: [{ rotate: `${card.rotation}deg` }],
-            zIndex: card.zIndex,
-            elevation: card.zIndex,
+            ...cardStackStyle(card.zIndex),
           },
         ]}
       >
         <View
-          onTouchStart={(event: any) => {
-            const touches = event.nativeEvent.touches;
-            if (touches.length === 1) {
-              // Single finger - start drag
-              handleDragStart(card.id, event);
-            } else if (touches.length === 2) {
-              // Two fingers - start pinch gesture
-              const currentDistance = getDistance(touches[0], touches[1]);
-              lastPinchDistance.current = currentDistance;
-            }
-          }}
-          onTouchMove={(event: any) => {
-            const touches = event.nativeEvent.touches;
-            if (touches.length === 1) {
-              // Single finger - continue drag
-              handleDragMove(card.id, event);
-            } else if (touches.length === 2) {
-              // Two fingers - handle pinch gesture
-              const currentDistance = getDistance(touches[0], touches[1]);
-              if (lastPinchDistance.current > 0) {
-                const distanceDiff =
-                  currentDistance - lastPinchDistance.current;
-                if (distanceDiff > 10) {
-                  handleCardFlip(card.id);
-                  lastPinchDistance.current = 0;
+          style={drawCardsUI.cardInner}
+          {...createPointerHandlers({
+            onStart: (event) => {
+              const touchCount = getTouchCount(event);
+              if (isSinglePointer(event)) {
+                startDrag(card.id, event);
+              } else if (touchCount === 2) {
+                const touches = event.nativeEvent.touches!;
+                const currentDistance = getDistance(touches[0], touches[1]);
+                lastPinchDistance.current = currentDistance;
+              }
+            },
+            onMove: (event) => {
+              const touchCount = getTouchCount(event);
+              if (isSinglePointer(event)) {
+                moveDrag(card.id, event);
+              } else if (touchCount === 2) {
+                const touches = event.nativeEvent.touches!;
+                const currentDistance = getDistance(touches[0], touches[1]);
+                if (lastPinchDistance.current > 0) {
+                  const distanceDiff =
+                    currentDistance - lastPinchDistance.current;
+                  if (distanceDiff > 10) {
+                    handleCardFlip(card.id);
+                    lastPinchDistance.current = 0;
+                  }
                 }
+                lastPinchDistance.current = currentDistance;
               }
-              lastPinchDistance.current = currentDistance;
-            }
-          }}
-          onTouchEnd={() => {
-            // Always end drag on finger-up; touches.length is often 0 here, not 1.
-            handleDragEnd(card.id);
-            lastPinchDistance.current = 0;
-          }}
+            },
+            onEnd: () => {
+              endDrag(card.id);
+              lastPinchDistance.current = 0;
+              if (isWeb) {
+                getWebTapHandler(card.id).handleTap(
+                  didDrag(),
+                  () => handleCardPress(card.id),
+                  () => handleCardLongPress(card),
+                );
+                resetDragTracking();
+              }
+            },
+          })}
         >
-          <TouchableOpacity
-            style={drawCardsUI.cardTouchable}
-            onPress={() => {
-              if (!card.isDragging) {
-                handleCardPress(card.id);
-              }
-            }}
-            onLongPress={() => {
-              handleCardLongPress(card);
-            }}
-            activeOpacity={1}
-          >
+          {isWeb ? (
             <Image
               key={`${card.id}-${shuffleKey}`}
               source={
@@ -657,7 +642,37 @@ export default function TarotDrawScreen({ navigation, route }: any) {
               style={drawCardsUI.cardImage}
               resizeMode="contain"
             />
-          </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={drawCardsUI.cardTouchable}
+              onPress={() => {
+                if (!didDrag()) {
+                  handleCardPress(card.id);
+                }
+                resetDragTracking();
+              }}
+              onLongPress={() => {
+                handleCardLongPress(card);
+              }}
+              activeOpacity={1}
+            >
+              <Image
+                key={`${card.id}-${shuffleKey}`}
+                source={
+                  card.isFlipped && card.tarotCard
+                    ? resolveTarotFaceFromMap(
+                        tarotImages,
+                        card.tarotCard.imageName,
+                      )
+                    : cardBackImages[
+                        (card.cardBackIndex ?? 0) % cardBackImages.length
+                      ]
+                }
+                style={drawCardsUI.cardImage}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -699,6 +714,13 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     >
       <StatusBar hidden={true} />
       <OnboardingOverlay screenKey="TAROT" />
+      <TouchableOpacity
+        style={drawCardsUI.shuffleButton}
+        onPress={shuffleCards}
+        activeOpacity={0.8}
+      >
+        <Text style={drawCardsUI.shuffleButtonText}>SHUFFLE</Text>
+      </TouchableOpacity>
       {/* Cards Container - Full Screen */}
       <View style={drawCardsUI.cardsContainer}>
         {cards.map(renderCard)}
@@ -754,8 +776,8 @@ export default function TarotDrawScreen({ navigation, route }: any) {
                 <Image
                   source={guidebookSource}
                   style={{
-                    width: SCREEN_WIDTH - 24,
-                    height: SCREEN_HEIGHT * 0.82,
+                    width: layoutWidth - 24,
+                    height: layoutHeight * 0.82,
                   }}
                   resizeMode="contain"
                 />

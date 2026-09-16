@@ -30,6 +30,7 @@ import {
   LunationEvent,
 } from "../types/calendarTypes";
 import { fetchLunationsForYear } from "../utils/lunationsUtils";
+import { fetchMoonModeEvents } from "../utils/calendarMoonAspectUtils";
 
 interface CalendarContextType {
   year: number;
@@ -538,6 +539,13 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
           })
           .filter((event): event is CalendarEvent => event !== null);
 
+        const moonModeEvents = await fetchMoonModeEvents(
+          year,
+          location.latitude,
+          location.longitude
+        );
+        mundaneEvents = [...mundaneEvents, ...moonModeEvents.mundane];
+
         // Process ephemeris samples for LINES view
         const linesResponse = await apiService.getYearEphemeris(
           year,
@@ -609,6 +617,24 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
             return null;
           })
           .filter((event): event is CalendarEvent => event !== null);
+
+          const moonModeEvents = await fetchMoonModeEvents(
+            year,
+            location.latitude,
+            location.longitude,
+            natalChart
+          );
+          natalTransitEvents = [
+            ...natalTransitEvents.filter(
+              (event) =>
+                !(
+                  event.type === "aspect" &&
+                  event.planet1?.toLowerCase() === "moon"
+                )
+            ),
+            ...moonModeEvents.natal,
+          ];
+
           await saveNatalTransitEventsToCache(
             year,
             location.latitude,

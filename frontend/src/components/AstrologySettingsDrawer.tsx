@@ -13,7 +13,11 @@ import {
   Animated,
   TextInput,
 } from "react-native";
-import * as Location from "expo-location";
+import {
+  geocodeQuery,
+  getCurrentCoordinates,
+  reverseGeocodeLabel,
+} from "../utils/geolocation";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { sharedUI } from "../styles/sharedUI";
 import { apiService } from "../services/api";
@@ -378,7 +382,7 @@ export default function AstrologySettingsDrawer({
     }
     try {
       setSearchingNatalPlace(true);
-      const results = await Location.geocodeAsync(query);
+      const results = await geocodeQuery(query);
       if (!results || results.length === 0) {
         Alert.alert("No match found", "Try a more specific location.");
         return;
@@ -511,14 +515,9 @@ export default function AstrologySettingsDrawer({
         setIsCurrentLocation(false);
         return;
       }
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setIsCurrentLocation(false);
-        return;
-      }
-      const pos = await Location.getCurrentPositionAsync({});
-      const currentLat = pos.coords.latitude;
-      const currentLng = pos.coords.longitude;
+      const coords = await getCurrentCoordinates();
+      const currentLat = coords.latitude;
+      const currentLng = coords.longitude;
       const tolerance = 0.0001;
       setIsCurrentLocation(
         Math.abs(savedLocation.latitude - currentLat) < tolerance &&
@@ -592,21 +591,14 @@ export default function AstrologySettingsDrawer({
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
       setGeocoding(true);
-      const addresses = await Location.reverseGeocodeAsync({
-        latitude: lat,
-        longitude: lng,
-      });
-      if (addresses && addresses.length > 0) {
-        const address = addresses[0];
-        const parts: string[] = [];
-        if (address.city) parts.push(address.city);
-        if (address.region) parts.push(address.region);
-        if (address.country) parts.push(address.country);
-        const name = parts.length > 0 ? parts.join(", ") : `${lat}, ${lng}`;
+      const name = await reverseGeocodeLabel(lat, lng);
+      if (name) {
         setLocationName(name);
         return name;
       }
-      return "";
+      const fallback = `${lat}, ${lng}`;
+      setLocationName(fallback);
+      return fallback;
     } catch (error) {
       console.error("Error reverse geocoding:", error);
       return "";
@@ -618,18 +610,9 @@ export default function AstrologySettingsDrawer({
   const handleUseCurrentLocation = async () => {
     try {
       setLoading(true);
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission Denied",
-          "Location permission is required to use your current location.",
-        );
-        setLoading(false);
-        return;
-      }
-      const location = await Location.getCurrentPositionAsync({});
-      const lat = location.coords.latitude;
-      const lng = location.coords.longitude;
+      const location = await getCurrentCoordinates();
+      const lat = location.latitude;
+      const lng = location.longitude;
       setLatitude(lat.toString());
       setLongitude(lng.toString());
       const name = await reverseGeocode(lat, lng);

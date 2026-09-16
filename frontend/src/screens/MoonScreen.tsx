@@ -11,6 +11,7 @@ import {
   ImageBackground,
   Dimensions,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 import {
   GestureHandlerRootView,
@@ -1773,14 +1774,18 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0)",
     minWidth: 300,
     alignItems: "center",
-    shadowColor: "#ffffff",
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 8,
+    ...(Platform.OS === "web"
+      ? null
+      : {
+          shadowColor: "#ffffff",
+          shadowOffset: {
+            width: 0,
+            height: 0,
+          },
+          shadowOpacity: 0.3,
+          shadowRadius: 15,
+          elevation: 8,
+        }),
   },
   aspectsTitle: {
     fontSize: 20,
@@ -1884,14 +1889,18 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0)",
     minWidth: 300,
     alignItems: "center",
-    shadowColor: "#ffffff",
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 8,
+    ...(Platform.OS === "web"
+      ? null
+      : {
+          shadowColor: "#ffffff",
+          shadowOffset: {
+            width: 0,
+            height: 0,
+          },
+          shadowOpacity: 0.3,
+          shadowRadius: 15,
+          elevation: 8,
+        }),
   },
   lunarPhasesTitle: {
     fontSize: 20,
