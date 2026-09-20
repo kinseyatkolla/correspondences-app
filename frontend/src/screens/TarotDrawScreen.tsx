@@ -105,6 +105,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     [selectedDeck],
   );
   const [maxZIndex, setMaxZIndex] = useState(0);
+  const maxZIndexRef = useRef(0);
   const lastTapRef = useRef<number>(0);
   const lastPinchDistance = useRef<number>(0);
   const lastFlipTime = useRef<number>(0);
@@ -161,6 +162,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
             setCards(normalized);
             // Find the highest z-index from saved state
             const maxZ = Math.max(...savedState.map((card) => card.zIndex));
+            maxZIndexRef.current = maxZ;
             setMaxZIndex(maxZ);
             // Restore used tarot cards tracking from saved state
             const usedIds = new Set<string>();
@@ -211,6 +213,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
     }
 
     setCards(newCards);
+    maxZIndexRef.current = INITIAL_CARD_COUNT - 1;
     setMaxZIndex(INITIAL_CARD_COUNT - 1);
   };
 
@@ -243,6 +246,7 @@ export default function TarotDrawScreen({ navigation, route }: any) {
       });
     }
     setCards(newCards);
+    maxZIndexRef.current = INITIAL_CARD_COUNT - 1;
     setMaxZIndex(INITIAL_CARD_COUNT - 1);
   };
 
@@ -329,15 +333,15 @@ export default function TarotDrawScreen({ navigation, route }: any) {
 
   const bringToFront = useCallback(
     (cardId: string) => {
-      setCards((prev) => {
-        const currentMaxZ = Math.max(...prev.map((card) => card.zIndex), 0);
-        const newMaxZ = currentMaxZ + 1;
-        setMaxZIndex(newMaxZ);
-        return prev.map((card) => ({
+      const next = maxZIndexRef.current + 1;
+      maxZIndexRef.current = next;
+      setMaxZIndex(next);
+      setCards((prev) =>
+        prev.map((card) => ({
           ...card,
-          zIndex: card.id === cardId ? newMaxZ : card.zIndex,
-        }));
-      });
+          zIndex: card.id === cardId ? next : card.zIndex,
+        })),
+      );
     },
     [setCards],
   );

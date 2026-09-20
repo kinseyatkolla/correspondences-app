@@ -63,11 +63,13 @@ export interface AspectEvent {
     degree: number;
     degreeFormatted: string;
     zodiacSignName: string;
+    eclipticLongitude?: number;
   };
   planet2Position: {
     degree: number;
     degreeFormatted: string;
     zodiacSignName: string;
+    eclipticLongitude?: number;
   };
   isNatalTransit?: boolean;
   natalTargetType?: "planet" | "angle";

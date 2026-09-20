@@ -19,6 +19,7 @@ import { FlowerEssence } from "../services/api";
 import { getFlowerEmoji } from "../utils/imageHelper";
 import { sharedUI } from "../styles/sharedUI";
 import { useFlowers } from "../contexts/FlowersContext";
+import { USE_NATIVE_DRIVER } from "../utils/platformUtils";
 
 // ============================================================================
 // DATA & CONSTANTS
@@ -154,7 +155,7 @@ export default function FlowersScreen({ navigation }: any) {
     Animated.timing(flipAnimation, {
       toValue,
       duration: 300,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
   };
 

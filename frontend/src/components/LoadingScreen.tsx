@@ -3,6 +3,7 @@
 // ============================================================================
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
+import { USE_NATIVE_DRIVER, textShadowStyle } from "../utils/platformUtils";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { useTarot } from "../contexts/TarotContext";
 import { useFlowers } from "../contexts/FlowersContext";
@@ -126,12 +127,16 @@ export default function LoadingScreen({
           }
         );
 
-        const moonModeEvents = await fetchMoonModeEvents(
-          year,
-          location.latitude,
-          location.longitude
-        );
-        events.push(...moonModeEvents.mundane);
+        try {
+          const moonModeEvents = await fetchMoonModeEvents(
+            year,
+            location.latitude,
+            location.longitude
+          );
+          events.push(...moonModeEvents.mundane);
+        } catch (moonModeError) {
+          console.error("Moon-mode preload failed:", moonModeError);
+        }
 
         // Process ephemeris samples for LINES view
         let processedLinesData = null;
@@ -254,12 +259,12 @@ export default function LoadingScreen({
           Animated.timing(letterAnimations[index], {
             toValue: 1,
             duration: duration / 2,
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           }),
           Animated.timing(letterAnimations[index], {
             toValue: 0.3,
             duration: duration / 2,
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           }),
         ]).start(() => {
           // Random delay before next animation (longer)
@@ -312,8 +317,10 @@ export default function LoadingScreen({
                     styles.letter,
                     {
                       opacity: animation,
-                      textShadowColor: "#ffffff",
-                      textShadowOffset: { width: 0, height: 0 },
+                      ...textShadowStyle({
+                        color: "#ffffff",
+                        offset: { width: 0, height: 0 },
+                      }),
                     },
                   ]}
                 >

@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { sharedUI } from "../styles/sharedUI";
-import { isWeb } from "../utils/platformUtils";
+import { isWeb, shadowStyle, USE_NATIVE_DRIVER } from "../utils/platformUtils";
 
 function formatWebDateValue(date: Date): string {
   const year = date.getFullYear();
@@ -95,13 +95,13 @@ export default function DateTimePickerDrawer({
       Animated.timing(drawerAnimation, {
         toValue: 1,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }).start();
     } else {
       Animated.timing(drawerAnimation, {
         toValue: 0,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }).start();
     }
   }, [visible]);
@@ -110,7 +110,7 @@ export default function DateTimePickerDrawer({
     Animated.timing(drawerAnimation, {
       toValue: 0,
       duration: 300,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start(() => {
       onClose();
     });
@@ -406,14 +406,13 @@ const styles = StyleSheet.create({
     padding: 8,
     borderWidth: 1,
     borderColor: "#444",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 1,
+    ...shadowStyle({
+      color: "#000",
+      offset: { width: 0, height: 1 },
+      opacity: 0.15,
+      radius: 2,
+      elevation: 1,
+    }),
     maxHeight: 120,
     overflow: "hidden",
     alignItems: "center",

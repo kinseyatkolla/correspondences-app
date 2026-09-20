@@ -1,8 +1,9 @@
 import React, { useRef, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { createStackNavigator } from "@react-navigation/stack";
-import { Text, View, TouchableOpacity, StyleSheet } from "react-native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { Text, TouchableOpacity, StyleSheet } from "react-native";
+import { shadowStyle } from "../utils/platformUtils";
 import GearIcon from "../../assets/gear-svgrepo-com.svg";
 import { FlowersProvider } from "../contexts/FlowersContext";
 import { TarotProvider } from "../contexts/TarotContext";
@@ -28,27 +29,31 @@ import PlanetaryHoursScreen from "../screens/PlanetaryHoursScreen";
 import CalendarScreen from "../screens/CalendarScreen";
 
 const Tab = createBottomTabNavigator();
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator();
+
+const stackScreenOptions = {
+  headerStyle: {
+    backgroundColor: "#000000",
+  },
+  headerShadowVisible: false,
+  headerTintColor: "white" as const,
+  headerTitleStyle: {
+    fontWeight: "bold" as const,
+    letterSpacing: 8,
+  },
+  headerTitle: "CORRESPONDENCES",
+};
+
+const tabHeaderStyle = {
+  backgroundColor: "#000000",
+  borderBottomWidth: 0,
+  ...shadowStyle({ opacity: 0, elevation: 0 }),
+};
 
 // Flowers Stack Navigator
 function FlowersStack() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: "#000000",
-          borderBottomWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: "white",
-        headerTitleStyle: {
-          fontWeight: "bold",
-          letterSpacing: 8,
-        },
-        headerTitle: "CORRESPONDENCES",
-      }}
-    >
+    <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen
         name="FlowerDraw"
         component={FlowerDrawScreen}
@@ -72,20 +77,7 @@ function TarotStack() {
   return (
     <Stack.Navigator
       initialRouteName="TarotDraw"
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: "#000000",
-          borderBottomWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: "white",
-        headerTitleStyle: {
-          fontWeight: "bold",
-          letterSpacing: 8,
-        },
-        headerTitle: "CORRESPONDENCES",
-      }}
+      screenOptions={stackScreenOptions}
     >
       <Stack.Screen
         name="TarotList"
@@ -118,22 +110,7 @@ function TarotStack() {
 // Astrology Stack Navigator
 function AstrologyStack() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: "#000000",
-          borderBottomWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: "white",
-        headerTitleStyle: {
-          fontWeight: "bold",
-          letterSpacing: 8,
-        },
-        headerTitle: "CORRESPONDENCES",
-      }}
-    >
+    <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen
         name="AstrologyMain"
         component={AstrologyScreen}
@@ -156,22 +133,7 @@ function AstrologyStack() {
 // Moon Stack Navigator
 function MoonStack() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: "#000000",
-          borderBottomWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: "white",
-        headerTitleStyle: {
-          fontWeight: "bold",
-          letterSpacing: 8,
-        },
-        headerTitle: "CORRESPONDENCES",
-      }}
-    >
+    <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen
         name="MoonMain"
         component={MoonScreen}
@@ -191,22 +153,7 @@ function CalendarStack() {
   const { year } = useYear();
   return (
     <CalendarProvider year={year}>
-      <Stack.Navigator
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: "#000000",
-            borderBottomWidth: 0,
-            elevation: 0,
-            shadowOpacity: 0,
-          },
-          headerTintColor: "white",
-          headerTitleStyle: {
-            fontWeight: "bold",
-            letterSpacing: 8,
-          },
-          headerTitle: "CORRESPONDENCES",
-        }}
-      >
+      <Stack.Navigator screenOptions={stackScreenOptions}>
         <Stack.Screen
           name="CalendarMain"
           component={CalendarScreen}
@@ -243,6 +190,15 @@ function AppNavigatorContent() {
       await refreshChart();
     } catch (error) {
       console.error("Error saving location:", error);
+    }
+  };
+
+  const handleClearLocation = async () => {
+    try {
+      await AsyncStorage.removeItem("savedLocation");
+      await refreshChart();
+    } catch (error) {
+      console.error("Error clearing saved location:", error);
     }
   };
 
@@ -316,12 +272,7 @@ function AppNavigatorContent() {
               paddingTop: 5,
               height: 60,
             },
-            headerStyle: {
-              backgroundColor: "#000000",
-              borderBottomWidth: 0,
-              elevation: 0,
-              shadowOpacity: 0,
-            },
+            headerStyle: tabHeaderStyle,
             headerTintColor: "white",
             headerTitleStyle: {
               fontWeight: "bold",
@@ -415,6 +366,7 @@ function AppNavigatorContent() {
         visible={settingsDrawerType === "astrology"}
         onClose={closeAstrologySettingsDrawer}
         onSave={handleSaveLocation}
+        onClearLocation={handleClearLocation}
         currentLocation={currentChart?.location || null}
         focusSection={astrologySettingsFocusSection}
       />

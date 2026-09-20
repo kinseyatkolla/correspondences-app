@@ -10,6 +10,9 @@ const {
   isBracketedAspectMinimum,
   isRefinedAspectExact,
 } = require("../lib/aspectDetection");
+const {
+  harmonizeAspectEventForDisplay,
+} = require("../lib/aspectDisplayDegrees");
 
 // Backend cache for year-ephemeris data
 // Key format: "year-latitude-longitude-sampleInterval"
@@ -1332,10 +1335,12 @@ function findExactAspectTime(
 }
 
 function buildPlanetPositionFromLongitude(longitude) {
+  const eclipticLongitude = ((longitude % 360) + 360) % 360;
   return {
-    degree: longitude % 30,
-    degreeFormatted: formatDegree(longitude),
-    zodiacSignName: getZodiacSign(longitude),
+    eclipticLongitude,
+    degree: eclipticLongitude % 30,
+    degreeFormatted: formatDegree(eclipticLongitude),
+    zodiacSignName: getZodiacSign(eclipticLongitude),
   };
 }
 
@@ -1501,12 +1506,40 @@ function getIngressBoundaryDistance(longitude, targetSign) {
   return Math.min(diff, 360 - diff);
 }
 
+function parseIsoDateKeyToUtcNoon(dateKey) {
+  const match = String(dateKey || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  const d = Number(match[3]);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
+    return null;
+  }
+  return new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+}
+
+function parseIsoDateKeyToUtcEnd(dateKey) {
+  const match = String(dateKey || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  const d = Number(match[3]);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
+    return null;
+  }
+  return new Date(Date.UTC(y, m - 1, d, 23, 59, 59));
+}
+
+const MAX_YEAR_EPHEMERIS_RANGE_DAYS = 31;
+
 // Get year-long ephemeris data for detecting ingresses and stations
 router.post("/year-ephemeris", (req, res) => {
   console.log("🚀 YEAR EPHEMERIS ENDPOINT HIT 🚀");
   try {
     const {
       year,
+      startDate: rangeStartDateKey,
+      endDate: rangeEndDateKey,
       latitude = 40.7128, // Default to New York
       longitude = -74.006,
       sampleInterval = 12, // Hours between samples (default: 12 hours for better detection)
@@ -1540,9 +1573,60 @@ router.post("/year-ephemeris", (req, res) => {
     const natalCacheKey = natalChart
       ? `${natalChart.year}-${natalChart.month}-${natalChart.day}-${natalChart.hour}-${natalChart.minute}-${natalChart.second}-${natalChart.latitude}-${natalChart.longitude}`
       : "no-natal";
+
+    let sampleStartDate = new Date(Date.UTC(year, 0, 1, 12, 0, 0));
+    let sampleEndDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
+    let rangeCacheKey = "full-year";
+    const parsedRangeStart = rangeStartDateKey
+      ? parseIsoDateKeyToUtcNoon(rangeStartDateKey)
+      : null;
+    const parsedRangeEnd = rangeEndDateKey
+      ? parseIsoDateKeyToUtcEnd(rangeEndDateKey)
+      : null;
+
+    if (parsedRangeStart || parsedRangeEnd) {
+      if (!parsedRangeStart || !parsedRangeEnd) {
+        return res.status(400).json({
+          success: false,
+          error: "Both startDate and endDate are required for a date range",
+        });
+      }
+      if (parsedRangeStart.getTime() > parsedRangeEnd.getTime()) {
+        return res.status(400).json({
+          success: false,
+          error: "startDate must be on or before endDate",
+        });
+      }
+      const yearStartMs = Date.UTC(Number(year), 0, 1, 0, 0, 0);
+      const yearEndMs = Date.UTC(Number(year), 11, 31, 23, 59, 59);
+      if (
+        parsedRangeEnd.getTime() < yearStartMs ||
+        parsedRangeStart.getTime() > yearEndMs
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: "Date range must overlap the requested year",
+        });
+      }
+      const rangeDays =
+        Math.floor(
+          (parsedRangeEnd.getTime() - parsedRangeStart.getTime()) /
+            (24 * 60 * 60 * 1000),
+        ) + 1;
+      if (rangeDays > MAX_YEAR_EPHEMERIS_RANGE_DAYS) {
+        return res.status(400).json({
+          success: false,
+          error: `Date range may not exceed ${MAX_YEAR_EPHEMERIS_RANGE_DAYS} days`,
+        });
+      }
+      sampleStartDate = parsedRangeStart;
+      sampleEndDate = parsedRangeEnd;
+      rangeCacheKey = `${rangeStartDateKey}_${rangeEndDateKey}`;
+    }
+
     const cacheKey = `${year}-${latitude}-${longitude}-${effectiveSampleInterval}-${natalCacheKey}-${
       useMoonMode ? "moon" : "standard"
-    }-ad${ASPECT_DETECTOR_VERSION}`;
+    }-${rangeCacheKey}-ad${ASPECT_DETECTOR_VERSION}`;
     const cachedData = yearEphemerisCache.get(cacheKey);
 
     if (cachedData) {
@@ -1572,6 +1656,10 @@ router.post("/year-ephemeris", (req, res) => {
         location: { latitude, longitude },
         year,
         sampleInterval: effectiveSampleInterval,
+        dateRange:
+          rangeCacheKey === "full-year"
+            ? "full year"
+            : `${rangeStartDateKey} → ${rangeEndDateKey}`,
         note: "All Swiss Ephemeris calc_ut() calls will use this location with their respective dates",
       }
     );
@@ -1694,10 +1782,9 @@ router.post("/year-ephemeris", (req, res) => {
       }
     }
 
-    // Sample data points throughout the year
-    // Use Date.UTC to ensure we're working in UTC, not local time
-    const startDate = new Date(Date.UTC(year, 0, 1, 12, 0, 0)); // Jan 1, noon UTC
-    const endDate = new Date(Date.UTC(year, 11, 31, 23, 59, 59)); // Dec 31, end of day UTC
+    // Sample data points throughout the year (or an optional startDate/endDate window)
+    const startDate = sampleStartDate;
+    const endDate = sampleEndDate;
     const samples = [];
 
     // Generate samples
@@ -2326,12 +2413,14 @@ router.post("/year-ephemeris", (req, res) => {
                   if (isRefinedAspectExact(refinedOrb)) {
                     const planet1Position =
                       getTransitPositionAtJD(exactJD, planet1.id) ?? {
+                        eclipticLongitude: planet1Data.longitude,
                         degree: planet1Data.degree,
                         degreeFormatted: planet1Data.degreeFormatted,
                         zodiacSignName: planet1Data.zodiacSignName,
                       };
                     const planet2Position =
                       getTransitPositionAtJD(exactJD, planet2.id) ?? {
+                        eclipticLongitude: planet2Data.longitude,
                         degree: planet2Data.degree,
                         degreeFormatted: planet2Data.degreeFormatted,
                         zodiacSignName: planet2Data.zodiacSignName,
@@ -2512,6 +2601,7 @@ router.post("/year-ephemeris", (req, res) => {
                       orb: refinedOrb,
                       planet1Position:
                         getTransitPositionAtJD(finalJD, transitPlanet.id) ?? {
+                          eclipticLongitude: transitPlanetData.longitude,
                           degree: transitPlanetData.degree,
                           degreeFormatted:
                             transitPlanetData.degreeFormatted,
@@ -2656,6 +2746,10 @@ router.post("/year-ephemeris", (req, res) => {
           })
       : deduplicatedEvents;
 
+    const displayNormalizedEvents = normalizedMoonModeEvents.map((event) =>
+      harmonizeAspectEventForDisplay(event)
+    );
+
     // Log event counts for debugging
     const eventCounts = deduplicatedEvents.reduce((acc, event) => {
       acc[event.type] = (acc[event.type] || 0) + 1;
@@ -2673,8 +2767,10 @@ router.post("/year-ephemeris", (req, res) => {
       location: { latitude, longitude },
       sampleInterval: effectiveSampleInterval,
       moonMode: useMoonMode,
+      startDate: rangeCacheKey === "full-year" ? null : rangeStartDateKey,
+      endDate: rangeCacheKey === "full-year" ? null : rangeEndDateKey,
       totalSamples: samples.length,
-      events: normalizedMoonModeEvents, // Return mode-filtered events with exact timestamps
+      events: displayNormalizedEvents, // Return mode-filtered events with exact timestamps
       samples, // Keep samples for backward compatibility if needed
     };
 

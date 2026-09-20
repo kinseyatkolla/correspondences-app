@@ -120,7 +120,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
     saveDrawState,
     loadDrawState,
   } = useFlowers();
-  const [maxZIndex, setMaxZIndex] = useState(0);
+  const maxZIndexRef = useRef(0);
   const lastTapRef = useRef<number>(0);
   const lastPinchDistance = useRef<number>(0);
   const lastFlipTime = useRef<number>(0);
@@ -138,7 +138,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
             setCards(savedState);
             // Find the highest z-index from saved state
             const maxZ = Math.max(...savedState.map((card) => card.zIndex));
-            setMaxZIndex(maxZ);
+            maxZIndexRef.current = maxZ;
           } else {
             // Initialize new cards if no saved state
             initializeCards();
@@ -181,7 +181,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
     }
 
     setCards(newCards);
-    setMaxZIndex(INITIAL_CARD_COUNT - 1);
+    maxZIndexRef.current = INITIAL_CARD_COUNT - 1;
   };
 
   const shuffleCards = () => {
@@ -208,7 +208,7 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
         });
       }
       setCards(newCards);
-      setMaxZIndex(INITIAL_CARD_COUNT - 1);
+      maxZIndexRef.current = INITIAL_CARD_COUNT - 1;
       return;
     }
 
@@ -227,16 +227,14 @@ export default function FlowerDrawScreen({ navigation, route }: any) {
 
   const bringToFront = useCallback(
     (cardId: string) => {
-      setMaxZIndex((prev) => {
-        const next = prev + 1;
-        setCards((current) =>
-          current.map((card) => ({
-            ...card,
-            zIndex: card.id === cardId ? next : card.zIndex,
-          })),
-        );
-        return next;
-      });
+      const next = maxZIndexRef.current + 1;
+      maxZIndexRef.current = next;
+      setCards((current) =>
+        current.map((card) => ({
+          ...card,
+          zIndex: card.id === cardId ? next : card.zIndex,
+        })),
+      );
     },
     [setCards],
   );

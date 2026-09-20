@@ -21,6 +21,7 @@ import DateTimePickerDrawer from "../components/DateTimePickerDrawer";
 import { useAstrology } from "../contexts/AstrologyContext";
 import { apiService, BirthData, BirthChart } from "../services/api";
 import { sharedUI } from "../styles/sharedUI";
+import { shadowStyle, textShadowStyle } from "../utils/platformUtils";
 import { usePhysisFont, getPhysisSymbolStyle } from "../utils/physisFont";
 import {
   getZodiacKeysFromNames,
@@ -647,9 +648,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 24,
     marginBottom: 8,
-    textShadowColor: "rgba(255, 255, 255, 0.4)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 6,
+    ...textShadowStyle({
+      color: "rgba(255, 255, 255, 0.4)",
+      offset: { width: 0, height: 0 },
+      radius: 6,
+    }),
   },
   errorText: {
     fontSize: 16,
@@ -667,14 +670,13 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.2)",
     minWidth: 300,
     alignItems: "center",
-    shadowColor: "#ffffff",
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 8,
+    ...shadowStyle({
+      color: "#ffffff",
+      offset: { width: 0, height: 0 },
+      opacity: 0.3,
+      radius: 15,
+      elevation: 8,
+    }),
   },
   tithiTitle: {
     fontSize: 18,
@@ -682,9 +684,11 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     marginBottom: 10,
     textAlign: "center",
-    textShadowColor: "rgba(255, 255, 255, 0.8)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    ...textShadowStyle({
+      color: "rgba(255, 255, 255, 0.8)",
+      offset: { width: 0, height: 0 },
+      radius: 8,
+    }),
   },
   tithiNumber: {
     fontSize: 24,

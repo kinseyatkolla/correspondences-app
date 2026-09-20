@@ -13,6 +13,7 @@ import {
   Switch,
 } from "react-native";
 import { useTarot } from "../contexts/TarotContext";
+import { USE_NATIVE_DRIVER } from "../utils/platformUtils";
 import { TAROT_DECKS } from "../utils/tarotImageHelper";
 import { sharedUI } from "../styles/sharedUI";
 
@@ -42,7 +43,7 @@ export default function TarotSettingsDrawer({
     if (visible && !prevVisibleRef.current) {
       Animated.spring(drawerAnimation, {
         toValue: 1,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
         tension: 65,
         friction: 11,
       }).start();
@@ -50,7 +51,7 @@ export default function TarotSettingsDrawer({
       Animated.timing(drawerAnimation, {
         toValue: 0,
         duration: 250,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }).start();
     }
     prevVisibleRef.current = visible;

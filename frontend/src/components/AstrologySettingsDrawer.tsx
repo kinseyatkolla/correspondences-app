@@ -16,8 +16,10 @@ import {
 import {
   geocodeQuery,
   getCurrentCoordinates,
+  isDefaultLocation,
   reverseGeocodeLabel,
 } from "../utils/geolocation";
+import { isWeb, USE_NATIVE_DRIVER } from "../utils/platformUtils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { sharedUI } from "../styles/sharedUI";
 import { apiService } from "../services/api";
@@ -30,6 +32,7 @@ interface AstrologySettingsDrawerProps {
     longitude: number;
     name?: string;
   }) => void;
+  onClearLocation?: () => Promise<void>;
   currentLocation: {
     latitude: number;
     longitude: number;
@@ -45,14 +48,17 @@ export default function AstrologySettingsDrawer({
   visible,
   onClose,
   onSave,
+  onClearLocation,
   currentLocation,
   focusSection = "location",
 }: AstrologySettingsDrawerProps) {
   const [latitude, setLatitude] = useState<string>("");
   const [longitude, setLongitude] = useState<string>("");
   const [locationName, setLocationName] = useState<string>("");
+  const [placeQuery, setPlaceQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const [searchingPlace, setSearchingPlace] = useState(false);
   const [isCurrentLocation, setIsCurrentLocation] = useState(false);
   const [natalYear, setNatalYear] = useState("");
   const [natalMonth, setNatalMonth] = useState("");
@@ -82,7 +88,7 @@ export default function AstrologySettingsDrawer({
     if (visible && !prevVisibleRef.current) {
       Animated.spring(drawerAnimation, {
         toValue: 1,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
         tension: 65,
         friction: 11,
       }).start();
@@ -90,7 +96,7 @@ export default function AstrologySettingsDrawer({
       Animated.timing(drawerAnimation, {
         toValue: 0,
         duration: 250,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }).start();
     }
     prevVisibleRef.current = visible;
@@ -516,6 +522,10 @@ export default function AstrologySettingsDrawer({
         return;
       }
       const coords = await getCurrentCoordinates();
+      if (isDefaultLocation(coords)) {
+        setIsCurrentLocation(false);
+        return;
+      }
       const currentLat = coords.latitude;
       const currentLng = coords.longitude;
       const tolerance = 0.0001;
@@ -611,6 +621,15 @@ export default function AstrologySettingsDrawer({
     try {
       setLoading(true);
       const location = await getCurrentCoordinates();
+      if (isDefaultLocation(location)) {
+        Alert.alert(
+          "Location unavailable",
+          isWeb
+            ? "Your browser did not share a location (permission denied or blocked). Search for a place or enter coordinates below instead."
+            : "Could not read your device location. Search for a place or enter coordinates below instead.",
+        );
+        return;
+      }
       const lat = location.latitude;
       const lng = location.longitude;
       setLatitude(lat.toString());
@@ -626,7 +645,82 @@ export default function AstrologySettingsDrawer({
       onClose();
     } catch (error) {
       console.error("Error getting current location:", error);
-      Alert.alert("Error", "Failed to get your current location");
+      Alert.alert(
+        "Error",
+        "Failed to get your current location. Search for a place or enter coordinates below instead.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearchDefaultPlace = async () => {
+    const query = placeQuery.trim();
+    if (!query) {
+      Alert.alert("Enter a location", "Try city, state, country.");
+      return;
+    }
+
+    try {
+      setSearchingPlace(true);
+      const results = await geocodeQuery(query);
+      if (!results || results.length === 0) {
+        Alert.alert("No match found", "Try a more specific location.");
+        return;
+      }
+
+      const best = results[0];
+      setLatitude(best.latitude.toString());
+      setLongitude(best.longitude.toString());
+      setLocationName(best.label || query);
+      setIsCurrentLocation(false);
+      Alert.alert(
+        "Location found",
+        "Review the coordinates below, then tap Save Location.",
+      );
+    } catch (error) {
+      console.error("Error searching default place:", error);
+      Alert.alert("Search failed", "Could not resolve that location.");
+    } finally {
+      setSearchingPlace(false);
+    }
+  };
+
+  const handleSaveManualLocation = async () => {
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
+      Alert.alert(
+        "Invalid coordinates",
+        "Enter a latitude between -90 and 90 and a longitude between -180 and 180.",
+      );
+      return;
+    }
+
+    try {
+      setLoading(true);
+      let name = locationName.trim();
+      if (!name) {
+        name = (await reverseGeocode(lat, lng)) || "";
+      }
+
+      onSave({
+        latitude: lat,
+        longitude: lng,
+        name,
+      });
+      Alert.alert("Success", "Location saved successfully!");
+      onClose();
+    } catch (error) {
+      console.error("Error saving manual location:", error);
+      Alert.alert("Error", "Could not save that location.");
     } finally {
       setLoading(false);
     }
@@ -647,7 +741,11 @@ export default function AstrologySettingsDrawer({
               setLatitude("");
               setLongitude("");
               setLocationName("");
+              setPlaceQuery("");
               setIsCurrentLocation(false);
+              if (onClearLocation) {
+                await onClearLocation();
+              }
               Alert.alert("Saved Location Cleared");
             } catch (error) {
               console.error("Error clearing saved location:", error);
@@ -746,6 +844,9 @@ export default function AstrologySettingsDrawer({
               <Text style={sharedUI.sectionTitle}>Set Default Location</Text>
               <Text style={sharedUI.drawerSectionText}>
                 Set a fixed location to use for all astrological calculations.
+                {isWeb
+                  ? " On web, if browser location is blocked, search for a place or enter coordinates below."
+                  : ""}
               </Text>
             </View>
             {(locationName || (latitude && longitude)) && (
@@ -800,6 +901,81 @@ export default function AstrologySettingsDrawer({
               >
                 <Text style={[sharedUI.drawerButtonText, styles.clearDangerText]}>
                   Clear Saved Location
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={sharedUI.drawerSection}>
+              <Text style={sharedUI.sectionTitle}>Search for a Place</Text>
+              <Text style={sharedUI.drawerSectionText}>
+                Override the browser default when GPS is unavailable or wrong.
+              </Text>
+              <TextInput
+                style={[styles.input, { marginBottom: 8 }]}
+                placeholder="City, state, country"
+                placeholderTextColor="#777"
+                value={placeQuery}
+                onChangeText={setPlaceQuery}
+                onSubmitEditing={handleSearchDefaultPlace}
+              />
+              <TouchableOpacity
+                style={[
+                  sharedUI.drawerButton,
+                  searchingPlace && sharedUI.drawerButtonDisabled,
+                ]}
+                onPress={handleSearchDefaultPlace}
+                disabled={searchingPlace}
+              >
+                <Text style={sharedUI.drawerButtonText}>
+                  {searchingPlace ? "Searching..." : "Search Location"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={sharedUI.drawerSection}>
+              <Text style={sharedUI.sectionTitle}>Coordinates</Text>
+              <Text style={sharedUI.drawerSectionText}>
+                Fine-tune latitude and longitude, then save.
+              </Text>
+              <View style={styles.row}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Latitude"
+                  placeholderTextColor="#777"
+                  keyboardType="default"
+                  value={latitude}
+                  onChangeText={(value) => {
+                    setLatitude(value);
+                    setIsCurrentLocation(false);
+                  }}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Longitude"
+                  placeholderTextColor="#777"
+                  keyboardType="default"
+                  value={longitude}
+                  onChangeText={(value) => {
+                    setLongitude(value);
+                    setIsCurrentLocation(false);
+                  }}
+                />
+              </View>
+              <TouchableOpacity
+                style={[
+                  sharedUI.drawerButton,
+                  sharedUI.drawerPrimaryButton,
+                  loading && sharedUI.drawerButtonDisabled,
+                ]}
+                onPress={handleSaveManualLocation}
+                disabled={loading}
+              >
+                <Text
+                  style={[
+                    sharedUI.drawerButtonText,
+                    sharedUI.drawerPrimaryButtonText,
+                    loading && sharedUI.drawerButtonTextDisabled,
+                  ]}
+                >
+                  {loading ? "Saving..." : "Save Location"}
                 </Text>
               </TouchableOpacity>
             </View>

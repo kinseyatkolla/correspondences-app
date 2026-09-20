@@ -1,7 +1,7 @@
 // Year-ephemeris aspect detector knobs.
 // Moon at a 2-hour sample interval can move ~1.0–1.25° between samples, so a
 // 0.5° in-orb gate plus "reject isolated samples" drops most true Moon aspects.
-const ASPECT_DETECTOR_VERSION = 2;
+const ASPECT_DETECTOR_VERSION = 3;
 const ASPECT_EXACT_ORB_DEGREES = 0.5;
 const MOON_ASPECT_DETECTION_ORB_DEGREES = 1.5;
 

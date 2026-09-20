@@ -9,6 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   DEFAULT_LOCATION,
   getCurrentCoordinates,
+  isDefaultLocation,
   reverseGeocodeLabel,
   type GeoCoords,
 } from "../utils/geolocation";
@@ -80,8 +81,14 @@ export function AstrologyProvider({ children }: AstrologyProviderProps) {
       const saved = await AsyncStorage.getItem(SAVED_LOCATION_KEY);
       if (saved) {
         const location = JSON.parse(saved);
-        console.log("Using saved location:", location);
-        return location;
+        if (
+          Number.isFinite(location.latitude) &&
+          Number.isFinite(location.longitude) &&
+          !isDefaultLocation(location)
+        ) {
+          console.log("Using saved location:", location);
+          return location;
+        }
       }
 
       // If no saved location, get current GPS location and save it automatically
@@ -90,8 +97,7 @@ export function AstrologyProvider({ children }: AstrologyProviderProps) {
       // Only save if we got a valid GPS location (not the fallback)
       // Check if it's not the default New York coordinates
       if (
-        currentLocation.latitude !== DEFAULT_LOCATION.latitude ||
-        currentLocation.longitude !== DEFAULT_LOCATION.longitude
+        !isDefaultLocation(currentLocation)
       ) {
         try {
           // Try to get location name via reverse geocoding

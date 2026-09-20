@@ -16,6 +16,7 @@ import {
   Animated,
 } from "react-native";
 import { useAstrology } from "../contexts/AstrologyContext";
+import { USE_NATIVE_DRIVER } from "../utils/platformUtils";
 import { sharedUI } from "../styles/sharedUI";
 import {
   usePhysisFont,
@@ -312,22 +313,22 @@ export default function PlanetaryHoursScreen({
         Animated.timing(nightOpacity, {
           toValue: opacityValues.night,
           duration,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(dayOpacity, {
           toValue: opacityValues.day,
           duration,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(duskOpacity, {
           toValue: opacityValues.dusk,
           duration,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(dawnOpacity, {
           toValue: opacityValues.dawn,
           duration,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]).start();
     },

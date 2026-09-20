@@ -1,4 +1,5 @@
 import { StyleSheet } from "react-native";
+import { shadowStyle } from "../utils/platformUtils";
 
 export const sharedUI = StyleSheet.create({
   // Page headers
@@ -118,11 +119,13 @@ export const sharedUI = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     marginHorizontal: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
+    ...shadowStyle({
+      color: "#000",
+      offset: { width: 0, height: 4 },
+      opacity: 0.3,
+      radius: 6,
+      elevation: 5,
+    }),
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.15)",
   },
@@ -150,11 +153,13 @@ export const sharedUI = StyleSheet.create({
     padding: 15,
     marginBottom: 10,
     borderRadius: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
+    ...shadowStyle({
+      color: "#000",
+      offset: { width: 0, height: 4 },
+      opacity: 0.3,
+      radius: 6,
+      elevation: 5,
+    }),
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,

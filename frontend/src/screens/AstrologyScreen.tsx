@@ -21,6 +21,7 @@ import {
 } from "react-native-gesture-handler";
 import DateTimePickerDrawer from "../components/DateTimePickerDrawer";
 import { useAstrology } from "../contexts/AstrologyContext";
+import { USE_NATIVE_DRIVER } from "../utils/platformUtils";
 import { apiService, BirthData, BirthChart } from "../services/api";
 import { navigationUI } from "../styles/navigationUI";
 import { sharedUI } from "../styles/sharedUI";
@@ -181,22 +182,22 @@ export default function AstrologyScreen({ navigation, route }: any) {
       Animated.timing(nightOpacity, {
         toValue: opacityValues.night,
         duration,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(dayOpacity, {
         toValue: opacityValues.day,
         duration,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(duskOpacity, {
         toValue: opacityValues.dusk,
         duration,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(dawnOpacity, {
         toValue: opacityValues.dawn,
         duration,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
   };

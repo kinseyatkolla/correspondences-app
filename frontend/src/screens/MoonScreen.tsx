@@ -11,8 +11,8 @@ import {
   ImageBackground,
   Dimensions,
   TouchableOpacity,
-  Platform,
 } from "react-native";
+import { isWeb, textShadowStyle } from "../utils/platformUtils";
 import {
   GestureHandlerRootView,
   Gesture,
@@ -32,6 +32,7 @@ import {
   getZodiacKeysFromNames,
   getPlanetKeysFromNames,
 } from "../utils/physisSymbolMap";
+import { planetEssentialDignityLabel } from "../utils/planetEssentialDignity";
 import {
   checkForConjunct,
   checkForOpposition,
@@ -1562,6 +1563,13 @@ export default function MoonScreen({ navigation, route }: any) {
                               hour12: true,
                             });
 
+                          const dignityLabel = lunation.moonPosition
+                            ? planetEssentialDignityLabel(
+                                "Moon",
+                                lunation.moonPosition.zodiacSignName,
+                              )
+                            : "";
+
                           return (
                             <TouchableOpacity
                               key={lunation.id || index}
@@ -1615,6 +1623,11 @@ export default function MoonScreen({ navigation, route }: any) {
                                     {lunation.moonPosition.degreeFormatted}{" "}
                                     {lunation.moonPosition.zodiacSignName}
                                   </Text>
+                                  {dignityLabel ? (
+                                    <Text style={styles.lunarPhaseDignityLabel}>
+                                      {dignityLabel}
+                                    </Text>
+                                  ) : null}
                                 </View>
                               )}
                             </TouchableOpacity>
@@ -1732,9 +1745,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: "#FF6B6B",
     textAlign: "center",
-    textShadowColor: "rgba(255, 107, 107, 0.6)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    ...textShadowStyle({
+      color: "rgba(255, 107, 107, 0.6)",
+      offset: { width: 0, height: 0 },
+      radius: 8,
+    }),
   },
   subtitle: {
     fontSize: 18,
@@ -1743,9 +1758,11 @@ const styles = StyleSheet.create({
     color: "#f8f9fa",
     textAlign: "center",
     fontStyle: "italic",
-    textShadowColor: "rgba(255, 255, 255, 0.6)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    ...textShadowStyle({
+      color: "rgba(255, 255, 255, 0.6)",
+      offset: { width: 0, height: 0 },
+      radius: 8,
+    }),
   },
   description: {
     fontSize: 16,
@@ -1753,9 +1770,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 24,
     marginBottom: 8,
-    textShadowColor: "rgba(255, 255, 255, 0.4)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 6,
+    ...textShadowStyle({
+      color: "rgba(255, 255, 255, 0.4)",
+      offset: { width: 0, height: 0 },
+      radius: 6,
+    }),
   },
   errorText: {
     fontSize: 16,
@@ -1774,7 +1793,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0)",
     minWidth: 300,
     alignItems: "center",
-    ...(Platform.OS === "web"
+    ...(isWeb
       ? null
       : {
           shadowColor: "#ffffff",
@@ -1889,7 +1908,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0)",
     minWidth: 300,
     alignItems: "center",
-    ...(Platform.OS === "web"
+    ...(isWeb
       ? null
       : {
           shadowColor: "#ffffff",
@@ -1920,7 +1939,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#dadada",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
   },
   lunarPhaseLeftColumn: {
@@ -1949,6 +1968,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     textAlign: "right",
+  },
+  lunarPhaseDignityLabel: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.6,
+    textAlign: "right",
+    color: "#888888",
   },
   lunarPhaseEmptyText: {
     fontSize: 14,

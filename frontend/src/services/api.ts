@@ -2,6 +2,7 @@
 import { API_BASE_URL } from "./apiConfig";
 
 const API_REQUEST_TIMEOUT_MS = 30000;
+const YEAR_EPHEMERIS_TIMEOUT_MS = 5 * 60 * 1000;
 
 if (__DEV__) {
   console.log(`🌐 API Base URL: ${API_BASE_URL}`);
@@ -136,6 +137,7 @@ export interface EphemerisInfo {
 // API service class
 class ApiService {
   private baseUrl: string;
+  private yearEphemerisInFlight = new Map<string, Promise<any>>();
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
@@ -144,27 +146,25 @@ class ApiService {
   // Generic fetch method with error handling
   private async fetchData<T>(
     endpoint: string,
-    options: RequestInit = {},
+    options: RequestInit & { timeoutMs?: number } = {},
   ): Promise<T> {
+    const { timeoutMs = API_REQUEST_TIMEOUT_MS, ...fetchOptions } = options;
     const url = `${this.baseUrl}${endpoint}`;
     try {
       if (__DEV__) {
-        console.log(`📡 API Request: ${options.method || "GET"} ${url}`);
+        console.log(`📡 API Request: ${fetchOptions.method || "GET"} ${url}`);
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        API_REQUEST_TIMEOUT_MS,
-      );
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
-          ...options.headers,
+          ...fetchOptions.headers,
         },
-        ...options,
-        signal: options.signal ?? controller.signal,
+        ...fetchOptions,
+        signal: fetchOptions.signal ?? controller.signal,
       }).finally(() => clearTimeout(timeoutId));
 
       if (!response.ok) {
@@ -191,9 +191,7 @@ class ApiService {
     } catch (error) {
       console.error(`❌ API Error for ${url}:`, error);
       if (error instanceof Error && error.name === "AbortError") {
-        throw new Error(
-          `Request timed out after ${API_REQUEST_TIMEOUT_MS / 1000}s`,
-        );
+        throw new Error(`Request timed out after ${timeoutMs / 1000}s`);
       }
       if (
         error instanceof TypeError &&
@@ -710,6 +708,9 @@ class ApiService {
       }>;
     };
   }> {
+    type YearEphemerisResponse = Awaited<
+      ReturnType<ApiService["getYearEphemeris"]>
+    >;
     const requestBody: any = { year };
     if (latitude !== undefined) requestBody.latitude = latitude;
     if (longitude !== undefined) requestBody.longitude = longitude;
@@ -718,26 +719,37 @@ class ApiService {
     if (natalChart) requestBody.natalChart = natalChart;
     if (options?.moonMode) requestBody.moonMode = true;
 
-    type YearEphemerisResponse = Awaited<
-      ReturnType<ApiService["getYearEphemeris"]>
-    >;
-    const response = await this.fetchData<YearEphemerisResponse>(
-      "/astrology/year-ephemeris",
-      {
-        method: "POST",
-        body: JSON.stringify(requestBody),
-      },
-    );
-
-    // Convert date strings back to Date objects for samples (if present)
-    if (response.success && response.data?.samples) {
-      response.data.samples = response.data.samples.map((sample: any) => ({
-        ...sample,
-        date: new Date(sample.timestamp),
-      }));
+    const inFlightKey = JSON.stringify(requestBody);
+    const inFlight = this.yearEphemerisInFlight.get(inFlightKey);
+    if (inFlight) {
+      return inFlight as Promise<YearEphemerisResponse>;
     }
 
-    return response;
+    const request = (async () => {
+      const response = await this.fetchData<YearEphemerisResponse>(
+        "/astrology/year-ephemeris",
+        {
+          method: "POST",
+          body: JSON.stringify(requestBody),
+          timeoutMs: YEAR_EPHEMERIS_TIMEOUT_MS,
+        },
+      );
+
+      // Convert date strings back to Date objects for samples (if present)
+      if (response.success && response.data?.samples) {
+        response.data.samples = response.data.samples.map((sample: any) => ({
+          ...sample,
+          date: new Date(sample.timestamp),
+        }));
+      }
+
+      return response;
+    })().finally(() => {
+      this.yearEphemerisInFlight.delete(inFlightKey);
+    });
+
+    this.yearEphemerisInFlight.set(inFlightKey, request);
+    return request;
   }
 }
 

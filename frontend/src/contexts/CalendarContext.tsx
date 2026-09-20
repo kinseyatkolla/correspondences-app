@@ -539,12 +539,16 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
           })
           .filter((event): event is CalendarEvent => event !== null);
 
-        const moonModeEvents = await fetchMoonModeEvents(
-          year,
-          location.latitude,
-          location.longitude
-        );
-        mundaneEvents = [...mundaneEvents, ...moonModeEvents.mundane];
+        try {
+          const moonModeEvents = await fetchMoonModeEvents(
+            year,
+            location.latitude,
+            location.longitude
+          );
+          mundaneEvents = [...mundaneEvents, ...moonModeEvents.mundane];
+        } catch (moonModeError) {
+          console.error("Moon-mode calendar fetch failed:", moonModeError);
+        }
 
         // Process ephemeris samples for LINES view
         const linesResponse = await apiService.getYearEphemeris(
@@ -618,22 +622,29 @@ export function CalendarProvider({ children, year }: CalendarProviderProps) {
           })
           .filter((event): event is CalendarEvent => event !== null);
 
-          const moonModeEvents = await fetchMoonModeEvents(
-            year,
-            location.latitude,
-            location.longitude,
-            natalChart
-          );
-          natalTransitEvents = [
-            ...natalTransitEvents.filter(
-              (event) =>
-                !(
-                  event.type === "aspect" &&
-                  event.planet1?.toLowerCase() === "moon"
-                )
-            ),
-            ...moonModeEvents.natal,
-          ];
+          try {
+            const moonModeEvents = await fetchMoonModeEvents(
+              year,
+              location.latitude,
+              location.longitude,
+              natalChart
+            );
+            natalTransitEvents = [
+              ...natalTransitEvents.filter(
+                (event) =>
+                  !(
+                    event.type === "aspect" &&
+                    event.planet1?.toLowerCase() === "moon"
+                  )
+              ),
+              ...moonModeEvents.natal,
+            ];
+          } catch (moonModeError) {
+            console.error(
+              "Moon-mode natal calendar fetch failed:",
+              moonModeError
+            );
+          }
 
           await saveNatalTransitEventsToCache(
             year,

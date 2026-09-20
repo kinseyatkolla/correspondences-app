@@ -146,4 +146,11 @@ export async function geocodeQuery(query: string): Promise<GeocodeResult[]> {
   }
 }
 
+export function isDefaultLocation(coords: GeoCoords): boolean {
+  return (
+    Math.abs(coords.latitude - DEFAULT_LOCATION.latitude) < 0.0001 &&
+    Math.abs(coords.longitude - DEFAULT_LOCATION.longitude) < 0.0001
+  );
+}
+
 export { DEFAULT_LOCATION };

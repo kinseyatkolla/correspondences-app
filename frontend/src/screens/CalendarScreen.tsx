@@ -34,6 +34,7 @@ import {
   getZodiacKeysFromNames,
   getPlanetKeysFromNames,
 } from "../utils/physisSymbolMap";
+import { planetEssentialDignityLabel } from "../utils/planetEssentialDignity";
 import LinesChart from "../components/LinesChart";
 import { processEphemerisData } from "../utils/ephemerisChartData";
 import OnboardingOverlay from "../components/OnboardingOverlay";
@@ -67,37 +68,6 @@ function getDegreeOnly(degreeFormatted: string): string {
   // Extract everything up to and including the degree symbol
   const match = degreeFormatted.match(/^\d+°/);
   return match ? match[0] : degreeFormatted.split("°")[0] + "°";
-}
-
-/**
- * Parse a degree string like "15°30'45"" into decimal degrees within the sign.
- */
-function parseDegreeWithinSign(degreeFormatted: string): number {
-  const degMatch = degreeFormatted.match(/^(\d+)°/);
-  const minMatch = degreeFormatted.match(/(\d+)'/);
-  const secMatch = degreeFormatted.match(/(\d+)"/);
-
-  const degrees = degMatch ? parseFloat(degMatch[1]) : 0;
-  const minutes = minMatch ? parseFloat(minMatch[1]) : 0;
-  const seconds = secMatch ? parseFloat(secMatch[1]) : 0;
-
-  return degrees + minutes / 60 + seconds / 3600;
-}
-
-/**
- * Aspects are defined by shared degree numbers across signs, so normalize both
- * planets to one rounded whole degree for list display.
- */
-function getSharedAspectDegree(
-  planet1DegreeFormatted: string,
-  planet2DegreeFormatted: string
-): string {
-  const p1 = parseDegreeWithinSign(planet1DegreeFormatted);
-  const p2 = parseDegreeWithinSign(planet2DegreeFormatted);
-  const sharedRounded = Math.round((p1 + p2) / 2);
-  // Keep degree value inside a sign range for display.
-  const normalized = Math.min(29, Math.max(0, sharedRounded));
-  return `${normalized}°`;
 }
 
 /**
@@ -508,8 +478,24 @@ export default function CalendarScreen({ navigation }: any) {
     return events;
   }, [lunationEvents, calendarEvents]);
 
+  const isMoonLunationFilterEvent = useCallback((event: CalendarEvent) => {
+    if (event.type === "ingress") {
+      return event.planet?.toLowerCase() === "moon";
+    }
+    if (event.type === "aspect" && !event.isNatalTransit) {
+      return (
+        event.planet1?.toLowerCase() === "moon" ||
+        event.planet2?.toLowerCase() === "moon"
+      );
+    }
+    return false;
+  }, []);
+
   const isEventVisible = useCallback(
     (event: CalendarEvent) => {
+      if (event.type === "lunation" || isMoonLunationFilterEvent(event)) {
+        return filterStates.lunation;
+      }
       if (event.type === "aspect") {
         return event.isNatalTransit
           ? filterStates.natalTransit
@@ -517,7 +503,7 @@ export default function CalendarScreen({ navigation }: any) {
       }
       return filterStates[event.type];
     },
-    [filterStates]
+    [filterStates, isMoonLunationFilterEvent]
   );
 
   // Memoize filteredEvents to prevent recalculation on every render
@@ -2112,6 +2098,10 @@ export default function CalendarScreen({ navigation }: any) {
                     };
 
                     const planetName = formatPlanetNameForDisplay(event.planet);
+                    const dignityLabel = planetEssentialDignityLabel(
+                      planetName,
+                      event.toSign
+                    );
 
                     // Check if this is a solstice or equinox (sun ingress into cardinal signs)
                     const isSolsticeOrEquinox = 
@@ -2188,6 +2178,11 @@ export default function CalendarScreen({ navigation }: any) {
                             {getDegreeOnly(event.degreeFormatted)}{" "}
                             {event.toSign}
                           </Text>
+                          {dignityLabel ? (
+                            <Text style={styles.eventDignityLabel}>
+                              {dignityLabel}
+                            </Text>
+                          ) : null}
                         </View>
                       </TouchableOpacity>
                     );
@@ -2309,9 +2304,8 @@ export default function CalendarScreen({ navigation }: any) {
                     const aspectName =
                       event.aspectName.charAt(0).toUpperCase() +
                       event.aspectName.slice(1);
-                    const sharedAspectDegree = getSharedAspectDegree(
-                      event.planet1Position.degreeFormatted,
-                      event.planet2Position.degreeFormatted
+                    const aspectDisplayDegree = getDegreeOnly(
+                      event.planet1Position.degreeFormatted
                     );
 
                     const eventIsToday = isToday(event.localDateTime);
@@ -2347,125 +2341,81 @@ export default function CalendarScreen({ navigation }: any) {
                           </Text>
                         </View>
                         <View style={styles.eventRightColumn}>
-                          {event.aspectName === "conjunct" ? (
-                            // For conjunctions, show only one position since both planets are at the same place
+                          <Text
+                            style={[
+                              styles.eventMoonPosition,
+                              getZodiacColorStyle(
+                                event.planet1Position.zodiacSignName
+                              ),
+                            ]}
+                          >
                             <Text
                               style={[
-                                styles.eventMoonPosition,
+                                getPhysisSymbolStyle(fontLoaded, "medium"),
                                 getZodiacColorStyle(
                                   event.planet1Position.zodiacSignName
                                 ),
                               ]}
                             >
-                              <Text
-                                style={[
-                                  getPhysisSymbolStyle(fontLoaded, "medium"),
-                                  getZodiacColorStyle(
-                                    event.planet1Position.zodiacSignName
-                                  ),
-                                ]}
-                              >
-                                {getPlanetKeysFromNames()[planet1Name] || ""}
-                              </Text>
-                              {"  "}
-                              <Text
-                                style={[
-                                  getPhysisSymbolStyle(fontLoaded, "medium"),
-                                  getZodiacColorStyle(
-                                    event.planet1Position.zodiacSignName
-                                  ),
-                                ]}
-                              >
-                                {
-                                  getZodiacKeysFromNames()[
-                                    event.planet1Position.zodiacSignName
-                                  ]
-                                }
-                              </Text>
-                              {"  "}
-                              {sharedAspectDegree}{" "}
-                              {event.planet1Position.zodiacSignName}
+                              {getPlanetKeysFromNames()[planet1Name] || ""}
                             </Text>
-                          ) : (
-                            // For other aspects, show both positions
-                            <>
-                              <Text
-                                style={[
-                                  styles.eventMoonPosition,
-                                  getZodiacColorStyle(
-                                    event.planet1Position.zodiacSignName
-                                  ),
-                                ]}
-                              >
-                                <Text
-                                  style={[
-                                    getPhysisSymbolStyle(fontLoaded, "medium"),
-                                    getZodiacColorStyle(
-                                      event.planet1Position.zodiacSignName
-                                    ),
-                                  ]}
-                                >
-                                  {getPlanetKeysFromNames()[planet1Name] || ""}
-                                </Text>
-                                {"  "}
-                                <Text
-                                  style={[
-                                    getPhysisSymbolStyle(fontLoaded, "medium"),
-                                    getZodiacColorStyle(
-                                      event.planet1Position.zodiacSignName
-                                    ),
-                                  ]}
-                                >
-                                  {
-                                    getZodiacKeysFromNames()[
-                                      event.planet1Position.zodiacSignName
-                                    ]
-                                  }
-                                </Text>
-                                {"  "}
-                                {sharedAspectDegree}{" "}
-                                {event.planet1Position.zodiacSignName}
-                              </Text>
-                              <Text
-                                style={[
-                                  styles.eventMoonPosition,
-                                  getZodiacColorStyle(
-                                    event.planet2Position.zodiacSignName
-                                  ),
-                                  { marginTop: 4 },
-                                ]}
-                              >
-                                <Text
-                                  style={[
-                                    getPhysisSymbolStyle(fontLoaded, "medium"),
-                                    getZodiacColorStyle(
-                                      event.planet2Position.zodiacSignName
-                                    ),
-                                  ]}
-                                >
-                                  {getPlanetKeysFromNames()[planet2Name] || ""}
-                                </Text>
-                                {"  "}
-                                <Text
-                                  style={[
-                                    getPhysisSymbolStyle(fontLoaded, "medium"),
-                                    getZodiacColorStyle(
-                                      event.planet2Position.zodiacSignName
-                                    ),
-                                  ]}
-                                >
-                                  {
-                                    getZodiacKeysFromNames()[
-                                      event.planet2Position.zodiacSignName
-                                    ]
-                                  }
-                                </Text>
-                                {"  "}
-                                {sharedAspectDegree}{" "}
-                                {event.planet2Position.zodiacSignName}
-                              </Text>
-                            </>
-                          )}
+                            {"  "}
+                            <Text
+                              style={[
+                                getPhysisSymbolStyle(fontLoaded, "medium"),
+                                getZodiacColorStyle(
+                                  event.planet1Position.zodiacSignName
+                                ),
+                              ]}
+                            >
+                              {
+                                getZodiacKeysFromNames()[
+                                  event.planet1Position.zodiacSignName
+                                ]
+                              }
+                            </Text>
+                            {"  "}
+                            {aspectDisplayDegree}{" "}
+                            {event.planet1Position.zodiacSignName}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.eventMoonPosition,
+                              getZodiacColorStyle(
+                                event.planet2Position.zodiacSignName
+                              ),
+                              { marginTop: 4 },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                getPhysisSymbolStyle(fontLoaded, "medium"),
+                                getZodiacColorStyle(
+                                  event.planet2Position.zodiacSignName
+                                ),
+                              ]}
+                            >
+                              {getPlanetKeysFromNames()[planet2Name] || ""}
+                            </Text>
+                            {"  "}
+                            <Text
+                              style={[
+                                getPhysisSymbolStyle(fontLoaded, "medium"),
+                                getZodiacColorStyle(
+                                  event.planet2Position.zodiacSignName
+                                ),
+                              ]}
+                            >
+                              {
+                                getZodiacKeysFromNames()[
+                                  event.planet2Position.zodiacSignName
+                                ]
+                              }
+                            </Text>
+                            {"  "}
+                            {aspectDisplayDegree}{" "}
+                            {event.planet2Position.zodiacSignName}
+                          </Text>
                         </View>
                       </TouchableOpacity>
                     );
@@ -2738,6 +2688,13 @@ const styles = StyleSheet.create({
   eventMoonPosition: {
     fontSize: 18,
     fontWeight: "500",
+  },
+  eventDignityLabel: {
+    marginTop: 4,
+    color: "#b8b8c8",
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.6,
   },
   emptyContainer: {
     flex: 1,
