@@ -483,7 +483,11 @@ export default function AstrologyChart({
 
   return (
     <View style={containerStyle}>
-      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <Svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${CHART_SIZE} ${CHART_SIZE}`}
+      >
         {/* Degree lines - drawn first so they appear behind the zodiac ring */}
         {/* Planet degree lines */}
         {planetPositions.map((planet) => {

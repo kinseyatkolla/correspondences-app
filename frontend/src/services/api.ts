@@ -3,7 +3,6 @@ import { API_BASE_URL } from "./apiConfig";
 
 const API_REQUEST_TIMEOUT_MS = 30000;
 const YEAR_EPHEMERIS_TIMEOUT_MS = 5 * 60 * 1000;
-
 if (__DEV__) {
   console.log(`🌐 API Base URL: ${API_BASE_URL}`);
 }
@@ -155,8 +154,35 @@ class ApiService {
         console.log(`📡 API Request: ${fetchOptions.method || "GET"} ${url}`);
       }
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      const timeoutController = new AbortController();
+      const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
+      const userSignal = fetchOptions.signal;
+      let signal: AbortSignal = timeoutController.signal;
+      let combinedAbortCleanup: (() => void) | undefined;
+      if (userSignal) {
+        if (typeof AbortSignal !== "undefined" && "any" in AbortSignal) {
+          signal = (
+            AbortSignal as typeof AbortSignal & {
+              any: (...s: AbortSignal[]) => AbortSignal;
+            }
+          ).any([userSignal, timeoutController.signal]);
+        } else if (userSignal.aborted) {
+          clearTimeout(timeoutId);
+          const err = new Error("Election search cancelled");
+          err.name = "AbortError";
+          throw err;
+        } else {
+          const combined = new AbortController();
+          const onAbort = () => combined.abort();
+          userSignal.addEventListener("abort", onAbort);
+          timeoutController.signal.addEventListener("abort", onAbort);
+          signal = combined.signal;
+          combinedAbortCleanup = () => {
+            userSignal.removeEventListener("abort", onAbort);
+            timeoutController.signal.removeEventListener("abort", onAbort);
+          };
+        }
+      }
 
       const response = await fetch(url, {
         headers: {
@@ -164,8 +190,11 @@ class ApiService {
           ...fetchOptions.headers,
         },
         ...fetchOptions,
-        signal: fetchOptions.signal ?? controller.signal,
-      }).finally(() => clearTimeout(timeoutId));
+        signal,
+      }).finally(() => {
+        clearTimeout(timeoutId);
+        if (combinedAbortCleanup) combinedAbortCleanup();
+      });
 
       if (!response.ok) {
         // Try to get error message from response
@@ -189,10 +218,20 @@ class ApiService {
 
       return await response.json();
     } catch (error) {
-      console.error(`❌ API Error for ${url}:`, error);
-      if (error instanceof Error && error.name === "AbortError") {
+      const isAbort =
+        (error instanceof Error && error.name === "AbortError") ||
+        (typeof error === "object" &&
+          error != null &&
+          (error as { name?: string }).name === "AbortError");
+      if (isAbort) {
+        if (fetchOptions.signal?.aborted) {
+          const cancelled = new Error("Election search cancelled");
+          cancelled.name = "AbortError";
+          throw cancelled;
+        }
         throw new Error(`Request timed out after ${timeoutMs / 1000}s`);
       }
+      console.error(`❌ API Error for ${url}:`, error);
       if (
         error instanceof TypeError &&
         error.message === "Network request failed"
@@ -750,6 +789,70 @@ class ApiService {
 
     this.yearEphemerisInFlight.set(inFlightKey, request);
     return request;
+  }
+
+  async fetchMonthlyElectionList(body: {
+    latitude: number;
+    longitude: number;
+    year: number;
+    month: number;
+      utcOffsetMinutes?: number;
+      includeVetoes?: boolean;
+    }): Promise<{
+    success: boolean;
+    data: {
+      monthLabel: string;
+      year: number;
+      month: number;
+      bucketCount?: number;
+      passedFilterCount?: number;
+      filteredOutCount?: number;
+      returnedCount?: number;
+      vetoedTimes?: Array<{
+        isoTime: string;
+        dateLabel: string;
+        timeLabel: string;
+        veto: string;
+      }>;
+      /** @deprecated use bucketCount */
+      eligibleCount?: number;
+      notes: string[];
+      times: Array<{
+        score: number;
+        isoTime: string;
+        dateLabel: string;
+        timeLabel: string;
+        risingSign: string;
+        isDayChart: boolean;
+        chartSect: "day" | "night";
+        ascRulerPlanet: string | null;
+        ascRulerSign: string | null;
+        ascRulerHouse: number | null;
+        ascRulerDignity: string | null;
+        moonSign: string | null;
+        moonHouse: number | null;
+        moonDignity: string | null;
+        inSectBeneficPlanet: string;
+        inSectBeneficSign: string | null;
+        inSectBeneficHouse: number | null;
+        inSectBeneficDignity: string | null;
+        outOfSectMaleficPlanet: string;
+        outOfSectMaleficSign: string | null;
+        outOfSectMaleficHouse: number | null;
+        outOfSectMaleficDignity: string | null;
+        chart?: {
+          planets: Record<string, PlanetPosition>;
+          houses?: HouseData;
+        };
+        breakdown?: Array<{ id: string; delta: number; label: string }>;
+      }>;
+    };
+  }> {
+    return this.fetchData("/astrology/electional-month", {
+      method: "POST",
+      body: JSON.stringify(body),
+      timeoutMs: 5 * 60 * 1000,
+    });
   }
 }
 

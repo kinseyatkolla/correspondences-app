@@ -2808,6 +2808,36 @@ router.post("/year-ephemeris", (req, res) => {
   }
 });
 
+router.post("/electional-month", (req, res) => {
+  try {
+    const { latitude, longitude, year, month, utcOffsetMinutes, includeVetoes } =
+      req.body;
+    if (latitude === undefined || longitude === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: "latitude and longitude are required",
+      });
+    }
+    const { searchMonthlyElectionList } = require("../electional/monthlyListSearch");
+    const data = searchMonthlyElectionList({
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+      year,
+      month,
+      utcOffsetMinutes,
+      includeVetoes: includeVetoes === true,
+    });
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error("Electional month list error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to build electional month list",
+      details: error.message,
+    });
+  }
+});
+
 router.DEFAULT_HOUSE_SYSTEM = DEFAULT_HOUSE_SYSTEM;
 router.resolveHouseSystem = resolveHouseSystem;
 

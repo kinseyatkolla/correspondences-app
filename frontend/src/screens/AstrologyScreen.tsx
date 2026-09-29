@@ -218,15 +218,10 @@ export default function AstrologyScreen({ navigation, route }: any) {
 
   // Function to fetch chart data for a specific date
   const fetchChartForDate = async (date: Date) => {
-    console.log("🚀 fetchChartForDate called for:", date.toISOString());
     setSelectedDateLoading(true);
-    // Clear previous chart data to prevent stale data display
     setSelectedDateChart(null);
-    console.log("🧹 Cleared selectedDateChart");
     try {
-      // Wait for currentChart to be available if it's not yet loaded
       if (!currentChart) {
-        console.log("⚠️ No currentChart available, waiting...");
         setSelectedDateLoading(false);
         return;
       }
@@ -269,10 +264,6 @@ export default function AstrologyScreen({ navigation, route }: any) {
           houses: response.data.houses,
         };
         setSelectedDateChart(chartData);
-        console.log(
-          "✅ Set selectedDateChart with data:",
-          !!response.data.houses
-        );
       } else {
         console.error("❌ Failed to fetch chart for selected date");
       }
@@ -301,7 +292,6 @@ export default function AstrologyScreen({ navigation, route }: any) {
   };
 
   const applyDateChange = (date: Date) => {
-    console.log("📅 applyDateChange called with date:", date.toISOString());
     setDisplayDate(date);
     fetchChartForDate(date);
   };
@@ -325,24 +315,12 @@ export default function AstrologyScreen({ navigation, route }: any) {
           // Swipe right - go to previous day
           const newDate = new Date(displayDate);
           newDate.setDate(newDate.getDate() - 1);
-          console.log(
-            "🔄 Swiping to previous day:",
-            newDate,
-            "currentChart available:",
-            !!currentChart
-          );
           setDisplayDate(newDate);
           fetchChartForDate(newDate);
         } else if (translationX < -threshold) {
           // Swipe left - go to next day
           const newDate = new Date(displayDate);
           newDate.setDate(newDate.getDate() + 1);
-          console.log(
-            "🔄 Swiping to next day:",
-            newDate,
-            "currentChart available:",
-            !!currentChart
-          );
           setDisplayDate(newDate);
           fetchChartForDate(newDate);
         }
@@ -364,10 +342,6 @@ export default function AstrologyScreen({ navigation, route }: any) {
       // Check if we need to update displayDate
       const dateMatches = dateFromRoute.getTime() === displayDate.getTime();
       if (!dateMatches) {
-        console.log(
-          "📅 Setting date from route params:",
-          dateFromRoute.toISOString()
-        );
         setDisplayDate(dateFromRoute);
       }
     }
@@ -377,32 +351,9 @@ export default function AstrologyScreen({ navigation, route }: any) {
   useEffect(() => {
     if (route?.params?.selectedDate && currentChart) {
       const dateFromRoute = new Date(route.params.selectedDate);
-      console.log(
-        "📅 Fetching chart for date from route params:",
-        dateFromRoute.toISOString()
-      );
       fetchChartForDate(dateFromRoute);
     }
   }, [route?.params?.selectedDate, currentChart]);
-
-  // Debug logging for activeChart
-  useEffect(() => {
-    console.log("🔄 ActiveChart updated:", {
-      hasSelectedDateChart: !!selectedDateChart,
-      hasCurrentChart: !!currentChart,
-      activeChartSource: selectedDateChart
-        ? "selectedDateChart"
-        : "currentChart",
-      activeChartHouses: activeChart?.houses
-        ? {
-            ascendant: activeChart.houses.ascendant,
-            ascendantSign: activeChart.houses.ascendantSign,
-            ascendantDegree: activeChart.houses.ascendantDegree,
-          }
-        : null,
-      timestamp: new Date().toISOString(),
-    });
-  }, [activeChart, selectedDateChart, currentChart]);
 
   // Note: Removed useEffect that was causing race conditions
   // Chart fetching is now handled directly by swipe handlers and date picker
@@ -432,14 +383,6 @@ export default function AstrologyScreen({ navigation, route }: any) {
     );
 
     if (newTimeOfDay !== currentTimeOfDay) {
-      console.log(
-        `🌅 Background transition: ${currentTimeOfDay} → ${newTimeOfDay}`,
-        {
-          displayTime: displayDate.toLocaleTimeString(),
-          sunrise: planetaryHoursData?.sunrise?.toLocaleTimeString(),
-          sunset: planetaryHoursData?.sunset?.toLocaleTimeString(),
-        }
-      );
       setCurrentTimeOfDay(newTimeOfDay);
       updateGradientOpacities(newTimeOfDay);
     }
@@ -977,25 +920,17 @@ export default function AstrologyScreen({ navigation, route }: any) {
                   }
                 />
               </View>
+              <TouchableOpacity
+                style={styles.electionalLink}
+                onPress={() => navigation.navigate("Electional")}
+              >
+                <Text style={styles.electionalLinkText}>
+                  Electional times for the month →
+                </Text>
+              </TouchableOpacity>
               {/* Current Chart Display */}
               {activeChart && !ephemerisLoading && (
                 <View style={styles.chartContainer}>
-                  {(() => {
-                    console.log("🎨 Rendering AstrologyChart with data:", {
-                      planetsCount: activeChart.planets
-                        ? Object.keys(activeChart.planets).length
-                        : 0,
-                      housesData: activeChart.houses
-                        ? {
-                            ascendant: activeChart.houses.ascendant,
-                            ascendantSign: activeChart.houses.ascendantSign,
-                            ascendantDegree: activeChart.houses.ascendantDegree,
-                          }
-                        : null,
-                      timestamp: new Date().toISOString(),
-                    });
-                    return null;
-                  })()}
                   <AstrologyChart
                     planets={activeChart.planets}
                     houses={activeChart.houses}
@@ -2648,6 +2583,22 @@ const styles = StyleSheet.create({
     top: 10,
     right: 10,
     zIndex: 1000,
+  },
+  electionalLink: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "rgba(74, 44, 122, 0.45)",
+    borderWidth: 1,
+    borderColor: "rgba(177, 156, 217, 0.35)",
+  },
+  electionalLinkText: {
+    color: "#e6e6fa",
+    textAlign: "center",
+    fontSize: 14,
+    fontWeight: "600",
   },
   // Card styles from PlanetaryHoursScreen
   cardContainer: {
