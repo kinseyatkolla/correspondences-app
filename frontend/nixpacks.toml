@@ -1,0 +1,6 @@
+# Railway: build static Expo web export, then serve dist/ (SPA fallback).
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "serve -s dist -l ${PORT:-8080}"

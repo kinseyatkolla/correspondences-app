@@ -7,8 +7,10 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "build": "expo export -p web",
     "build:web": "expo export -p web",
-    "preview:web": "npx serve dist"
+    "start:web": "serve -s dist -l ${PORT:-3000}",
+    "preview:web": "serve -s dist -l 3000"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
@@ -36,7 +38,8 @@
     "react-native-svg": "15.12.1",
     "react-native-svg-transformer": "^1.5.1",
     "react-native-web": "^0.21.0",
-    "react-native-worklets": "0.5.1"
+    "react-native-worklets": "0.5.1",
+    "serve": "^14.2.6"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
