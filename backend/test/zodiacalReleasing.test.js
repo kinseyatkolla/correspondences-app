@@ -150,3 +150,47 @@ test("L2 truncation ends last sub-period within parent", () => {
   assert.equal(last.endMs, l1[0].endMs);
   assert.equal(last.truncated, true);
 });
+
+test("Eros L2 Culm. matches reference (10th from active L1)", () => {
+  const { birthMs, lots } = chartAndContext();
+  const tz = fixture.displayTimeZone;
+  const fortuneSign = lots.fortune.sign;
+  const erosSign = lots.eros.sign;
+  assert.equal(erosSign, "Leo");
+
+  const l1 = generateLevel1Periods({
+    birthMs,
+    releasingSign: erosSign,
+    maxEndMs: birthMs + 150 * 360 * 86400000,
+    fortuneSign,
+  });
+
+  const culmRows = [
+    { l1: "Leo", l2: "Taurus", start: "02/09/1997" },
+    { l1: "Virgo", l2: "Gemini", start: "12/07/2014" },
+    { l1: "Scorpio", l2: "Leo", start: "12/05/2043" },
+    { l1: "Capricorn", l2: "Libra", start: "07/11/2071" },
+    { l1: "Capricorn", l2: "Libra", start: "08/28/2079" },
+    { l1: "Aquarius", l2: "Scorpio", start: "07/29/2096" },
+    { l1: "Aquarius", l2: "Scorpio", start: "11/15/2104" },
+  ];
+
+  for (const row of culmRows) {
+    const l1p = l1.find((p) => p.sign === row.l1);
+    assert.ok(l1p, row.l1);
+    const l2 = generateChildPeriods({
+      parentStartMs: l1p.startMs,
+      parentEndMs: l1p.endMs,
+      parentSign: l1p.sign,
+      childLevel: 2,
+      fortuneSign,
+      releasingLotSign: erosSign,
+    });
+    const match = l2.find(
+      (p) =>
+        p.sign === row.l2 && formatLocal(p.startMs, tz) === row.start,
+    );
+    assert.ok(match, `${row.l1} ${row.l2} ${row.start}`);
+    assert.equal(match.isCulminatingFromFortune, true);
+  }
+});

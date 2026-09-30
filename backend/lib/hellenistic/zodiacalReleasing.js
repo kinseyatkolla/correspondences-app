@@ -7,7 +7,10 @@ const {
   DAY_MS,
   HOUR_MS,
 } = require("./config");
-const { periodAngularityMetadata } = require("./angularity");
+const {
+  periodAngularityMetadata,
+  culminatingFlagForChildPeriod,
+} = require("./angularity");
 
 function periodDurationMs(level, signName, yearLengthDays = ZR_YEAR_LENGTH_DAYS) {
   const units = SIGN_MINOR_YEARS[signName];
@@ -45,8 +48,8 @@ function generateChildPeriods({
 }) {
   const periods = [];
   const parentSignIdx = signIndex(parentSign);
-  const oppositeReleasingIdx =
-    (signIndex(releasingLotSign) + 6) % 12;
+  /** First pass through the sign opposite the parent period (Pre LB). */
+  const oppositeParentIdx = (parentSignIdx + 6) % 12;
   let cursor = parentStartMs;
   let signIdx = parentSignIdx;
   let unitsInLap = 0;
@@ -65,10 +68,9 @@ function generateChildPeriods({
 
     const meta = periodAngularityMetadata(sign, fortuneSign, releasingLotSign);
     const isLoosingOfBond = nextIsLoosingOfBond;
-    const isOppositeReleasing =
-      signIdx === oppositeReleasingIdx && !isLoosingOfBond;
+    const isOppositeParent = signIdx === oppositeParentIdx && !isLoosingOfBond;
     const isPreLoosingOfBond =
-      isOppositeReleasing && !seenPreBondOpposite && !isLoosingOfBond;
+      isOppositeParent && !seenPreBondOpposite && !isLoosingOfBond;
     if (isPreLoosingOfBond) seenPreBondOpposite = true;
 
     periods.push({
@@ -81,6 +83,7 @@ function generateChildPeriods({
       isLoosingOfBond,
       isPreLoosingOfBond,
       ...meta,
+      isCulminatingFromFortune: culminatingFlagForChildPeriod(sign, parentSign),
     });
 
     nextIsLoosingOfBond = false;
@@ -199,7 +202,7 @@ function findActiveChildPeriod({
   if (atMs < parentStartMs || atMs >= parentEndMs) return null;
 
   const parentSignIdx = signIndex(parentSign);
-  const oppositeReleasingIdx = (signIndex(releasingLotSign) + 6) % 12;
+  const oppositeParentIdx = (signIndex(parentSign) + 6) % 12;
   let cursor = parentStartMs;
   let signIdx = parentSignIdx;
   let unitsInLap = 0;
@@ -217,10 +220,9 @@ function findActiveChildPeriod({
     if (atMs >= cursor && atMs < endMs) {
       const meta = periodAngularityMetadata(sign, fortuneSign, releasingLotSign);
       const isLoosingOfBond = nextIsLoosingOfBond;
-      const isOppositeReleasing =
-        signIdx === oppositeReleasingIdx && !isLoosingOfBond;
+      const isOppositeParent = signIdx === oppositeParentIdx && !isLoosingOfBond;
       const isPreLoosingOfBond =
-        isOppositeReleasing && !seenPreBondOpposite && !isLoosingOfBond;
+        isOppositeParent && !seenPreBondOpposite && !isLoosingOfBond;
       return {
         level: childLevel,
         sign,
@@ -231,6 +233,7 @@ function findActiveChildPeriod({
         isLoosingOfBond,
         isPreLoosingOfBond,
         ...meta,
+        isCulminatingFromFortune: culminatingFlagForChildPeriod(sign, parentSign),
       };
     }
 

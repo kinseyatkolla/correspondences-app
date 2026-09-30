@@ -23,6 +23,10 @@ function angularityFromAnchor(sign, anchorSign) {
   };
 }
 
+function isCulminatingFromAnchor(periodSign, anchorSign) {
+  return wholeSignHouseFromSign(periodSign, anchorSign) === 10;
+}
+
 function periodAngularityMetadata(periodSign, fortuneSign, releasingLotSign) {
   const fromFortune = angularityFromAnchor(periodSign, fortuneSign);
   const fromLot = angularityFromAnchor(periodSign, releasingLotSign);
@@ -34,9 +38,16 @@ function periodAngularityMetadata(periodSign, fortuneSign, releasingLotSign) {
   };
 }
 
+/** Peak (10th whole-sign house) relative to the parent period sign — used for L2+ Culm. labels. */
+function culminatingFlagForChildPeriod(periodSign, parentSign) {
+  return isCulminatingFromAnchor(periodSign, parentSign);
+}
+
 module.exports = {
   wholeSignHouseFromSign,
   angularityFromAnchor,
+  isCulminatingFromAnchor,
+  culminatingFlagForChildPeriod,
   periodAngularityMetadata,
   signDistance,
   SIGNS,
