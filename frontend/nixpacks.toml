@@ -3,4 +3,4 @@
 cmds = ["npm run build"]
 
 [start]
-cmd = "serve -s dist -l ${PORT:-8080}"
+cmd = "node server.js"

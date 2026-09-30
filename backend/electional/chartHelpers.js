@@ -53,12 +53,6 @@ function isAversion(signA, signB) {
   return !hasWholeSignAspect(signA, signB);
 }
 
-/** @deprecated Use electionSect.isDayChart (ecliptic horizon). Kept for tests comparing whole-sign sect. */
-function isDayChartWholeSign(ascLon, sunLon) {
-  const h = wholeSignHouse(sunLon, ascLon);
-  return h >= 10 || h <= 3;
-}
-
 function getRuler(signName) {
   return SIGN_RULER[signName] || null;
 }
@@ -168,13 +162,13 @@ function southNodeLon(northNodeLon) {
 
 module.exports = {
   normalizeLon,
+  signIndex,
   signFromLon,
   wholeSignHouse,
   signDistance,
   hasWholeSignAspect,
   hasWholeSignHardAspect,
   isAversion,
-  isDayChartWholeSign,
   getRuler,
   getDignity,
   angularHouse,

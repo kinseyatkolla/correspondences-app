@@ -121,6 +121,18 @@ export interface BirthChart {
   houses: HouseData;
 }
 
+export interface ZrPeriod {
+  level: number;
+  sign: string;
+  ruler: string;
+  startMs: number;
+  endMs: number;
+  truncated?: boolean;
+  isLoosingOfBond?: boolean;
+  isPreLoosingOfBond?: boolean;
+  isCulminatingFromFortune?: boolean;
+}
+
 export interface EphemerisInfo {
   status: string;
   ephemerisType: string;
@@ -852,6 +864,81 @@ class ApiService {
       method: "POST",
       body: JSON.stringify(body),
       timeoutMs: 5 * 60 * 1000,
+    });
+  }
+
+  async getNatalLots(
+    birthData: BirthData,
+    variantByLotId?: Record<string, string>,
+  ): Promise<{
+    success: boolean;
+    data: {
+      lots: Record<
+        string,
+        {
+          id: string;
+          name: string;
+          longitude: number;
+          sign: string;
+          degreeWithinSign: number;
+          wholeSignHouse: number;
+          signRuler: string;
+          formulaUsed: string;
+          isDayChart: boolean;
+        }
+      >;
+      sect: {
+        isDayChart: boolean;
+        chartSect: "day" | "night";
+        sunDistanceToHorizonDeg: number;
+        nearSectBoundary: boolean;
+      };
+    };
+  }> {
+    return this.fetchData("/astrology/natal-lots", {
+      method: "POST",
+      body: JSON.stringify({ ...birthData, variantByLotId }),
+    });
+  }
+
+  async getZodiacalReleasingActive(
+    birthData: BirthData,
+    options?: { lotId?: string; atMs?: number; atIso?: string },
+  ): Promise<{
+    success: boolean;
+    data: {
+      lotId: string;
+      releasingSign: string;
+      active: {
+        l1: ZrPeriod | null;
+        l2: ZrPeriod | null;
+        l3: ZrPeriod | null;
+        l4: ZrPeriod | null;
+      };
+    };
+  }> {
+    return this.fetchData("/astrology/zodiacal-releasing/active", {
+      method: "POST",
+      body: JSON.stringify({ ...birthData, ...options }),
+    });
+  }
+
+  async getZodiacalReleasingPeriods(
+    birthData: BirthData,
+    options: {
+      level: number;
+      lotId?: string;
+      fromMs?: number;
+      toMs?: number;
+      parent?: { startMs: number; endMs: number; sign: string };
+    },
+  ): Promise<{
+    success: boolean;
+    data: { level: number; periods: ZrPeriod[] };
+  }> {
+    return this.fetchData("/astrology/zodiacal-releasing/periods", {
+      method: "POST",
+      body: JSON.stringify({ ...birthData, ...options }),
     });
   }
 }

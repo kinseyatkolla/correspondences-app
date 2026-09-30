@@ -6,7 +6,6 @@ const {
   pickNextApplication,
 } = require("../electional/lunarMotion");
 const { isDayChart } = require("../electional/electionSect");
-const { isDayChartWholeSign } = require("../electional/chartHelpers");
 const {
   isUnderBeams,
   isCombust,
@@ -82,8 +81,6 @@ test("sect day chart from ecliptic horizon (Asc–Dsc arc)", () => {
   const sunNight = 90;
   assert.equal(isDayChart(asc, sunDay), true);
   assert.equal(isDayChart(asc, sunNight), false);
-  assert.equal(isDayChartWholeSign(asc, 45), true);
-  assert.equal(isDayChartWholeSign(asc, 135), false);
 });
 
 test("Oct 15 2026 1:35 AM Denver Leo rising is night chart (not whole-sign day)", () => {
@@ -98,7 +95,6 @@ test("Oct 15 2026 1:35 AM Denver Leo rising is night chart (not whole-sign day)"
   const asc = chart.houses.ascendant;
   const sun = chart.planets.sun.longitude;
   assert.equal(isDayChart(asc, sun), false);
-  assert.equal(isDayChartWholeSign(asc, sun), true);
 });
 
 test("overcoming: malefic in 10th sign from Moon", () => {

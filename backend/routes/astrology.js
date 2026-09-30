@@ -2838,6 +2838,141 @@ router.post("/electional-month", (req, res) => {
   }
 });
 
+router.post("/natal-lots", (req, res) => {
+  try {
+    const { chartFromBirthBody } = require("../lib/natalChartFromBody");
+    const { computeHermeticLots } = require("../lib/hellenistic/lots");
+    const chart = chartFromBirthBody(req.body);
+    const { lots, sect } = computeHermeticLots(chart, {
+      variantByLotId: req.body.variantByLotId || {},
+    });
+    res.json({ success: true, data: { lots, sect, houses: chart.houses } });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message || "Failed to compute lots",
+    });
+  }
+});
+
+router.post("/zodiacal-releasing/active", (req, res) => {
+  try {
+    const { chartFromBirthBody, birthMsFromBody } = require("../lib/natalChartFromBody");
+    const { computeHermeticLots, getLotById } = require("../lib/hellenistic/lots");
+    const { getActivePeriods, releasingSignFromLot } = require("../lib/hellenistic/zodiacalReleasing");
+
+    const chart = chartFromBirthBody(req.body);
+    const birthMs = birthMsFromBody(req.body);
+    const { lots } = computeHermeticLots(chart);
+    const lotId = req.body.lotId || "fortune";
+    const lot = getLotById({ lots }, lotId);
+    const atMs =
+      req.body.atMs != null
+        ? Number(req.body.atMs)
+        : req.body.atIso
+          ? Date.parse(req.body.atIso)
+          : Date.now();
+
+    const fortuneSign = lots.fortune.sign;
+    const releasingLotSign = releasingSignFromLot(lot);
+    const active = getActivePeriods({
+      birthMs,
+      releasingLotSign,
+      fortuneSign,
+      atMs,
+      yearLengthDays: req.body.yearLengthDays,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        lotId,
+        releasingSign: releasingLotSign,
+        fortuneSign,
+        birthMs,
+        atMs,
+        active,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message || "Failed to compute active periods",
+    });
+  }
+});
+
+router.post("/zodiacal-releasing/periods", (req, res) => {
+  try {
+    const { chartFromBirthBody, birthMsFromBody } = require("../lib/natalChartFromBody");
+    const { computeHermeticLots, getLotById } = require("../lib/hellenistic/lots");
+    const {
+      generateLevel1Periods,
+      generateChildPeriods,
+      releasingSignFromLot,
+    } = require("../lib/hellenistic/zodiacalReleasing");
+
+    const chart = chartFromBirthBody(req.body);
+    const birthMs = birthMsFromBody(req.body);
+    const { lots } = computeHermeticLots(chart);
+    const lotId = req.body.lotId || "fortune";
+    const lot = getLotById({ lots }, lotId);
+    const level = Number(req.body.level || 2);
+    const fromMs = Number(req.body.fromMs ?? birthMs);
+    const toMs = Number(
+      req.body.toMs ?? birthMs + 120 * 360 * 24 * 60 * 60 * 1000,
+    );
+
+    const fortuneSign = lots.fortune.sign;
+    const releasingLotSign = releasingSignFromLot(lot);
+
+    let periods;
+    if (level === 1) {
+      periods = generateLevel1Periods({
+        birthMs,
+        releasingSign: releasingLotSign,
+        maxEndMs: toMs,
+        fortuneSign,
+        yearLengthDays: req.body.yearLengthDays,
+      }).filter((p) => p.endMs > fromMs && p.startMs < toMs);
+    } else {
+      const parent = req.body.parent;
+      if (!parent?.startMs || !parent?.endMs || !parent?.sign) {
+        return res.status(400).json({
+          success: false,
+          error: "parent { startMs, endMs, sign } required for level > 1",
+        });
+      }
+      periods = generateChildPeriods({
+        parentStartMs: Number(parent.startMs),
+        parentEndMs: Number(parent.endMs),
+        parentSign: parent.sign,
+        childLevel: level,
+        rangeEndMs: toMs,
+        fortuneSign,
+        releasingLotSign,
+        yearLengthDays: req.body.yearLengthDays,
+      }).filter((p) => p.endMs > fromMs && p.startMs < toMs);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        lotId,
+        level,
+        releasingSign: releasingLotSign,
+        fortuneSign,
+        periods,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message || "Failed to compute periods",
+    });
+  }
+});
+
 router.DEFAULT_HOUSE_SYSTEM = DEFAULT_HOUSE_SYSTEM;
 router.resolveHouseSystem = resolveHouseSystem;
 

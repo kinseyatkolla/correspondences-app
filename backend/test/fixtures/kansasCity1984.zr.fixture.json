@@ -1,0 +1,33 @@
+{
+  "description": "Kansas City MO — 18 Feb 1984 13:54 CST, release from Lot of Fortune",
+  "birthUtc": {
+    "year": 1984,
+    "month": 2,
+    "day": 18,
+    "hour": 19,
+    "minute": 54,
+    "second": 0,
+    "latitude": 39.1,
+    "longitude": -94.583333
+  },
+  "displayTimeZone": "America/Chicago",
+  "releasingLotId": "fortune",
+  "expectedFortuneSign": "Aquarius",
+  "l1Boundaries": [
+    { "sign": "Aquarius", "start": "02/18/1984", "end": "09/13/2013" },
+    { "sign": "Pisces", "start": "09/13/2013", "end": "07/12/2025" }
+  ],
+  "l2Starts": [
+    { "sign": "Aquarius", "start": "02/18/1984" },
+    { "sign": "Pisces", "start": "08/06/1986" },
+    { "sign": "Leo", "start": "06/18/2001", "isLoosingOfBond": true },
+    { "sign": "Leo", "start": "03/02/1993", "isPreLoosingOfBond": true }
+  ],
+  "l3UnderFirstL2Aqu": [
+    { "sign": "Aquarius", "start": "02/18/1984" },
+    { "sign": "Pisces", "start": "05/03/1984" },
+    { "sign": "Leo", "start": "11/19/1984", "isPreLoosingOfBond": true },
+    { "sign": "Leo", "start": "07/30/1985", "isLoosingOfBond": true },
+    { "sign": "Scorpio", "start": "03/17/1985", "isCulminatingFromFortune": true }
+  ]
+}

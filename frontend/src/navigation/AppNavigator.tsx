@@ -28,6 +28,14 @@ import BirthChartCalculatorScreen from "../screens/BirthChartCalculatorScreen";
 import PlanetaryHoursScreen from "../screens/PlanetaryHoursScreen";
 import ElectionalScreen from "../screens/ElectionalScreen";
 import CalendarScreen from "../screens/CalendarScreen";
+import ZodiacalReleasingScreen from "../screens/ZodiacalReleasingScreen";
+import { useSavedNatalChart } from "../hooks/useSavedNatalChart";
+import { zodiacSignToUnicodeEmoji } from "../utils/zodiacNavEmoji";
+import {
+  OPEN_ASTROLOGY_SETTINGS_KEY,
+  OPEN_ASTROLOGY_SETTINGS_SECTION_KEY,
+  OPEN_ASTROLOGY_SETTINGS_RETURN_TAB_KEY,
+} from "./astrologySettingsKeys";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -171,9 +179,6 @@ function CalendarStack() {
 }
 
 type SettingsDrawerType = "astrology" | "tarot" | null;
-const OPEN_ASTROLOGY_SETTINGS_KEY = "openAstrologySettingsDrawer";
-const OPEN_ASTROLOGY_SETTINGS_SECTION_KEY = "openAstrologySettingsSection";
-const OPEN_ASTROLOGY_SETTINGS_RETURN_TAB_KEY = "openAstrologySettingsReturnTab";
 
 function AppNavigatorContent() {
   const [settingsDrawerType, setSettingsDrawerType] =
@@ -185,6 +190,8 @@ function AppNavigatorContent() {
   >(null);
   const navigationRef = useRef<any>(null);
   const { currentChart, refreshChart } = useAstrology();
+  const { hasNatal, risingSign, refresh: refreshSavedNatal } =
+    useSavedNatalChart({ fetchRisingSign: true });
 
   const handleSaveLocation = async (location: {
     latitude: number;
@@ -212,12 +219,15 @@ function AppNavigatorContent() {
     const state = navigation.getState();
     const currentTab = state?.routes?.[state?.index]?.name ?? null;
     if (currentTab === "Tarot") setSettingsDrawerType("tarot");
-    else if (["Moon", "Book", "Astrology"].includes(currentTab ?? ""))
+    else if (
+      ["Moon", "Releasing", "Book", "Astrology"].includes(currentTab ?? "")
+    )
       setSettingsDrawerType("astrology");
   };
 
   const closeAstrologySettingsDrawer = async () => {
     setSettingsDrawerType(null);
+    await refreshSavedNatal();
     if (astrologySettingsReturnTab) {
       const tabToReturn = astrologySettingsReturnTab;
       setAstrologySettingsReturnTab(null);
@@ -342,6 +352,24 @@ function AppNavigatorContent() {
               ),
             }}
           />
+          {hasNatal ? (
+            <Tab.Screen
+              name="Releasing"
+              component={ZodiacalReleasingScreen}
+              options={{
+                tabBarLabel: "",
+                tabBarIcon: ({ focused, size }) => (
+                  <Text
+                    style={{ fontSize: size, opacity: focused ? 1 : 0.35 }}
+                  >
+                    {risingSign
+                      ? zodiacSignToUnicodeEmoji(risingSign)
+                      : "↑"}
+                  </Text>
+                ),
+              }}
+            />
+          ) : null}
           <Tab.Screen
             name="Book"
             component={CalendarStack}

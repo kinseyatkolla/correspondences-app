@@ -54,7 +54,7 @@ cd frontend
 npm install
 
 # Start the Expo development server
-npm start
+npm run dev
 ```
 
 ### 3. Running the App

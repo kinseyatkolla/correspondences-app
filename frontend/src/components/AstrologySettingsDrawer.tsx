@@ -500,6 +500,23 @@ export default function AstrologySettingsDrawer({
         return;
       }
 
+      try {
+        const chartRes = await apiService.getBirthChart({
+          year: parsed.utcYear!,
+          month: parsed.utcMonth!,
+          day: parsed.utcDay!,
+          hour: parsed.utcHour!,
+          minute: parsed.utcMinute!,
+          second: parsed.utcSecond ?? 0,
+          latitude: parsed.latitude,
+          longitude: parsed.longitude,
+        });
+        const asc = chartRes.data?.houses?.ascendantSign;
+        if (asc) parsed.ascendantSign = asc;
+      } catch (ascError) {
+        console.error("Could not cache ascendant for natal save:", ascError);
+      }
+
       await AsyncStorage.setItem(SAVED_NATAL_CHART_KEY, JSON.stringify(parsed));
       await updateNatalPlacementsPreview();
       Alert.alert("Saved", "Natal chart defaults saved with timezone.");
