@@ -1,4 +1,11 @@
 # Railway: build static Expo web export, then serve dist/ (SPA fallback).
+# Expo 54 / Metro needs Node 20+ (Array.prototype.toReversed).
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[variables]
+NIXPACKS_NODE_VERSION = "20"
+
 [phases.build]
 cmds = ["npm run build"]
 
